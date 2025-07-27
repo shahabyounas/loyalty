@@ -1,0 +1,226 @@
+/* App Layout */
+.app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.header {
+    background-color: var(--background-secondary);
+    border-bottom: 1px solid var(--border-primary);
+    padding: var(--spacing-md) 0;
+}
+
+.header h1 {
+    margin: 0;
+    color: var(--primary-600);
+    font-size: var(--font-size-2xl);
+}
+
+.navigation {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+.nav-btn {
+    background: none;
+    border: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+    font-family: inherit;
+    font-size: var(--font-size-base);
+    font-weight: 500;
+}
+
+.nav-btn:hover {
+    background-color: var(--background-tertiary);
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.nav-btn.active {
+    background-color: var(--primary-600);
+    color: white;
+    border-color: var(--primary-600);
+    text-decoration: none;
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    padding: var(--spacing-xl) 0;
+}
+
+/* Home Section */
+.home-section {
+    text-align: center;
+}
+
+.color-demo {
+    margin-top: var(--spacing-2xl);
+}
+
+.color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.color-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.color-swatch {
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--border-primary);
+}
+
+.color-item.primary .color-swatch {
+    background-color: var(--primary-500);
+}
+
+.color-item.secondary .color-swatch {
+    background-color: var(--secondary-500);
+}
+
+.color-item.success .color-swatch {
+    background-color: var(--success-500);
+}
+
+.color-item.warning .color-swatch {
+    background-color: var(--warning-500);
+}
+
+.color-item.error .color-swatch {
+    background-color: var(--error-500);
+}
+
+/* Components Section */
+.component-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-lg);
+}
+
+/* Colors Section */
+.color-system {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2xl);
+}
+
+.color-family {
+    margin-bottom: var(--spacing-xl);
+}
+
+.color-shades {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: var(--spacing-xs);
+    margin-top: var(--spacing-md);
+}
+
+.color-shade {
+    height: 60px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-primary);
+}
+
+.color-shade:nth-child(1) {
+    color: var(--text-primary);
+}
+
+.color-shade:nth-child(2) {
+    color: var(--text-primary);
+}
+
+.color-shade:nth-child(3) {
+    color: var(--text-primary);
+}
+
+.color-shade:nth-child(4) {
+    color: var(--text-primary);
+}
+
+.color-shade:nth-child(5) {
+    color: var(--text-primary);
+}
+
+.color-shade:nth-child(6) {
+    color: white;
+}
+
+.color-shade:nth-child(7) {
+    color: white;
+}
+
+.color-shade:nth-child(8) {
+    color: white;
+}
+
+.color-shade:nth-child(9) {
+    color: white;
+}
+
+.color-shade:nth-child(10) {
+    color: white;
+}
+
+/* About Section */
+.about-section {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.about-section ul {
+    margin: var(--spacing-md) 0;
+    padding-left: var(--spacing-lg);
+}
+
+.about-section li {
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-secondary);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .navigation {
+        flex-direction: column;
+    }
+
+    .color-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .color-shades {
+        grid-template-columns: repeat(5, 1fr);
+    }
+
+    .component-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,65 @@
+{
+  "name": "@loyalty/dv",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/dv/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "command": "cd apps/dv && npx rsbuild build",
+        "outputPath": "apps/dv/dist"
+      },
+      "configurations": {
+        "development": {
+          "command": "cd apps/dv && npx rsbuild build --mode development"
+        },
+        "production": {
+          "command": "cd apps/dv && npx rsbuild build --mode production"
+        }
+      }
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "defaultConfiguration": "development",
+      "options": {
+        "command": "cd apps/dv && npx rsbuild dev"
+      },
+      "configurations": {
+        "development": {
+          "command": "cd apps/dv && npx rsbuild dev"
+        },
+        "production": {
+          "command": "cd apps/dv && npx rsbuild preview"
+        }
+      }
+    },
+    "preview": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cd apps/dv && npx rsbuild preview"
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/test-output/jest/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/dv/jest.config.js",
+        "passWithNoTests": true
+      },
+      "configurations": {
+        "ci": {
+          "ci": true,
+          "codeCoverage": true
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"]
+    }
+  },
+  "tags": []
+} 

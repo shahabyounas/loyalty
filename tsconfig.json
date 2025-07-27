@@ -2,5 +2,21 @@
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
   "files": [],
-  "references": []
+  "references": [
+    {
+      "path": "./apps/dv-e2e"
+    },
+    {
+      "path": "./apps/dv"
+    },
+    {
+      "path": "./client-dv-e2e"
+    },
+    {
+      "path": "./client-dv"
+    },
+    {
+      "path": "./dv"
+    }
+  ]
 }
