@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # Frontend Application
+  frontend:
+    build:
+      context: .
+      dockerfile: ./deploy/Dockerfile.frontend
+    ports:
+      - "80:80"
+    environment:
+      - REACT_APP_API_URL=http://backend:3001/api
+      - NODE_ENV=production
+    depends_on:
+      - backend
+    networks:
+      - loyalty-network
+
+  # Backend API Server
+  backend:
+    build:
+      context: .
+      dockerfile: ./deploy/Dockerfile.backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - JWT_SECRET=${JWT_SECRET}
+      - FRONTEND_URL=http://localhost
+    networks:
+      - loyalty-network
+    volumes:
+      - ./server/logs:/app/logs
+
+  # Database (Optional - for production)
+  # Uncomment and configure if you want to use a real database
+  # database:
+  #   image: postgres:15-alpine
+  #   environment:
+  #     - POSTGRES_DB=loyalty
+  #     - POSTGRES_USER=loyalty_user
+  #     - POSTGRES_PASSWORD=${DB_PASSWORD}
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - loyalty-network
+
+  # Redis (Optional - for session storage)
+  # Uncomment if you want to use Redis for session management
+  # redis:
+  #   image: redis:7-alpine
+  #   networks:
+  #     - loyalty-network
+
+networks:
+  loyalty-network:
+    driver: bridge
+
+volumes:
+  postgres_data: 
