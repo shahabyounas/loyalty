@@ -1,5 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  tokenStorage,
+  isTokenValid,
+  getUserFromToken,
+  isTokenExpiringSoon,
+  refreshToken as refreshJWTToken,
+} from "../utils/jwt.js";
+import { authAPI, apiErrorHandler } from "../utils/api.js";
 
 const AuthContext = createContext();
 
@@ -23,7 +31,7 @@ export const AuthProvider = ({ children }) => {
   // Security constants
   const MAX_LOGIN_ATTEMPTS = 5;
   const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
-  const TOKEN_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+  const TOKEN_REFRESH_INTERVAL = 4 * 60 * 1000; // 4 minutes (refresh before 5-min expiry)
 
   useEffect(() => {
     // Check for existing authentication on app load
@@ -45,23 +53,28 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Set up token refresh interval
     if (isAuthenticated) {
-      const interval = setInterval(refreshToken, TOKEN_REFRESH_INTERVAL);
+      const interval = setInterval(handleTokenRefresh, TOKEN_REFRESH_INTERVAL);
       return () => clearInterval(interval);
     }
   }, [isAuthenticated]);
 
-  const checkAuthStatus = () => {
+  const checkAuthStatus = async () => {
     try {
-      const token = localStorage.getItem("authToken");
-      const userEmail = localStorage.getItem("userEmail");
+      const token = tokenStorage.getToken();
+      const storedUser = tokenStorage.getUser();
 
-      if (token && userEmail) {
-        // In a real app, you would validate the token with your backend
-        const isValid = validateToken(token);
-
-        if (isValid) {
-          setUser({ email: userEmail });
-          setIsAuthenticated(true);
+      if (token && storedUser) {
+        // Validate token
+        if (isTokenValid(token)) {
+          // Extract user data from token to ensure it matches stored data
+          const tokenUser = getUserFromToken(token);
+          if (tokenUser && tokenUser.email === storedUser.email) {
+            setUser(storedUser);
+            setIsAuthenticated(true);
+          } else {
+            // Token user data doesn't match stored data
+            clearAuthData();
+          }
         } else {
           // Token is invalid, clear storage
           clearAuthData();
@@ -75,46 +88,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const validateToken = (token) => {
-    // In a real app, this would validate the token with your backend
-    // For demo purposes, we'll do basic validation
-    if (!token || token === "null" || token === "undefined") {
-      return false;
-    }
-
-    // Check if token is expired (demo tokens expire after 1 hour)
-    const tokenData = parseToken(token);
-    if (tokenData && tokenData.exp) {
-      return Date.now() < tokenData.exp;
-    }
-
-    return true;
-  };
-
-  const parseToken = (token) => {
+  const handleTokenRefresh = async () => {
     try {
-      // In a real app, you would decode a JWT token
-      // For demo purposes, we'll extract timestamp from our demo token
-      const timestamp = token.split("-").pop();
-      if (timestamp) {
-        const tokenTime = parseInt(timestamp);
-        const expiryTime = tokenTime + 60 * 60 * 1000; // 1 hour
-        return { exp: expiryTime };
-      }
-    } catch (error) {
-      console.error("Token parsing failed:", error);
-    }
-    return null;
-  };
-
-  const refreshToken = async () => {
-    try {
-      // In a real app, this would call your backend to refresh the token
-      const currentToken = localStorage.getItem("authToken");
-      if (currentToken && validateToken(currentToken)) {
-        // Generate new token
-        const newToken = "demo-token-" + Date.now();
-        localStorage.setItem("authToken", newToken);
+      const token = tokenStorage.getToken();
+      if (token && isTokenExpiringSoon(token)) {
+        // Try to refresh token via API first
+        try {
+          await authAPI.refreshToken();
+        } catch (error) {
+          // If API refresh fails, try local refresh
+          const newToken = refreshJWTToken(token);
+          if (newToken) {
+            tokenStorage.setToken(newToken);
+          } else {
+            // Token refresh failed, logout user
+            logout();
+          }
+        }
       }
     } catch (error) {
       console.error("Token refresh failed:", error);
@@ -128,80 +118,70 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      // Simulate API call with security delay
-      await new Promise((resolve) =>
-        setTimeout(resolve, 1000 + Math.random() * 1000)
-      );
+      // Call API for authentication
+      const response = await authAPI.login(email, password);
 
-      // Demo credentials
-      if (email === "demo@example.com" && password === "Demo123!") {
-        // Success - store token and user data
-        const token = "demo-token-" + Date.now();
-        localStorage.setItem("authToken", token);
-        localStorage.setItem("userEmail", email);
+      // Update state
+      setUser(response.user);
+      setIsAuthenticated(true);
+      setLoginAttempts(0);
 
-        setUser({ email });
-        setIsAuthenticated(true);
-        setLoginAttempts(0);
+      return { success: true, user: response.user };
+    } catch (error) {
+      // Handle login failures
+      const newAttempts = loginAttempts + 1;
+      setLoginAttempts(newAttempts);
 
-        return { success: true };
+      if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
+        setIsLocked(true);
+        setLockoutTime(Date.now());
+        throw new Error(
+          "Too many failed attempts. Account locked for 15 minutes."
+        );
       } else {
-        // Failed login
-        const newAttempts = loginAttempts + 1;
-        setLoginAttempts(newAttempts);
-
-        if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
-          setIsLocked(true);
-          setLockoutTime(Date.now());
-          throw new Error(
-            "Too many failed attempts. Account locked for 15 minutes."
-          );
-        } else {
-          throw new Error(
+        throw new Error(
+          apiErrorHandler.handleError(error) ||
             `Invalid credentials. ${
               MAX_LOGIN_ATTEMPTS - newAttempts
             } attempts remaining.`
-          );
-        }
+        );
       }
-    } catch (error) {
-      throw error;
     }
   };
 
   const signup = async (userData) => {
     try {
-      // Simulate API call with security delay
-      await new Promise((resolve) =>
-        setTimeout(resolve, 1000 + Math.random() * 1000)
-      );
+      // Call API for user registration
+      const response = await authAPI.register(userData);
 
-      // In a real app, this would create the account on your backend
-      const token = "demo-token-" + Date.now();
-      localStorage.setItem("authToken", token);
-      localStorage.setItem("userEmail", userData.email);
-
-      setUser({
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-      });
+      // Update state
+      setUser(response.user);
       setIsAuthenticated(true);
 
-      return { success: true };
+      return { success: true, user: response.user };
     } catch (error) {
-      throw new Error("Account creation failed. Please try again.");
+      throw new Error(
+        apiErrorHandler.handleError(error) ||
+          "Account creation failed. Please try again."
+      );
     }
   };
 
-  const logout = () => {
-    clearAuthData();
-    navigate("/");
+  const logout = async () => {
+    try {
+      // Call API logout endpoint
+      await authAPI.logout();
+    } catch (error) {
+      console.warn("Logout API call failed:", error);
+    } finally {
+      // Always clear local data
+      clearAuthData();
+      navigate("/");
+    }
   };
 
   const clearAuthData = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userEmail");
+    tokenStorage.clearAll();
     setUser(null);
     setIsAuthenticated(false);
     setLoginAttempts(0);
@@ -211,33 +191,76 @@ export const AuthProvider = ({ children }) => {
 
   const changePassword = async (currentPassword, newPassword) => {
     try {
-      // In a real app, this would call your backend
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Validate current password
-      if (currentPassword !== "Demo123!") {
-        throw new Error("Current password is incorrect");
-      }
-
-      // Update password (in real app, this would be stored securely on backend)
-      return { success: true };
+      const response = await authAPI.changePassword(
+        currentPassword,
+        newPassword
+      );
+      return { success: true, message: "Password changed successfully" };
     } catch (error) {
-      throw error;
+      throw new Error(
+        apiErrorHandler.handleError(error) || "Failed to change password"
+      );
     }
   };
 
   const resetPassword = async (email) => {
     try {
-      // In a real app, this would send a reset email
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      if (email === "demo@example.com") {
-        return { success: true, message: "Password reset email sent" };
-      } else {
-        throw new Error("Email not found");
-      }
+      const response = await authAPI.resetPassword(email);
+      return { success: true, message: "Password reset email sent" };
     } catch (error) {
-      throw error;
+      throw new Error(
+        apiErrorHandler.handleError(error) || "Failed to send reset email"
+      );
+    }
+  };
+
+  const verifyResetToken = async (token) => {
+    try {
+      const response = await authAPI.verifyResetToken(token);
+      return { success: true, valid: true };
+    } catch (error) {
+      throw new Error(
+        apiErrorHandler.handleError(error) || "Invalid reset token"
+      );
+    }
+  };
+
+  const setNewPassword = async (token, newPassword) => {
+    try {
+      const response = await authAPI.setNewPassword(token, newPassword);
+      return { success: true, message: "Password reset successfully" };
+    } catch (error) {
+      throw new Error(
+        apiErrorHandler.handleError(error) || "Failed to reset password"
+      );
+    }
+  };
+
+  const getProfile = async () => {
+    try {
+      const profile = await authAPI.getProfile();
+      // Update user state with latest profile data
+      setUser(profile);
+      tokenStorage.setUser(profile);
+      return profile;
+    } catch (error) {
+      throw new Error(
+        apiErrorHandler.handleError(error) || "Failed to get profile"
+      );
+    }
+  };
+
+  const updateProfile = async (profileData) => {
+    try {
+      const updatedProfile = await authAPI.updateProfile(profileData);
+      // Update user state with new profile data
+      setUser(updatedProfile);
+      tokenStorage.setUser(updatedProfile);
+      return { success: true, user: updatedProfile };
+    } catch (error) {
+      throw new Error(
+        apiErrorHandler.handleError(error) || "Failed to update profile"
+      );
     }
   };
 
@@ -248,6 +271,8 @@ export const AuthProvider = ({ children }) => {
       remainingAttempts: MAX_LOGIN_ATTEMPTS - loginAttempts,
       lockoutTime,
       isAuthenticated,
+      tokenValid: isTokenValid(tokenStorage.getToken()),
+      tokenExpiringSoon: isTokenExpiringSoon(tokenStorage.getToken()),
     };
   };
 
@@ -260,6 +285,10 @@ export const AuthProvider = ({ children }) => {
     logout,
     changePassword,
     resetPassword,
+    verifyResetToken,
+    setNewPassword,
+    getProfile,
+    updateProfile,
     getSecurityStatus,
   };
 

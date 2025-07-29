@@ -1,0 +1,215 @@
+/* Import colors from the design system */
+@import url('../../styles/colors.css');
+
+.signup-page {
+    /* Remove full-page styling since it's embedded */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.signup-container {
+    width: 100%;
+    height: 100%;
+}
+
+.signup-form {
+    background: var(--ai-surface-card);
+    border: 0.0625em solid var(--ai-border-medium);
+    border-radius: 0.75em;
+    padding: 1em;
+    box-shadow: var(--component-box-shadow);
+    animation: fadeInUp 0.8s ease-out;
+    width: 100%;
+}
+
+.form-header {
+    text-align: center;
+    margin-bottom: 1em;
+}
+
+.form-header h2 {
+    font-size: 1.5em;
+    font-weight: 700;
+    margin-bottom: 0.5em;
+    background: var(--ai-gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.form-header p {
+    color: var(--text-secondary);
+    font-size: 0.875em;
+}
+
+.error-message {
+    background: rgba(239, 68, 68, 0.1);
+    border: 0.0625em solid rgba(239, 68, 68, 0.3);
+    color: var(--error-400);
+    padding: 0.75em;
+    border-radius: 0.5em;
+    margin-bottom: 1em;
+    font-size: 0.875em;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1em;
+    margin-bottom: 1em;
+}
+
+.form-group {
+    margin-bottom: 1em;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5em;
+    color: var(--text-color);
+    font-weight: 500;
+    font-size: 0.875em;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75em;
+    background: var(--console-surface);
+    border: 0.0625em solid var(--ai-border-medium);
+    border-radius: 0.5em;
+    color: var(--text-color);
+    font-size: 0.875em;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(0.625em);
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--focus-border-color);
+    box-shadow: 0 0 0 0.1875em rgba(32, 146, 234, 0.1);
+}
+
+.form-group input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: var(--interactive-disabled);
+}
+
+.form-group input::placeholder {
+    color: var(--text-muted);
+}
+
+.btn-full {
+    width: 100%;
+    padding: 0.75em;
+    font-size: 0.875em;
+    font-weight: 600;
+    border: none;
+    border-radius: 0.5em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+    background: var(--control-color);
+    color: var(--control-text-color);
+}
+
+.btn-full:hover {
+    background: var(--control-highlight-color);
+    transform: translateY(-0.0625em);
+    box-shadow: var(--component-box-shadow);
+}
+
+.btn-full:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.loading-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+}
+
+.loading-text::after {
+    content: '';
+    width: 1em;
+    height: 1em;
+    border: 0.125em solid transparent;
+    border-top: 0.125em solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.form-footer {
+    text-align: center;
+    margin-top: 1em;
+    padding-top: 1em;
+    border-top: 0.0625em solid var(--ai-border-subtle);
+}
+
+.form-footer p {
+    color: var(--text-secondary);
+    font-size: 0.875em;
+    margin: 0;
+}
+
+.link-button {
+    background: none;
+    border: none;
+    color: var(--text-link);
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 0.5em;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.link-button:hover {
+    color: var(--text-link-hover);
+}
+
+.link-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(1.875em);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 30em) {
+    .signup-form {
+        padding: 1em;
+    }
+
+    .form-header h2 {
+        font-size: 1.25em;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+}

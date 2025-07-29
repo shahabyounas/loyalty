@@ -2,46 +2,132 @@ import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 
-const ProtectedRoute = ({
+/**
+ * ProtectedRoute component that requires authentication
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Child components to render if authenticated
+ * @param {string} props.redirectTo - Path to redirect to if not authenticated (default: "/")
+ * @param {boolean} props.requireAuth - Whether authentication is required (default: true)
+ * @param {string[]} props.allowedRoles - Array of allowed user roles (optional)
+ * @returns {React.ReactNode} Protected route component
+ */
+export const ProtectedRoute = ({
   children,
+  redirectTo = "/",
   requireAuth = true,
-  adminOnly = false,
+  allowedRoles = [],
 }) => {
-  const { isAuthenticated, user, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
 
   // Show loading spinner while checking authentication
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-primary-50">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-primary-600">Loading...</p>
-        </div>
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
       </div>
     );
   }
 
-  // If authentication is required but user is not authenticated
-  if (requireAuth && !isAuthenticated) {
-    // Redirect to login page with return URL
-    return <Navigate to="/" state={{ from: location }} replace />;
+  // If authentication is not required, render children
+  if (!requireAuth) {
+    return children;
   }
 
-  // If admin access is required but user is not admin
-  if (adminOnly && (!user || !user.isAdmin)) {
-    // Redirect to dashboard or show access denied
-    return <Navigate to="/dashboard" replace />;
+  // If not authenticated, redirect to login
+  if (!isAuthenticated) {
+    // Save the attempted URL for redirect after login
+    const searchParams = new URLSearchParams();
+    searchParams.set("redirect", location.pathname + location.search);
+
+    return <Navigate to={`${redirectTo}?${searchParams.toString()}`} replace />;
   }
 
-  // If user is authenticated but trying to access login/signup pages
-  if (!requireAuth && isAuthenticated) {
-    // Redirect to dashboard
-    return <Navigate to="/dashboard" replace />;
+  // Check role-based access if roles are specified
+  if (allowedRoles.length > 0 && user) {
+    const userRole = user.role || "user";
+    if (!allowedRoles.includes(userRole)) {
+      return (
+        <div className="access-denied">
+          <h2>Access Denied</h2>
+          <p>You don't have permission to access this page.</p>
+          <button onClick={() => window.history.back()}>Go Back</button>
+        </div>
+      );
+    }
   }
 
-  // Render the protected content
+  // User is authenticated and authorized, render children
   return children;
+};
+
+/**
+ * PublicRoute component that redirects authenticated users
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Child components to render if not authenticated
+ * @param {string} props.redirectTo - Path to redirect to if authenticated (default: "/dashboard")
+ * @returns {React.ReactNode} Public route component
+ */
+export const PublicRoute = ({ children, redirectTo = "/dashboard" }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
+
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  // If authenticated, redirect to dashboard or specified path
+  if (isAuthenticated) {
+    // Check if there's a redirect parameter from login
+    const searchParams = new URLSearchParams(location.search);
+    const redirectPath = searchParams.get("redirect") || redirectTo;
+
+    return <Navigate to={redirectPath} replace />;
+  }
+
+  // User is not authenticated, render children
+  return children;
+};
+
+/**
+ * AdminRoute component that requires admin authentication
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Child components to render if admin
+ * @returns {React.ReactNode} Admin route component
+ */
+export const AdminRoute = ({ children }) => {
+  return (
+    <ProtectedRoute
+      allowedRoles={["admin", "superadmin"]}
+      redirectTo="/auth/login"
+    >
+      {children}
+    </ProtectedRoute>
+  );
+};
+
+/**
+ * UserRoute component that requires user authentication
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Child components to render if user
+ * @returns {React.ReactNode} User route component
+ */
+export const UserRoute = ({ children }) => {
+  return (
+    <ProtectedRoute
+      allowedRoles={["user", "admin", "superadmin"]}
+      redirectTo="/auth/login"
+    >
+      {children}
+    </ProtectedRoute>
+  );
 };
 
 export default ProtectedRoute;
