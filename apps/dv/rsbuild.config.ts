@@ -24,7 +24,8 @@ export default defineConfig({
     output: {
 		copy: [
 		{ from: './src/favicon.ico' },
-		{ from: './src/assets' }],
+		{ from: './src/assets' },
+		{ from: './src/404.html' }],
 	
         target: 'web',
         distPath: {
