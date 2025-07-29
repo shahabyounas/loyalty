@@ -49,6 +49,11 @@ jobs:
         with:
           path: apps/dv/dist/
 
+      - name: Configure custom domain
+        run: |
+          echo "${{ secrets.CUSTOM_DOMAIN }}" > apps/dv/dist/CNAME
+        if: ${{ secrets.CUSTOM_DOMAIN != '' }}
+
   # Deployment job
   deploy:
     environment:

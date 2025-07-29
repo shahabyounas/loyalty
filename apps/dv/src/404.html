@@ -10,7 +10,12 @@
       // This script takes the current url and converts the path and query
       // string into just a query string, and then redirects the browser
       // to the new url with only a query string and hash fragment.
-      var pathSegmentsToKeep = 1;
+      // For custom domains, we keep 0 path segments, for GitHub Pages subdirectory we keep 1
+      var pathSegmentsToKeep =
+        window.location.hostname === "localhost" ||
+        window.location.hostname.includes("github.io")
+          ? 1
+          : 0;
 
       var l = window.location;
       l.replace(
