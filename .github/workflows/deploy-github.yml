@@ -43,12 +43,6 @@ jobs:
       - name: Install dependencies
         run: npm ci ${{ env.NPM_FLAGS }}
 
-      - name: Install backend dependencies
-        run: |
-          cd server
-          npm ci --only=production
-          cd ..
-
       - name: Run linting
         run: npm run lint
 
@@ -97,12 +91,6 @@ jobs:
       - name: Run security audit
         run: npm run security:audit
 
-      - name: Run backend security audit
-        run: |
-          cd server
-          npm audit --audit-level=moderate
-          cd ..
-
   # Deploy Frontend to GitHub Pages
   deploy-frontend:
     runs-on: ubuntu-latest
@@ -141,146 +129,11 @@ jobs:
           echo "✅ Frontend deployed to GitHub Pages"
           echo "🌐 URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
 
-  # Deploy Backend to GitHub Actions Runner (Self-hosted)
-  deploy-backend:
-    runs-on: self-hosted
-    name: Deploy Backend API
-    needs: [test-and-build, security-scan]
-    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'production'
-    environment: production
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
-
-      - name: Install backend dependencies
-        run: |
-          cd server
-          npm ci --only=production
-          cd ..
-
-      - name: Create environment file
-        run: |
-          cat > server/.env << EOF
-          NODE_ENV=production
-          PORT=3001
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
-          FRONTEND_URL=https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
-          EOF
-
-      - name: Stop existing server
-        run: |
-          if pgrep -f "node server.js" > /dev/null; then
-            pkill -f "node server.js"
-            sleep 5
-          fi
-
-      - name: Start backend server
-        run: |
-          cd server
-          nohup node server.js > ../server.log 2>&1 &
-          echo $! > ../server.pid
-
-      - name: Wait for server to start
-        run: |
-          for i in {1..30}; do
-            if curl -f http://localhost:3001/api/health > /dev/null 2>&1; then
-              echo "✅ Server is running"
-              break
-            fi
-            echo "Waiting for server to start... ($i/30)"
-            sleep 2
-          done
-
-      - name: Health check
-        run: |
-          curl -f http://localhost:3001/api/health || exit 1
-          echo "✅ Backend health check passed"
-
-      - name: Notify backend deployment
-        run: |
-          echo "✅ Backend deployed successfully"
-          echo "🔧 API URL: http://localhost:3001/api"
-          echo "📊 Health endpoint: http://localhost:3001/api/health"
-
-  # Deploy to Staging (develop branch)
-  deploy-staging:
-    runs-on: ubuntu-latest
-    name: Deploy to Staging
-    needs: [test-and-build, security-scan]
-    if: github.ref == 'refs/heads/develop' || github.event.inputs.environment == 'staging'
-    environment: staging
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-files
-          path: apps/dv/dist/
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
-
-      - name: Install backend dependencies
-        run: |
-          cd server
-          npm ci --only=production
-          cd ..
-
-      - name: Create staging environment file
-        run: |
-          cat > server/.env << EOF
-          NODE_ENV=staging
-          PORT=3001
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
-          FRONTEND_URL=https://staging.${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
-          EOF
-
-      - name: Start staging server
-        run: |
-          cd server
-          nohup node server.js > ../staging-server.log 2>&1 &
-          echo $! > ../staging-server.pid
-
-      - name: Wait for staging server
-        run: |
-          for i in {1..30}; do
-            if curl -f http://localhost:3001/api/health > /dev/null 2>&1; then
-              echo "✅ Staging server is running"
-              break
-            fi
-            echo "Waiting for staging server... ($i/30)"
-            sleep 2
-          done
-
-      - name: Staging health check
-        run: |
-          curl -f http://localhost:3001/api/health || exit 1
-          echo "✅ Staging health check passed"
-
-      - name: Notify staging deployment
-        run: |
-          echo "✅ Staging deployment completed"
-          echo "🔧 Staging API: http://localhost:3001/api"
-          echo "📊 Staging Health: http://localhost:3001/api/health"
-
   # Post-deployment tests
   post-deployment-tests:
     runs-on: ubuntu-latest
     name: Post-deployment Tests
-    needs: [deploy-frontend, deploy-backend]
+    needs: [deploy-frontend]
     if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'production'
 
     steps:
@@ -290,20 +143,12 @@ jobs:
           # Add your frontend tests here
           echo "✅ Frontend tests passed"
 
-      - name: Test API endpoints
-        run: |
-          echo "Testing API endpoints..."
-          # Add your API tests here
-          echo "✅ API tests passed"
-
       - name: Generate deployment report
         run: |
           echo "## Deployment Report" >> $GITHUB_STEP_SUMMARY
           echo "✅ Frontend: Deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Backend: Deployed to self-hosted runner" >> $GITHUB_STEP_SUMMARY
           echo "✅ Tests: All passed" >> $GITHUB_STEP_SUMMARY
           echo "✅ Security: Audit completed" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Frontend URL:** https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Backend URL:** http://localhost:3001/api" >> $GITHUB_STEP_SUMMARY
           echo "**Environment:** Production" >> $GITHUB_STEP_SUMMARY

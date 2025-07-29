@@ -33,12 +33,6 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Install backend dependencies
-        run: |
-          cd server
-          npm ci --only=production
-          cd ..
-
       - name: Run linting
         run: npm run lint
 
