@@ -38,6 +38,9 @@ jobs:
         env:
           REACT_APP_API_URL: ${{ secrets.REACT_APP_API_URL }}
 
+      - name: Fix asset paths for GitHub Pages
+        run: node fix-paths.js
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
