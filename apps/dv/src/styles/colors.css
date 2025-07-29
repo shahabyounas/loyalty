@@ -1,19 +1,19 @@
-/* Console UI Design System - Minimalist Color Palette */
+/* AI Application Design System - Professional Blue Theme */
 :root {
-    /* Primary Colors - Elegant Purple */
-    --primary-50: #faf5ff;
-    --primary-100: #f3e8ff;
-    --primary-200: #e9d5ff;
-    --primary-300: #d8b4fe;
-    --primary-400: #c084fc;
-    --primary-500: #a855f7;
-    --primary-600: #9333ea;
-    --primary-700: #7c3aed;
-    --primary-800: #6b21a8;
-    --primary-900: #581c87;
-    --primary-950: #3b0764;
+    /* Primary Colors - Client Blue */
+    --primary-50: #f0f8ff;
+    --primary-100: #e0f2fe;
+    --primary-200: #bae6fd;
+    --primary-300: #7dd3fc;
+    --primary-400: #38bdf8;
+    --primary-500: #2092ea;
+    --primary-600: #208fea;
+    --primary-700: #0284c7;
+    --primary-800: #0369a1;
+    --primary-900: #075985;
+    --primary-950: #0c4a6e;
 
-    /* Secondary Colors - Cool Gray */
+    /* Secondary Colors - Blue Variations */
     --secondary-50: #f8fafc;
     --secondary-100: #f1f5f9;
     --secondary-200: #e2e8f0;
@@ -26,44 +26,44 @@
     --secondary-900: #0f172a;
     --secondary-950: #020617;
 
-    /* Success Colors - Emerald */
-    --success-50: #ecfdf5;
-    --success-100: #d1fae5;
-    --success-200: #a7f3d0;
-    --success-300: #6ee7b7;
-    --success-400: #34d399;
-    --success-500: #10b981;
-    --success-600: #059669;
-    --success-700: #047857;
-    --success-800: #065f46;
-    --success-900: #064e3b;
-    --success-950: #022c22;
+    /* Success Colors - Modern Green */
+    --success-50: #f0fdf4;
+    --success-100: #dcfce7;
+    --success-200: #bbf7d0;
+    --success-300: #86efac;
+    --success-400: #4ade80;
+    --success-500: #22c55e;
+    --success-600: #16a34a;
+    --success-700: #15803d;
+    --success-800: #166534;
+    --success-900: #14532d;
+    --success-950: #052e16;
 
-    /* Warning Colors - Amber */
-    --warning-50: #fffbeb;
-    --warning-100: #fef3c7;
-    --warning-200: #fde68a;
-    --warning-300: #fcd34d;
-    --warning-400: #fbbf24;
-    --warning-500: #f59e0b;
-    --warning-600: #d97706;
-    --warning-700: #b45309;
-    --warning-800: #92400e;
-    --warning-900: #78350f;
-    --warning-950: #451a03;
+    /* Warning Colors - Bright Orange */
+    --warning-50: #fff7ed;
+    --warning-100: #ffedd5;
+    --warning-200: #fed7aa;
+    --warning-300: #fdba74;
+    --warning-400: #fb923c;
+    --warning-500: #f97316;
+    --warning-600: #ea580c;
+    --warning-700: #c2410c;
+    --warning-800: #9a3412;
+    --warning-900: #7c2d12;
+    --warning-950: #431407;
 
-    /* Error Colors - Rose */
-    --error-50: #fff1f2;
-    --error-100: #ffe4e6;
-    --error-200: #fecdd3;
-    --error-300: #fda4af;
-    --error-400: #fb7185;
-    --error-500: #f43f5e;
-    --error-600: #e11d48;
-    --error-700: #be123c;
-    --error-800: #9f1239;
-    --error-900: #881337;
-    --error-950: #4c0519;
+    /* Error Colors - Modern Red */
+    --error-50: #fef2f2;
+    --error-100: #fee2e2;
+    --error-200: #fecaca;
+    --error-300: #fca5a5;
+    --error-400: #f87171;
+    --error-500: #ef4444;
+    --error-600: #dc2626;
+    --error-700: #b91c1c;
+    --error-800: #991b1b;
+    --error-900: #7f1d1d;
+    --error-950: #450a0a;
 
     /* Neutral Colors - Pure White to Deep Gray */
     --neutral-50: #ffffff;
@@ -78,68 +78,79 @@
     --neutral-900: #262626;
     --neutral-950: #171717;
 
-    /* Main Application Colors */
+    /* AI Application Colors - Bright & Professional */
     --background-color: #ffffff;
-    --secondary-background-color: #fafafa;
-    --text-color: #171717;
-    --text-secondary: #525252;
-    --text-muted: #737373;
-    --text-disabled: #a3a3a3;
+    --secondary-background-color: #f8fafc;
+    --text-color: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --text-disabled: #94a3b8;
     --text-inverse: #ffffff;
     --text-link: var(--primary-600);
     --text-link-hover: var(--primary-700);
 
-    /* Control Colors */
-    --control-color: #6b6b6b;
-    --control-text-color: #262424;
-    --control-highlight-color: #2f70ad;
-    --control-highlight-text-color: #dbe4ea;
+    /* Control Colors - AI Blue Theme */
+    --control-color: var(--primary-500);
+    --control-text-color: #ffffff;
+    --control-highlight-color: var(--primary-600);
+    --control-highlight-text-color: #ffffff;
 
-    /* Interactive States */
-    --interactive-hover: var(--primary-50);
-    --interactive-active: var(--primary-100);
-    --interactive-selected: var(--primary-100);
-    --interactive-disabled: var(--neutral-100);
+    /* Interactive States - Bright & Responsive */
+    --interactive-hover: #f0f8ff;
+    --interactive-active: #e0f2fe;
+    --interactive-selected: #bae6fd;
+    --interactive-disabled: #f1f5f9;
 
-    /* Console UI Colors */
-    --console-surface: #fafafa;
-    --console-surface-hover: #f5f5f5;
-    --console-surface-active: #e5e5e5;
-    --console-border: #e5e5e5;
-    --console-border-hover: #d4d4d4;
+    /* Console UI Colors - Clean & Modern */
+    --console-surface: #ffffff;
+    --console-surface-hover: #f8fafc;
+    --console-surface-active: #f1f5f9;
+    --console-border: #e2e8f0;
+    --console-border-hover: #cbd5e1;
 
-    /* Focus and Border Colors */
+    /* Focus and Border Colors - AI Blue Accent */
     --focus-border-color: var(--primary-500);
-    --color-border-container: #e6e6ec;
+    --color-border-container: #e2e8f0;
 
-    /* Shadow System */
-    --component-box-shadow: 0 0.625em 0.9375em -0.1875em rgba(0, 0, 0, 0.1), 0 0.25em 0.375em -0.125em rgba(0, 0, 0, 0.05);
-    --shadow-container: 0 0 0.0625em 0.0625em #e9ebed, 0 0.0625em 0.5em 0.125em rgba(0, 7, 22, .12);
+    /* Shadow System - Subtle & Professional */
+    --component-box-shadow: 0 0.625em 0.9375em -0.1875em rgba(32, 146, 234, 0.1), 0 0.25em 0.375em -0.125em rgba(32, 146, 234, 0.05);
+    --shadow-container: 0 0 0.0625em 0.0625em rgba(32, 146, 234, 0.05), 0 0.0625em 0.5em 0.125em rgba(32, 146, 234, 0.08);
 
-    /* Status Colors */
+    /* Status Colors - AI Application Theme */
     --status-info: var(--primary-500);
     --status-success: var(--success-500);
     --status-warning: var(--warning-500);
     --status-error: var(--error-500);
 
-    /* Border Radius */
+    /* Border Radius - Modern & Clean */
     --sm-border-radius: 0.25em;
     --m-border-radius: 0.5em;
     --l-border-radius: 0.75em;
     --xl-border-radius: 1em;
 
-    /* Icon System */
+    /* Icon System - AI Blue Theme */
     --icon-scale: 1;
     --icon-stroke: currentcolor;
-    --icon-fill-alert: #b80b0b;
-    --icon-fill-active: #fdb601;
+    --icon-fill-alert: var(--error-500);
+    --icon-fill-active: var(--primary-500);
+
+    /* AI Application Specific Colors */
+    --ai-gradient-primary: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+    --ai-gradient-secondary: linear-gradient(135deg, #ffffff, var(--primary-50));
+    --ai-accent-blue: #2092ea;
+    --ai-accent-blue-light: #208fea;
+    --ai-surface-elevated: #ffffff;
+    --ai-surface-card: #ffffff;
+    --ai-border-subtle: #f1f5f9;
+    --ai-border-medium: #e2e8f0;
+    --ai-border-strong: #cbd5e1;
 
     /* Transitions */
     transition-duration: 0.3s;
     transition-property: --background-color --secondary-background-color --text-color --control-color --control-text-color --control-highlight-color --control-highlight-text-color;
 }
 
-/* Dark Mode Support */
+/* Dark Mode Support - AI Application Dark Theme */
 @media (prefers-color-scheme: dark) {
     :root {
         --background-color: #0f172a;
@@ -150,14 +161,14 @@
         --text-disabled: #64748b;
         --text-inverse: #0f172a;
 
-        --control-color: #475569;
-        --control-text-color: #f8fafc;
-        --control-highlight-color: var(--primary-600);
-        --control-highlight-text-color: #f8fafc;
+        --control-color: var(--primary-500);
+        --control-text-color: #ffffff;
+        --control-highlight-color: var(--primary-400);
+        --control-highlight-text-color: #ffffff;
 
-        --interactive-hover: rgba(168, 85, 247, 0.1);
-        --interactive-active: rgba(168, 85, 247, 0.2);
-        --interactive-selected: rgba(168, 85, 247, 0.15);
+        --interactive-hover: rgba(32, 146, 234, 0.1);
+        --interactive-active: rgba(32, 146, 234, 0.2);
+        --interactive-selected: rgba(32, 146, 234, 0.15);
         --interactive-disabled: #334155;
 
         --console-surface: #1e293b;
@@ -167,5 +178,11 @@
         --console-border-hover: #475569;
 
         --color-border-container: #334155;
+
+        --ai-surface-elevated: #1e293b;
+        --ai-surface-card: #1e293b;
+        --ai-border-subtle: #334155;
+        --ai-border-medium: #475569;
+        --ai-border-strong: #64748b;
     }
 }

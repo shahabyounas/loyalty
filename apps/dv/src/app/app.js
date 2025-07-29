@@ -1,55 +1,108 @@
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { AuthProvider } from "../contexts/AuthContext";
 import "./app.module.css";
 
-// Import page components (these will be created separately)
-import LandingPage from "../pages/LandingPage";
-import LoginPage from "../pages/LoginPage";
-import SignupPage from "../pages/SignupPage";
-import DashboardPage from "../pages/DashboardPage";
-import RoutesPage from "../pages/RoutesPage";
-import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
-import AdminUsersPage from "../pages/admin/AdminUsersPage";
-import AdminSettingsPage from "../pages/admin/AdminSettingsPage";
-import NotFoundPage from "../pages/NotFoundPage";
-
-// Layout components
-import MainLayout from "../layouts/MainLayout";
-import AdminLayout from "../layouts/AdminLayout";
-import AuthLayout from "../layouts/AuthLayout";
+// Import user types
+import * as EndUser from "../end-user";
+import * as Admin from "../admin";
+import { NotFoundPage } from "../shared";
 
 function App() {
   return (
-    <div className="app">
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<MainLayout />}>
-          <Route index element={<LandingPage />} />
-          <Route path="routes" element={<RoutesPage />} />
-        </Route>
+    <Router>
+      <AuthProvider>
+        <div className="app">
+          <Routes>
+            {/* Public Landing Page - No sidebar */}
+            <Route
+              path="/"
+              element={
+                <EndUser.PublicLayout>
+                  <EndUser.LandingPage />
+                </EndUser.PublicLayout>
+              }
+            />
 
-        {/* Authentication Routes */}
-        <Route path="/auth" element={<AuthLayout />}>
-          <Route path="login" element={<LoginPage />} />
-          <Route path="signup" element={<SignupPage />} />
-        </Route>
+            {/* Authentication Routes - Auth layout */}
+            <Route
+              path="/auth/login"
+              element={
+                <EndUser.AuthLayout>
+                  <EndUser.LoginPage />
+                </EndUser.AuthLayout>
+              }
+            />
+            <Route
+              path="/auth/signup"
+              element={
+                <EndUser.AuthLayout>
+                  <EndUser.SignupPage />
+                </EndUser.AuthLayout>
+              }
+            />
 
-        {/* Protected User Routes */}
-        <Route path="/dashboard" element={<MainLayout />}>
-          <Route index element={<DashboardPage />} />
-        </Route>
+            {/* User Dashboard - With sidebar */}
+            <Route
+              path="/dashboard"
+              element={
+                <EndUser.MainLayout>
+                  <EndUser.DashboardPage />
+                </EndUser.MainLayout>
+              }
+            />
 
-        {/* Admin Routes */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboardPage />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route path="settings" element={<AdminSettingsPage />} />
-        </Route>
+            {/* User Routes - With sidebar */}
+            <Route
+              path="/routes"
+              element={
+                <EndUser.MainLayout>
+                  <EndUser.RoutesPage />
+                </EndUser.MainLayout>
+              }
+            />
 
-        {/* Catch all route */}
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </div>
+            {/* Admin Dashboard - Admin layout */}
+            <Route
+              path="/admin"
+              element={
+                <Admin.AdminLayout>
+                  <Admin.AdminDashboardPage />
+                </Admin.AdminLayout>
+              }
+            />
+
+            {/* Admin Users - Admin layout */}
+            <Route
+              path="/admin/users"
+              element={
+                <Admin.AdminLayout>
+                  <Admin.AdminUsersPage />
+                </Admin.AdminLayout>
+              }
+            />
+
+            {/* Admin Settings - Admin layout */}
+            <Route
+              path="/admin/settings"
+              element={
+                <Admin.AdminLayout>
+                  <Admin.AdminSettingsPage />
+                </Admin.AdminLayout>
+              }
+            />
+
+            {/* Catch all route */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </div>
+      </AuthProvider>
+    </Router>
   );
 }
 

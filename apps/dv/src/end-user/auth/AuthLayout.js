@@ -1,7 +1,6 @@
 import React from "react";
-import { Outlet } from "react-router-dom";
 
-function AuthLayout() {
+function AuthLayout({ children }) {
   return (
     <div className="auth-layout">
       <header className="auth-header">
@@ -12,9 +11,7 @@ function AuthLayout() {
           <a href="/">Back to Home</a>
         </nav>
       </header>
-      <main className="auth-content">
-        <Outlet />
-      </main>
+      <main className="auth-content">{children}</main>
     </div>
   );
 }

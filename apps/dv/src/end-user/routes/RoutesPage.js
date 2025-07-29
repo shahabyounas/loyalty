@@ -1,5 +1,5 @@
 import React from "react";
-import RoutesUI from "../components/RoutesUI";
+import RoutesUI from "./RoutesUI";
 
 function RoutesPage() {
   return (

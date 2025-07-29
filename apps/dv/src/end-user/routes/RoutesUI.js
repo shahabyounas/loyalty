@@ -1,6 +1,24 @@
 import React from "react";
 import { useLocation, Link } from "react-router-dom";
 import styles from "./RoutesUI.module.css";
+import {
+  HomeIcon,
+  RoutesIcon,
+  LoginIcon,
+  SignupIcon,
+  DashboardIcon,
+  AdminIcon,
+  UsersIcon,
+  SettingsIcon,
+  PublicIcon,
+  AuthIcon,
+  ProtectedIcon,
+  AdminCategoryIcon,
+  FolderIcon,
+  LocationIcon,
+  ArrowRightIcon,
+  CheckIcon,
+} from "../../assets/icons";
 
 function RoutesUI() {
   const location = useLocation();
@@ -12,56 +30,56 @@ function RoutesUI() {
       name: "Landing Page",
       description: "Welcome page for the application",
       category: "Public",
-      icon: "🏠",
+      icon: <HomeIcon />,
     },
     {
       path: "/routes",
       name: "Routes Overview",
       description: "Dynamic overview of all application routes",
       category: "Public",
-      icon: "🗺️",
+      icon: <RoutesIcon />,
     },
     {
       path: "/auth/login",
       name: "Login",
       description: "User authentication page",
       category: "Authentication",
-      icon: "🔐",
+      icon: <LoginIcon />,
     },
     {
       path: "/auth/signup",
       name: "Signup",
       description: "User registration page",
       category: "Authentication",
-      icon: "📝",
+      icon: <SignupIcon />,
     },
     {
       path: "/dashboard",
       name: "Dashboard",
       description: "User dashboard and main interface",
       category: "Protected",
-      icon: "📊",
+      icon: <DashboardIcon />,
     },
     {
       path: "/admin",
       name: "Admin Dashboard",
       description: "Administrator main dashboard",
       category: "Admin",
-      icon: "⚙️",
+      icon: <AdminIcon />,
     },
     {
       path: "/admin/users",
       name: "Admin Users",
       description: "User management interface",
       category: "Admin",
-      icon: "👥",
+      icon: <UsersIcon />,
     },
     {
       path: "/admin/settings",
       name: "Admin Settings",
       description: "System configuration and settings",
       category: "Admin",
-      icon: "🔧",
+      icon: <SettingsIcon />,
     },
   ];
 
@@ -80,12 +98,12 @@ function RoutesUI() {
 
   const getCategoryIcon = (category) => {
     const icons = {
-      Public: "🌐",
-      Authentication: "🔐",
-      Protected: "🛡️",
-      Admin: "👑",
+      Public: <PublicIcon />,
+      Authentication: <AuthIcon />,
+      Protected: <ProtectedIcon />,
+      Admin: <AdminCategoryIcon />,
     };
-    return icons[category] || "📁";
+    return icons[category] || <FolderIcon />;
   };
 
   return (
@@ -160,9 +178,17 @@ function RoutesUI() {
                           isActiveRoute(route.path) ? styles.active : ""
                         }`}
                       >
-                        {isActiveRoute(route.path)
-                          ? "📍 Current Page"
-                          : "🚀 Navigate"}
+                        {isActiveRoute(route.path) ? (
+                          <>
+                            <LocationIcon />
+                            Current Page
+                          </>
+                        ) : (
+                          <>
+                            <ArrowRightIcon />
+                            Navigate
+                          </>
+                        )}
                       </Link>
                       {isActiveRoute(route.path) && (
                         <span className={styles["current-indicator"]}>
@@ -184,7 +210,8 @@ function RoutesUI() {
             <strong>Categories:</strong> {Object.keys(groupedRoutes).length}
           </p>
           <p className={styles["routes-note"]}>
-            💡 This page automatically updates when new routes are added to the
+            <CheckIcon style={{ display: "inline", marginRight: "0.5em" }} />
+            This page automatically updates when new routes are added to the
             application.
           </p>
         </div>

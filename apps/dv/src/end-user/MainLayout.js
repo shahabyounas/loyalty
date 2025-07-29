@@ -1,16 +1,49 @@
 import React, { useState } from "react";
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import {
+  DashboardIcon,
+  RoutesIcon,
+  LoginIcon,
+  SignupIcon,
+  AdminIcon,
+  MenuIcon,
+  NotificationIcon,
+  SettingsIcon,
+  PlusIcon,
+  UserIcon,
+  AppLogo,
+} from "../assets/icons";
 
-function MainLayout() {
+function MainLayout({ children }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const location = useLocation();
 
   const navigationItems = [
-    { path: "/", label: "Dashboard", icon: "📊" },
-    { path: "/routes", label: "Routes", icon: "🗺️" },
-    { path: "/auth/login", label: "Login", icon: "🔐" },
-    { path: "/auth/signup", label: "Signup", icon: "📝" },
-    { path: "/admin", label: "Admin", icon: "⚙️" },
+    {
+      path: "/",
+      label: "Dashboard",
+      icon: <DashboardIcon />,
+    },
+    {
+      path: "/routes",
+      label: "Routes",
+      icon: <RoutesIcon />,
+    },
+    {
+      path: "/auth/login",
+      label: "Login",
+      icon: <LoginIcon />,
+    },
+    {
+      path: "/auth/signup",
+      label: "Signup",
+      icon: <SignupIcon />,
+    },
+    {
+      path: "/admin",
+      label: "Admin",
+      icon: <AdminIcon />,
+    },
   ];
 
   const isActiveRoute = (path) => {
@@ -26,11 +59,11 @@ function MainLayout() {
         <div className="p-6 border-b border-console-border">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">D</span>
+              <AppLogo />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-primary">DevConsole</h1>
-              <p className="text-xs text-muted">Development Platform</p>
+              <h1 className="text-lg font-semibold text-primary">AIConsole</h1>
+              <p className="text-xs text-muted">AI Development Platform</p>
             </div>
           </div>
         </div>
@@ -55,7 +88,7 @@ function MainLayout() {
         <div className="p-4 border-t border-console-border">
           <div className="flex items-center gap-3 p-3 bg-console-surface-hover rounded-lg">
             <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-              <span className="text-primary-600 font-semibold">U</span>
+              <UserIcon />
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium">User</p>
@@ -75,7 +108,7 @@ function MainLayout() {
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
                 className="btn btn-ghost btn-sm"
               >
-                <span className="text-lg">☰</span>
+                <MenuIcon />
               </button>
 
               <div className="breadcrumb">
@@ -94,29 +127,28 @@ function MainLayout() {
 
             <div className="flex items-center gap-3">
               <button className="btn btn-ghost btn-sm">
-                <span className="text-lg">🔔</span>
+                <NotificationIcon />
               </button>
               <button className="btn btn-ghost btn-sm">
-                <span className="text-lg">⚙️</span>
+                <SettingsIcon />
               </button>
               <div className="w-px h-6 bg-console-border"></div>
               <button className="btn btn-primary btn-sm">
-                <span className="text-sm">+ New</span>
+                <PlusIcon />
+                <span className="text-sm">New</span>
               </button>
             </div>
           </div>
         </header>
 
         {/* Content Area */}
-        <div className="console-content">
-          <Outlet />
-        </div>
+        <div className="console-content">{children}</div>
 
         {/* Footer */}
         <footer className="console-footer">
           <div className="flex items-center justify-between w-full px-6">
             <div className="flex items-center gap-4">
-              <span className="text-xs text-muted">© 2024 DevConsole</span>
+              <span className="text-xs text-muted">© 2024 AIConsole</span>
               <span className="text-xs text-muted">•</span>
               <span className="text-xs text-muted">v1.0.0</span>
             </div>
