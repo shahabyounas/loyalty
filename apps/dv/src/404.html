@@ -4,19 +4,19 @@
     <meta charset="utf-8" />
     <title>Diamond Vape - Loyalty Program</title>
     <script type="text/javascript">
-      // Simplified routing for custom domains
-      // This script handles routing for GitHub Pages with custom domains
+      // Universal SPA routing for GitHub Pages and custom domains
+      // This script handles routing for all deployment scenarios
 
-      // Check if we're on a custom domain
-      var isCustomDomain =
-        !window.location.hostname.includes("localhost") &&
-        !window.location.hostname.includes("github.io");
+      // Get the current path
+      var path = window.location.pathname;
+      var search = window.location.search;
+      var hash = window.location.hash;
 
-      if (isCustomDomain) {
-        // For custom domains, redirect to the main page and let React Router handle routing
-        window.location.replace("/");
-      } else {
-        // For GitHub Pages subdirectory, use the original SPA redirect logic
+      // Check if we're on GitHub Pages subdirectory
+      var isGitHubPages = window.location.hostname.includes("github.io");
+
+      if (isGitHubPages) {
+        // For GitHub Pages, use the original SPA redirect logic
         var pathSegmentsToKeep = 1;
         var l = window.location;
         var currentPath = l.pathname
@@ -74,6 +74,10 @@
               "/?/404"
           );
         }
+      } else {
+        // For custom domains, redirect to the main page and let React Router handle it
+        // This works because the server will serve index.html for all routes
+        window.location.replace("/");
       }
     </script>
   </head>

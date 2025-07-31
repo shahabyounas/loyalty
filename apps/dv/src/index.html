@@ -19,13 +19,11 @@
   <body>
     <div id="root"></div>
     <script type="text/javascript">
-      // Simplified routing script for custom domains
-      // Check if we're on a custom domain
-      var isCustomDomain =
-        !window.location.hostname.includes("localhost") &&
-        !window.location.hostname.includes("github.io");
+      // Universal SPA routing script
+      // Check if we're on GitHub Pages subdirectory
+      var isGitHubPages = window.location.hostname.includes("github.io");
 
-      if (!isCustomDomain) {
+      if (isGitHubPages) {
         // Only run the SPA redirect logic for GitHub Pages subdirectory
         (function (l) {
           if (l.search[1] === "/") {

@@ -1,7 +1,6 @@
 import React from "react";
 import {
   BrowserRouter as Router,
-  HashRouter as HashRouter,
   Routes,
   Route,
   Navigate,
@@ -14,20 +13,9 @@ import * as EndUser from "../userUI";
 import * as Admin from "../adminUI";
 import { NotFoundPage, LandingPage, PublicLayout } from "../shared";
 
-// Check if we're on a custom domain (not localhost or github.io)
-const isCustomDomain = () => {
-  return (
-    !window.location.hostname.includes("localhost") &&
-    !window.location.hostname.includes("github.io")
-  );
-};
-
 function App() {
-  // Use HashRouter for custom domains to avoid routing issues
-  const RouterComponent = isCustomDomain() ? HashRouter : Router;
-
   return (
-    <RouterComponent>
+    <Router>
       <AuthProvider>
         <div className="app">
           <Routes>
@@ -128,7 +116,7 @@ function App() {
           </Routes>
         </div>
       </AuthProvider>
-    </RouterComponent>
+    </Router>
   );
 }
 
