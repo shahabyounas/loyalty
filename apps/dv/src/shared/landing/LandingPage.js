@@ -195,7 +195,12 @@ function LandingPage() {
               Diamond Vape for their vaping needs
             </p>
             <div className="cta-actions">
-              <button className="btn-primary btn-large">Shop Now</button>
+              <button
+                className="btn-primary btn-large"
+                onClick={() => navigate("/home")}
+              >
+                Shop Now
+              </button>
               <button className="btn-outline btn-large">Contact Support</button>
             </div>
           </div>
