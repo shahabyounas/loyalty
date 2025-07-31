@@ -38,12 +38,19 @@
               return s.replace(/~and~/g, "&");
             })
             .join("?");
+
           // For custom domains, we don't slice the pathname
           var pathname =
             window.location.hostname === "localhost" ||
             window.location.hostname.includes("github.io")
               ? l.pathname.slice(0, -1)
               : l.pathname;
+
+          // If the decoded path is 404, set it to a path that will trigger the catch-all route
+          if (decoded === "404") {
+            decoded = "invalid-route-that-will-trigger-404";
+          }
+
           window.history.replaceState(null, null, pathname + decoded + l.hash);
         }
       })(window.location);
