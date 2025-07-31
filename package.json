@@ -28,9 +28,10 @@
   "private": true,
   "devDependencies": {
     "@nx/jest": "21.3.7",
-    "@nx/js": "21.3.7",
+    "@nx/js": "21.3.10",
     "@nx/react": "^21.3.7",
     "@nx/rsbuild": "21.3.7",
+    "@nxlv/python": "^21.0.4",
     "@rsbuild/core": "1.1.10",
     "@rsbuild/plugin-react": "1.1.0",
     "@swc-node/register": "~1.9.1",
@@ -46,6 +47,7 @@
     "babel-jest": "^30.0.2",
     "jest": "^30.0.2",
     "jest-environment-jsdom": "^30.0.2",
+    "jest-environment-node": "^30.0.2",
     "jest-util": "^30.0.2",
     "nx": "21.3.7",
     "ts-jest": "^29.4.0",
@@ -58,6 +60,7 @@
     "apps/*"
   ],
   "dependencies": {
+    "axios": "^1.6.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-router-dom": "6.29.0"
