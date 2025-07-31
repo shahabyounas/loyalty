@@ -8,10 +8,10 @@ function PublicLayout({ children }) {
       {/* Simple header for public pages */}
       <header className="public-header flex justify-between items-center">
         <div>
-          <img src={dmlogo} alt="Dimond Vape Logo" className="h-12 w-auto" />
+          <img src={dmlogo} alt="Diamond Vape Logo" className="h-12 w-auto" />
         </div>
         <div className="flex flex-col">
-          <h1 className="text-xl font-bold text-white">Dimond Vape</h1>
+          <h1 className="text-xl font-bold text-white">Diamond Vape</h1>
           <h6 className="text-sm text-white/80 font-medium">
             The best vape shop in the UK
           </h6>
@@ -26,7 +26,7 @@ function PublicLayout({ children }) {
         <div className="container">
           <div className="flex items-center justify-between py-4">
             <div className="flex items-center gap-4">
-              <span className="text-xs text-muted">© 2025 Dimond Vape</span>
+              <span className="text-xs text-muted">© 2025 Diamond Vape</span>
               <span className="text-xs text-muted">•</span>
               <span className="text-xs text-muted">v1.0.0</span>
             </div>

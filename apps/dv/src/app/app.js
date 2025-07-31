@@ -1,6 +1,7 @@
 import React from "react";
 import {
   BrowserRouter as Router,
+  HashRouter as HashRouter,
   Routes,
   Route,
   Navigate,
@@ -13,9 +14,20 @@ import * as EndUser from "../userUI";
 import * as Admin from "../adminUI";
 import { NotFoundPage, LandingPage, PublicLayout } from "../shared";
 
-function App() {
+// Check if we're on a custom domain (not localhost or github.io)
+const isCustomDomain = () => {
   return (
-    <Router>
+    !window.location.hostname.includes("localhost") &&
+    !window.location.hostname.includes("github.io")
+  );
+};
+
+function App() {
+  // Use HashRouter for custom domains to avoid routing issues
+  const RouterComponent = isCustomDomain() ? HashRouter : Router;
+
+  return (
+    <RouterComponent>
       <AuthProvider>
         <div className="app">
           <Routes>
@@ -37,6 +49,34 @@ function App() {
               element={
                 <PublicLayout>
                   <EndUser.Home />
+                </PublicLayout>
+              }
+            />
+
+            {/* Test Route for Custom Domain */}
+            <Route
+              path="/test"
+              element={
+                <PublicLayout>
+                  <div
+                    style={{
+                      padding: "2em",
+                      textAlign: "center",
+                      background:
+                        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      minHeight: "50vh",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                    }}
+                  >
+                    <div>
+                      <h1>🎉 Test Route Working!</h1>
+                      <p>Custom domain routing is functioning correctly.</p>
+                      <p>Current URL: {window.location.href}</p>
+                    </div>
+                  </div>
                 </PublicLayout>
               }
             />
@@ -88,7 +128,7 @@ function App() {
           </Routes>
         </div>
       </AuthProvider>
-    </Router>
+    </RouterComponent>
   );
 }
 

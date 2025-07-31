@@ -51,7 +51,7 @@ function LandingPage() {
             <div className="hero-visual">
               <img
                 src={dimonvape}
-                alt="Dimond Vape Company"
+                alt="Diamond Vape Company"
                 className="company-image"
               />
             </div>
@@ -96,7 +96,7 @@ function LandingPage() {
       <section className="features-section">
         <div className="container">
           <div className="section-header">
-            <h2 className="section-title">Why Choose Dimond Vape?</h2>
+            <h2 className="section-title">Why Choose Diamond Vape?</h2>
             <p className="section-subtitle">
               Your trusted partner for premium vaping products and exceptional
               service across the UK
@@ -192,7 +192,7 @@ function LandingPage() {
             <h2>Ready to Experience Premium Vaping?</h2>
             <p>
               Join thousands of satisfied customers across the UK who trust
-              Dimond Vape for their vaping needs
+              Diamond Vape for their vaping needs
             </p>
             <div className="cta-actions">
               <button className="btn-primary btn-large">Shop Now</button>

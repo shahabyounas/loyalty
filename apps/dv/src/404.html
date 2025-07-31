@@ -2,79 +2,97 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>DV - Loyalty Program</title>
+    <title>Diamond Vape - Loyalty Program</title>
     <script type="text/javascript">
-      // Single Page Apps for GitHub Pages
-      // MIT License
-      // https://github.com/rafgraph/spa-github-pages
+      // Simplified routing for custom domains
       // This script handles routing for GitHub Pages with custom domains
 
-      // Define valid routes that should be redirected
-      var validRoutes = [
-        "/",
-        "/dashboard",
-        "/admin",
-        "/auth/login",
-        "/auth/signup",
-      ];
+      // Check if we're on a custom domain
+      var isCustomDomain =
+        !window.location.hostname.includes("localhost") &&
+        !window.location.hostname.includes("github.io");
 
-      // For custom domains, we keep 0 path segments, for GitHub Pages subdirectory we keep 1
-      var pathSegmentsToKeep =
-        window.location.hostname === "localhost" ||
-        window.location.hostname.includes("github.io")
-          ? 1
-          : 0;
-
-      var l = window.location;
-      var currentPath = l.pathname
-        .slice(1)
-        .split("/")
-        .slice(pathSegmentsToKeep)
-        .join("/");
-
-      // Check if this is a valid route or if it looks like a valid route pattern
-      var isValidRoute =
-        validRoutes.includes("/" + currentPath) ||
-        currentPath.startsWith("auth/") ||
-        currentPath.startsWith("dashboard") ||
-        currentPath.startsWith("admin");
-
-      // Only redirect if it's a valid route, otherwise let React Router handle it
-      if (isValidRoute) {
-        l.replace(
-          l.protocol +
-            "//" +
-            l.hostname +
-            (l.port ? ":" + l.port : "") +
-            l.pathname
-              .split("/")
-              .slice(0, 1 + pathSegmentsToKeep)
-              .join("/") +
-            "/?/" +
-            l.pathname
-              .slice(1)
-              .split("/")
-              .slice(pathSegmentsToKeep)
-              .join("/")
-              .replace(/&/g, "~and~") +
-            (l.search ? "&" + l.search.slice(1).replace(/&/g, "~and~") : "") +
-            l.hash
-        );
+      if (isCustomDomain) {
+        // For custom domains, redirect to the main page and let React Router handle routing
+        window.location.replace("/");
       } else {
-        // For invalid routes, redirect to the main app and let React Router show 404
-        l.replace(
-          l.protocol +
-            "//" +
-            l.hostname +
-            (l.port ? ":" + l.port : "") +
-            l.pathname
-              .split("/")
-              .slice(0, 1 + pathSegmentsToKeep)
-              .join("/") +
-            "/?/404"
-        );
+        // For GitHub Pages subdirectory, use the original SPA redirect logic
+        var pathSegmentsToKeep = 1;
+        var l = window.location;
+        var currentPath = l.pathname
+          .slice(1)
+          .split("/")
+          .slice(pathSegmentsToKeep)
+          .join("/");
+
+        // Define valid routes
+        var validRoutes = [
+          "/",
+          "/dashboard",
+          "/admin",
+          "/auth/login",
+          "/auth/signup",
+          "/home",
+          "/test",
+        ];
+        var isValidRoute =
+          validRoutes.includes("/" + currentPath) ||
+          currentPath.startsWith("auth/") ||
+          currentPath.startsWith("dashboard") ||
+          currentPath.startsWith("admin");
+
+        if (isValidRoute) {
+          l.replace(
+            l.protocol +
+              "//" +
+              l.hostname +
+              (l.port ? ":" + l.port : "") +
+              l.pathname
+                .split("/")
+                .slice(0, 1 + pathSegmentsToKeep)
+                .join("/") +
+              "/?/" +
+              l.pathname
+                .slice(1)
+                .split("/")
+                .slice(pathSegmentsToKeep)
+                .join("/")
+                .replace(/&/g, "~and~") +
+              (l.search ? "&" + l.search.slice(1).replace(/&/g, "~and~") : "") +
+              l.hash
+          );
+        } else {
+          l.replace(
+            l.protocol +
+              "//" +
+              l.hostname +
+              (l.port ? ":" + l.port : "") +
+              l.pathname
+                .split("/")
+                .slice(0, 1 + pathSegmentsToKeep)
+                .join("/") +
+              "/?/404"
+          );
+        }
       }
     </script>
   </head>
-  <body></body>
+  <body>
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      "
+    >
+      <div style="text-align: center">
+        <h1>Redirecting...</h1>
+        <p>Please wait while we redirect you to the correct page.</p>
+      </div>
+    </div>
+  </body>
 </html>
