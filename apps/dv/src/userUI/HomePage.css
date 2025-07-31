@@ -1,0 +1,562 @@
+/* VapeAI HomePage Styles - Futuristic AI Vibe with Gamification */
+
+/* Color Variables (AI + Vape Theme) */
+:root {
+    --ai-primary: #00d4ff;
+    --ai-secondary: #0099cc;
+    --ai-accent: #ff6b35;
+    --vape-purple: #8b5cf6;
+    --vape-pink: #ec4899;
+    --text-primary: #ffffff;
+    --text-secondary: #a1a1aa;
+    --background-dark: #0a0a0a;
+    --background-darker: #000000;
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --glow-blue: rgba(0, 212, 255, 0.3);
+    --glow-purple: rgba(139, 92, 246, 0.3);
+    --glow-pink: rgba(236, 72, 153, 0.3);
+}
+
+/* Base Layout */
+.home-page {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--background-darker) 0%, #1a1a2e 50%, #16213e 100%);
+    color: var(--text-primary);
+    overflow: hidden;
+    position: relative;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2em;
+    position: relative;
+    z-index: 2;
+}
+
+/* AI Background Elements */
+.ai-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+}
+
+.vapor-cloud {
+    position: absolute;
+    background: linear-gradient(45deg, var(--ai-primary), var(--vape-purple));
+    border-radius: 50%;
+    opacity: 0.1;
+    filter: blur(2em);
+    animation: float 8s ease-in-out infinite;
+}
+
+.cloud-1 {
+    width: 20em;
+    height: 20em;
+    top: 10%;
+    left: 10%;
+    animation-delay: 0s;
+}
+
+.cloud-2 {
+    width: 15em;
+    height: 15em;
+    top: 60%;
+    right: 15%;
+    animation-delay: 2s;
+}
+
+.cloud-3 {
+    width: 25em;
+    height: 25em;
+    bottom: 10%;
+    left: 50%;
+    animation-delay: 4s;
+}
+
+.neural-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image:
+        linear-gradient(rgba(0, 212, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 212, 255, 0.1) 1px, transparent 1px);
+    background-size: 3em 3em;
+    animation: grid-move 20s linear infinite;
+}
+
+.floating-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.particle {
+    position: absolute;
+    width: 0.25em;
+    height: 0.25em;
+    background: var(--ai-primary);
+    border-radius: 50%;
+    animation: particle-float 6s ease-in-out infinite;
+}
+
+.particle:nth-child(1) {
+    top: 20%;
+    left: 20%;
+    animation-delay: 0s;
+}
+
+.particle:nth-child(2) {
+    top: 40%;
+    right: 30%;
+    animation-delay: 1s;
+}
+
+.particle:nth-child(3) {
+    bottom: 30%;
+    left: 40%;
+    animation-delay: 2s;
+}
+
+.particle:nth-child(4) {
+    top: 70%;
+    right: 20%;
+    animation-delay: 3s;
+}
+
+.particle:nth-child(5) {
+    bottom: 60%;
+    left: 60%;
+    animation-delay: 4s;
+}
+
+/* Main Hero Section */
+.vape-ai-hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding: 2em 0;
+}
+
+.ai-content {
+    width: 100%;
+    text-align: center;
+}
+
+/* AI Header */
+.ai-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3em;
+    padding: 1em 2em;
+    background: var(--glass-bg);
+    backdrop-filter: blur(1em);
+    border-radius: 1em;
+    border: 0.125em solid var(--glass-border);
+}
+
+.ai-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+.status-dot {
+    width: 0.5em;
+    height: 0.5em;
+    background: var(--ai-primary);
+    border-radius: 50%;
+}
+
+.status-dot.pulse {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.level-indicator {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+}
+
+.level-text {
+    font-size: 0.9em;
+    color: var(--ai-accent);
+    font-weight: 600;
+}
+
+.level-bar {
+    width: 8em;
+    height: 0.5em;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 0.25em;
+    overflow: hidden;
+}
+
+.level-progress {
+    height: 100%;
+    background: linear-gradient(90deg, var(--ai-primary), var(--vape-purple));
+    border-radius: 0.25em;
+    animation: progress-glow 2s ease-in-out infinite;
+}
+
+/* AI Main Content */
+.ai-main {
+    margin-bottom: 3em;
+}
+
+.ai-title {
+    font-size: 4em;
+    font-weight: 800;
+    margin: 0 0 0.5em 0;
+    line-height: 1;
+    letter-spacing: -0.025em;
+}
+
+.ai-prefix {
+    color: var(--ai-primary);
+    text-shadow: 0 0 1em var(--glow-blue);
+}
+
+.ai-brand {
+    background: linear-gradient(135deg, var(--vape-purple), var(--vape-pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 1em var(--glow-purple);
+}
+
+.ai-suffix {
+    color: var(--ai-accent);
+    text-shadow: 0 0 1em rgba(255, 107, 53, 0.5);
+}
+
+.ai-subtitle {
+    font-size: 1.25em;
+    color: var(--text-secondary);
+    margin: 0 0 2em 0;
+    line-height: 1.6;
+}
+
+/* AI Actions */
+.ai-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2em;
+    margin-bottom: 3em;
+}
+
+.ai-btn-primary {
+    position: relative;
+    padding: 1em 2.5em;
+    background: linear-gradient(135deg, var(--ai-primary), var(--vape-purple));
+    border: none;
+    border-radius: 0.75em;
+    color: white;
+    font-size: 1.125em;
+    font-weight: 600;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 2em var(--glow-blue);
+}
+
+.ai-btn-primary:hover {
+    transform: translateY(-0.25em);
+    box-shadow: 0 0 3em var(--glow-purple);
+}
+
+.btn-glow {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: btn-shine 3s ease-in-out infinite;
+}
+
+.btn-text {
+    position: relative;
+    z-index: 1;
+}
+
+.ai-quick-stats {
+    display: flex;
+    gap: 2em;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1em 1.5em;
+    background: var(--glass-bg);
+    backdrop-filter: blur(1em);
+    border-radius: 0.75em;
+    border: 0.125em solid var(--glass-border);
+    min-width: 8em;
+}
+
+.stat-value {
+    font-size: 2em;
+    font-weight: 700;
+    color: var(--ai-primary);
+    margin-bottom: 0.25em;
+}
+
+.stat-label {
+    font-size: 0.875em;
+    color: var(--text-secondary);
+}
+
+/* AI Features */
+.ai-features {
+    display: flex;
+    justify-content: center;
+    gap: 2em;
+    flex-wrap: wrap;
+    margin-bottom: 3em;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.75em 1.5em;
+    background: var(--glass-bg);
+    backdrop-filter: blur(1em);
+    border-radius: 2em;
+    border: 0.125em solid var(--glass-border);
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+}
+
+.feature-item:hover {
+    transform: translateY(-0.125em);
+    border-color: var(--ai-primary);
+    box-shadow: 0 0 1em var(--glow-blue);
+}
+
+.feature-icon {
+    font-size: 1.25em;
+}
+
+/* Gamification Panel */
+.gamification-panel {
+    display: flex;
+    justify-content: center;
+    gap: 2em;
+    flex-wrap: wrap;
+}
+
+.achievement-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.75em;
+    padding: 1em 1.5em;
+    background: linear-gradient(135deg, var(--ai-accent), var(--vape-pink));
+    border-radius: 0.75em;
+    font-weight: 600;
+    box-shadow: 0 0 1em var(--glow-pink);
+}
+
+.badge-icon {
+    font-size: 1.5em;
+}
+
+.next-reward {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+    padding: 1em 1.5em;
+    background: var(--glass-bg);
+    backdrop-filter: blur(1em);
+    border-radius: 0.75em;
+    border: 0.125em solid var(--glass-border);
+    min-width: 12em;
+}
+
+.next-reward span {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+}
+
+.reward-progress {
+    width: 100%;
+    height: 0.5em;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 0.25em;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--ai-primary), var(--vape-purple));
+    border-radius: 0.25em;
+    animation: progress-glow 2s ease-in-out infinite;
+}
+
+/* Animations */
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+
+    50% {
+        transform: translateY(-2em) rotate(180deg);
+    }
+}
+
+@keyframes grid-move {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    100% {
+        transform: translate(3em, 3em);
+    }
+}
+
+@keyframes particle-float {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: translateY(-1em) scale(1.5);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+    }
+}
+
+@keyframes progress-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0.5em var(--glow-blue);
+    }
+
+    50% {
+        box-shadow: 0 0 1em var(--glow-purple);
+    }
+}
+
+@keyframes btn-shine {
+    0% {
+        left: -100%;
+    }
+
+    50% {
+        left: 100%;
+    }
+
+    100% {
+        left: 100%;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 48em) {
+    .ai-header {
+        flex-direction: column;
+        gap: 1em;
+        text-align: center;
+    }
+
+    .ai-title {
+        font-size: 2.5em;
+    }
+
+    .ai-subtitle {
+        font-size: 1.125em;
+    }
+
+    .ai-quick-stats {
+        gap: 1em;
+    }
+
+    .stat-item {
+        min-width: 6em;
+        padding: 0.75em 1em;
+    }
+
+    .ai-features {
+        gap: 1em;
+    }
+
+    .feature-item {
+        font-size: 0.8em;
+        padding: 0.5em 1em;
+    }
+
+    .gamification-panel {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+@media (max-width: 30em) {
+    .container {
+        padding: 0 1em;
+    }
+
+    .ai-title {
+        font-size: 2em;
+    }
+
+    .ai-subtitle {
+        font-size: 1em;
+    }
+
+    .ai-quick-stats {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .stat-item {
+        width: 100%;
+        max-width: 15em;
+    }
+
+    .ai-features {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .feature-item {
+        width: 100%;
+        max-width: 15em;
+        justify-content: center;
+    }
+}

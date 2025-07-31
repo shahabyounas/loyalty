@@ -31,6 +31,16 @@ function App() {
               }
             />
 
+            {/* End User Home Page - User layout */}
+            <Route
+              path="/home"
+              element={
+                <PublicLayout>
+                  <EndUser.Home />
+                </PublicLayout>
+              }
+            />
+
             {/* ===== ADMIN BACKEND ===== */}
 
             {/* Admin Dashboard - Admin layout */}
