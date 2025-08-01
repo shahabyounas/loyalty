@@ -11,7 +11,14 @@ import "./app.module.css";
 // Import user types
 import * as EndUser from "../userUI";
 import * as Admin from "../adminUI";
-import { NotFoundPage, LandingPage, PublicLayout } from "../shared";
+import {
+  NotFoundPage,
+  LandingPage,
+  PublicLayout,
+  Login,
+  Signup,
+} from "../shared";
+import { LoginTest } from "../shared/login/LoginTest.js";
 
 function App() {
   return (
@@ -41,6 +48,60 @@ function App() {
               }
             />
 
+            {/* Loyalty Dashboard */}
+            <Route
+              path="/loyalty"
+              element={
+                <PublicLayout>
+                  <EndUser.Home />
+                </PublicLayout>
+              }
+            />
+
+            {/* Auth Routes */}
+            <Route
+              path="/auth/login"
+              element={
+                <PublicLayout>
+                  <Login />
+                </PublicLayout>
+              }
+            />
+            <Route
+              path="/auth/signup"
+              element={
+                <PublicLayout>
+                  <Signup />
+                </PublicLayout>
+              }
+            />
+
+            {/* Dashboard Route */}
+            <Route
+              path="/dashboard"
+              element={
+                <PublicLayout>
+                  <div style={{ padding: "2em", textAlign: "center" }}>
+                    <h1>🎉 Welcome to Dashboard!</h1>
+                    <p>You have successfully logged in.</p>
+                    <button
+                      onClick={() => (window.location.href = "/")}
+                      style={{
+                        padding: "0.5em 1em",
+                        background: "#667eea",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "0.5em",
+                        cursor: "pointer",
+                      }}
+                    >
+                      Go Home
+                    </button>
+                  </div>
+                </PublicLayout>
+              }
+            />
+
             {/* Test Route for Custom Domain */}
             <Route
               path="/test"
@@ -65,6 +126,16 @@ function App() {
                       <p>Current URL: {window.location.href}</p>
                     </div>
                   </div>
+                </PublicLayout>
+              }
+            />
+
+            {/* Auth Test Route */}
+            <Route
+              path="/auth-test"
+              element={
+                <PublicLayout>
+                  <LoginTest />
                 </PublicLayout>
               }
             />

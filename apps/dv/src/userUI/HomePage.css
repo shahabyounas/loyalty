@@ -1,80 +1,69 @@
-/* VapeAI HomePage Styles - Futuristic AI Vibe with Gamification */
+/* HomePage.css - Loyalty System */
 
-/* Color Variables (AI + Vape Theme) */
-:root {
-    --ai-primary: #00d4ff;
-    --ai-secondary: #0099cc;
-    --ai-accent: #ff6b35;
-    --vape-purple: #8b5cf6;
-    --vape-pink: #ec4899;
-    --text-primary: #ffffff;
-    --text-secondary: #a1a1aa;
-    --background-dark: #0a0a0a;
-    --background-darker: #000000;
-    --glass-bg: rgba(255, 255, 255, 0.1);
-    --glass-border: rgba(255, 255, 255, 0.2);
-    --glow-blue: rgba(0, 212, 255, 0.3);
-    --glow-purple: rgba(139, 92, 246, 0.3);
-    --glow-pink: rgba(236, 72, 153, 0.3);
-}
-
-/* Base Layout */
 .home-page {
     min-height: 100vh;
-    background: linear-gradient(135deg, var(--background-darker) 0%, #1a1a2e 50%, #16213e 100%);
-    color: var(--text-primary);
-    overflow: hidden;
+    background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
     position: relative;
+    overflow: hidden;
+}
+
+.loyalty-hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2em 1em;
 }
 
 .container {
     max-width: 1200px;
+    width: 100%;
     margin: 0 auto;
-    padding: 0 2em;
     position: relative;
     z-index: 2;
 }
 
-/* AI Background Elements */
-.ai-background {
+/* Animated Background */
+.loyalty-background {
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
 }
 
-.vapor-cloud {
+.floating-card {
     position: absolute;
-    background: linear-gradient(45deg, var(--ai-primary), var(--vape-purple));
-    border-radius: 50%;
-    opacity: 0.1;
-    filter: blur(2em);
-    animation: float 8s ease-in-out infinite;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    animation: float 6s ease-in-out infinite;
 }
 
-.cloud-1 {
-    width: 20em;
-    height: 20em;
+.card-1 {
+    width: 200px;
+    height: 120px;
     top: 10%;
-    left: 10%;
+    left: 5%;
     animation-delay: 0s;
 }
 
-.cloud-2 {
-    width: 15em;
-    height: 15em;
+.card-2 {
+    width: 150px;
+    height: 100px;
     top: 60%;
-    right: 15%;
+    right: 10%;
     animation-delay: 2s;
 }
 
-.cloud-3 {
-    width: 25em;
-    height: 25em;
-    bottom: 10%;
-    left: 50%;
+.card-3 {
+    width: 180px;
+    height: 110px;
+    bottom: 20%;
+    left: 15%;
     animation-delay: 4s;
 }
 
@@ -82,30 +71,28 @@
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
+    width: 100%;
+    height: 100%;
     background-image:
-        linear-gradient(rgba(0, 212, 255, 0.1) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 212, 255, 0.1) 1px, transparent 1px);
-    background-size: 3em 3em;
-    animation: grid-move 20s linear infinite;
+        linear-gradient(rgba(102, 126, 234, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(102, 126, 234, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: gridMove 20s linear infinite;
 }
 
 .floating-particles {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    width: 100%;
+    height: 100%;
 }
 
 .particle {
     position: absolute;
-    width: 0.25em;
-    height: 0.25em;
-    background: var(--ai-primary);
+    width: 4px;
+    height: 4px;
+    background: #667eea;
     border-radius: 50%;
-    animation: particle-float 6s ease-in-out infinite;
+    animation: particleFloat 8s linear infinite;
 }
 
 .particle:nth-child(1) {
@@ -117,296 +104,288 @@
 .particle:nth-child(2) {
     top: 40%;
     right: 30%;
-    animation-delay: 1s;
+    animation-delay: 2s;
 }
 
 .particle:nth-child(3) {
     bottom: 30%;
     left: 40%;
-    animation-delay: 2s;
+    animation-delay: 4s;
 }
 
 .particle:nth-child(4) {
     top: 70%;
     right: 20%;
-    animation-delay: 3s;
+    animation-delay: 6s;
 }
 
 .particle:nth-child(5) {
     bottom: 60%;
-    left: 60%;
-    animation-delay: 4s;
+    right: 60%;
+    animation-delay: 1s;
 }
 
-/* Main Hero Section */
-.vape-ai-hero {
-    min-height: 100vh;
+/* Main Content */
+.loyalty-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2em;
+    align-items: center;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* User Card */
+.user-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 1.5em;
     display: flex;
     align-items: center;
-    position: relative;
-    padding: 2em 0;
-}
-
-.ai-content {
+    gap: 1.5em;
     width: 100%;
-    text-align: center;
+    max-width: 400px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
-/* AI Header */
-.ai-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 3em;
-    padding: 1em 2em;
-    background: var(--glass-bg);
-    backdrop-filter: blur(1em);
-    border-radius: 1em;
-    border: 0.125em solid var(--glass-border);
+.user-avatar {
+    flex-shrink: 0;
 }
 
-.ai-status {
-    display: flex;
-    align-items: center;
-    gap: 0.5em;
-    font-size: 0.9em;
-    color: var(--text-secondary);
-}
-
-.status-dot {
-    width: 0.5em;
-    height: 0.5em;
-    background: var(--ai-primary);
+.avatar-circle {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border-radius: 50%;
-}
-
-.status-dot.pulse {
-    animation: pulse 2s ease-in-out infinite;
-}
-
-.level-indicator {
     display: flex;
     align-items: center;
-    gap: 1em;
-}
-
-.level-text {
-    font-size: 0.9em;
-    color: var(--ai-accent);
-    font-weight: 600;
-}
-
-.level-bar {
-    width: 8em;
-    height: 0.5em;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 0.25em;
-    overflow: hidden;
-}
-
-.level-progress {
-    height: 100%;
-    background: linear-gradient(90deg, var(--ai-primary), var(--vape-purple));
-    border-radius: 0.25em;
-    animation: progress-glow 2s ease-in-out infinite;
-}
-
-/* AI Main Content */
-.ai-main {
-    margin-bottom: 3em;
-}
-
-.ai-title {
-    font-size: 4em;
-    font-weight: 800;
-    margin: 0 0 0.5em 0;
-    line-height: 1;
-    letter-spacing: -0.025em;
-}
-
-.ai-prefix {
-    color: var(--ai-primary);
-    text-shadow: 0 0 1em var(--glow-blue);
-}
-
-.ai-brand {
-    background: linear-gradient(135deg, var(--vape-purple), var(--vape-pink));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: 0 0 1em var(--glow-purple);
-}
-
-.ai-suffix {
-    color: var(--ai-accent);
-    text-shadow: 0 0 1em rgba(255, 107, 53, 0.5);
-}
-
-.ai-subtitle {
-    font-size: 1.25em;
-    color: var(--text-secondary);
-    margin: 0 0 2em 0;
-    line-height: 1.6;
-}
-
-/* AI Actions */
-.ai-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2em;
-    margin-bottom: 3em;
-}
-
-.ai-btn-primary {
-    position: relative;
-    padding: 1em 2.5em;
-    background: linear-gradient(135deg, var(--ai-primary), var(--vape-purple));
-    border: none;
-    border-radius: 0.75em;
-    color: white;
-    font-size: 1.125em;
-    font-weight: 600;
-    cursor: pointer;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    box-shadow: 0 0 2em var(--glow-blue);
-}
-
-.ai-btn-primary:hover {
-    transform: translateY(-0.25em);
-    box-shadow: 0 0 3em var(--glow-purple);
-}
-
-.btn-glow {
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    animation: btn-shine 3s ease-in-out infinite;
-}
-
-.btn-text {
-    position: relative;
-    z-index: 1;
-}
-
-.ai-quick-stats {
-    display: flex;
-    gap: 2em;
-    flex-wrap: wrap;
     justify-content: center;
-}
-
-.stat-item {
-    text-align: center;
-    padding: 1em 1.5em;
-    background: var(--glass-bg);
-    backdrop-filter: blur(1em);
-    border-radius: 0.75em;
-    border: 0.125em solid var(--glass-border);
-    min-width: 8em;
-}
-
-.stat-value {
-    font-size: 2em;
-    font-weight: 700;
-    color: var(--ai-primary);
-    margin-bottom: 0.25em;
-}
-
-.stat-label {
-    font-size: 0.875em;
-    color: var(--text-secondary);
-}
-
-/* AI Features */
-.ai-features {
-    display: flex;
-    justify-content: center;
-    gap: 2em;
-    flex-wrap: wrap;
-    margin-bottom: 3em;
-}
-
-.feature-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5em;
-    padding: 0.75em 1.5em;
-    background: var(--glass-bg);
-    backdrop-filter: blur(1em);
-    border-radius: 2em;
-    border: 0.125em solid var(--glass-border);
-    font-size: 0.9em;
-    transition: all 0.3s ease;
-}
-
-.feature-item:hover {
-    transform: translateY(-0.125em);
-    border-color: var(--ai-primary);
-    box-shadow: 0 0 1em var(--glow-blue);
-}
-
-.feature-icon {
-    font-size: 1.25em;
-}
-
-/* Gamification Panel */
-.gamification-panel {
-    display: flex;
-    justify-content: center;
-    gap: 2em;
-    flex-wrap: wrap;
-}
-
-.achievement-badge {
-    display: flex;
-    align-items: center;
-    gap: 0.75em;
-    padding: 1em 1.5em;
-    background: linear-gradient(135deg, var(--ai-accent), var(--vape-pink));
-    border-radius: 0.75em;
-    font-weight: 600;
-    box-shadow: 0 0 1em var(--glow-pink);
-}
-
-.badge-icon {
     font-size: 1.5em;
+    font-weight: bold;
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
-.next-reward {
+.user-info {
+    flex: 1;
+}
+
+.user-name {
+    margin: 0 0 0.5em 0;
+    font-size: 1.3em;
+    font-weight: 600;
+    color: white;
+}
+
+.user-email {
+    margin: 0 0 0.5em 0;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9em;
+}
+
+.level-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.3em 0.8em;
+    border-radius: 15px;
+    font-size: 0.8em;
+    font-weight: 500;
+}
+
+/* Main Card */
+.main-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    padding: 2em;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Tabs */
+.card-tabs {
+    display: flex;
+    gap: 1em;
+    margin-bottom: 2em;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 0.5em;
+}
+
+.tab-button {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 1em;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    font-size: 0.95em;
+    font-weight: 500;
+}
+
+.tab-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.tab-button.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.tab-icon {
+    font-size: 1.2em;
+}
+
+/* Progress Tab */
+.progress-container {
     display: flex;
     flex-direction: column;
-    gap: 0.5em;
-    padding: 1em 1.5em;
-    background: var(--glass-bg);
-    backdrop-filter: blur(1em);
-    border-radius: 0.75em;
-    border: 0.125em solid var(--glass-border);
-    min-width: 12em;
+    align-items: center;
+    gap: 2em;
 }
 
-.next-reward span {
-    font-size: 0.9em;
-    color: var(--text-secondary);
+.progress-circle {
+    position: relative;
+    width: 200px;
+    height: 200px;
 }
 
-.reward-progress {
+.progress-ring {
+    position: relative;
     width: 100%;
-    height: 0.5em;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 0.25em;
-    overflow: hidden;
+    height: 100%;
+}
+
+.progress-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.progress-bg {
+    stroke: rgba(255, 255, 255, 0.1);
 }
 
 .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--ai-primary), var(--vape-purple));
-    border-radius: 0.25em;
-    animation: progress-glow 2s ease-in-out infinite;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease;
+}
+
+.progress-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.progress-number {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 0.2em;
+}
+
+.progress-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9em;
+}
+
+.progress-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    width: 100%;
+}
+
+.stat-row {
+    display: flex;
+    gap: 1em;
+}
+
+.stat-item {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 1.5em;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-value {
+    font-size: 1.8em;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 0.3em;
+}
+
+.stat-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85em;
+}
+
+/* QR Code Tab */
+.qr-code-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2em;
+}
+
+.qr-code {
+    position: relative;
+    width: 250px;
+    height: 250px;
+    background: white;
+    border-radius: 20px;
+    padding: 1.5em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.qr-code svg {
+    border-radius: 10px;
+}
+
+.qr-center-logo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.logo-circle {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 0.8em;
+}
+
+.qr-instruction {
+    color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+    font-size: 0.95em;
+    margin: 0;
 }
 
 /* Animations */
@@ -414,149 +393,80 @@
 
     0%,
     100% {
-        transform: translateY(0) rotate(0deg);
+        transform: translateY(0px) rotate(0deg);
     }
 
     50% {
-        transform: translateY(-2em) rotate(180deg);
+        transform: translateY(-20px) rotate(5deg);
     }
 }
 
-@keyframes grid-move {
+@keyframes gridMove {
     0% {
         transform: translate(0, 0);
     }
 
     100% {
-        transform: translate(3em, 3em);
+        transform: translate(50px, 50px);
     }
 }
 
-@keyframes particle-float {
-
-    0%,
-    100% {
-        transform: translateY(0) scale(1);
-        opacity: 0.5;
-    }
-
-    50% {
-        transform: translateY(-1em) scale(1.5);
-        opacity: 1;
-    }
-}
-
-@keyframes pulse {
-
-    0%,
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-
-    50% {
-        opacity: 0.5;
-        transform: scale(1.2);
-    }
-}
-
-@keyframes progress-glow {
-
-    0%,
-    100% {
-        box-shadow: 0 0 0.5em var(--glow-blue);
-    }
-
-    50% {
-        box-shadow: 0 0 1em var(--glow-purple);
-    }
-}
-
-@keyframes btn-shine {
+@keyframes particleFloat {
     0% {
-        left: -100%;
+        transform: translateY(0px) translateX(0px);
+        opacity: 0;
     }
 
-    50% {
-        left: 100%;
+    10% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 1;
     }
 
     100% {
-        left: 100%;
+        transform: translateY(-100px) translateX(50px);
+        opacity: 0;
     }
 }
 
 /* Responsive Design */
-@media (max-width: 48em) {
-    .ai-header {
+@media (max-width: 768px) {
+    .loyalty-content {
+        gap: 1.5em;
+    }
+
+    .user-card {
         flex-direction: column;
-        gap: 1em;
         text-align: center;
-    }
-
-    .ai-title {
-        font-size: 2.5em;
-    }
-
-    .ai-subtitle {
-        font-size: 1.125em;
-    }
-
-    .ai-quick-stats {
         gap: 1em;
     }
 
-    .stat-item {
-        min-width: 6em;
-        padding: 0.75em 1em;
+    .main-card {
+        padding: 1.5em;
     }
 
-    .ai-features {
-        gap: 1em;
-    }
-
-    .feature-item {
-        font-size: 0.8em;
-        padding: 0.5em 1em;
-    }
-
-    .gamification-panel {
+    .card-tabs {
         flex-direction: column;
-        align-items: center;
-    }
-}
-
-@media (max-width: 30em) {
-    .container {
-        padding: 0 1em;
     }
 
-    .ai-title {
+    .progress-circle {
+        width: 150px;
+        height: 150px;
+    }
+
+    .progress-number {
         font-size: 2em;
     }
 
-    .ai-subtitle {
-        font-size: 1em;
-    }
-
-    .ai-quick-stats {
+    .stat-row {
         flex-direction: column;
-        align-items: center;
     }
 
-    .stat-item {
-        width: 100%;
-        max-width: 15em;
-    }
-
-    .ai-features {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .feature-item {
-        width: 100%;
-        max-width: 15em;
-        justify-content: center;
+    .qr-code {
+        width: 200px;
+        height: 200px;
+        padding: 1.5em;
     }
 }

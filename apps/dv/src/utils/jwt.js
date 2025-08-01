@@ -246,11 +246,40 @@ export const tokenStorage = {
     }
   },
 
+  // Store refresh token
+  setRefreshToken: (refreshToken) => {
+    try {
+      localStorage.setItem("refreshToken", refreshToken);
+    } catch (error) {
+      console.error("Failed to store refresh token:", error);
+    }
+  },
+
+  // Get refresh token
+  getRefreshToken: () => {
+    try {
+      return localStorage.getItem("refreshToken");
+    } catch (error) {
+      console.error("Failed to get refresh token:", error);
+      return null;
+    }
+  },
+
+  // Remove refresh token
+  removeRefreshToken: () => {
+    try {
+      localStorage.removeItem("refreshToken");
+    } catch (error) {
+      console.error("Failed to remove refresh token:", error);
+    }
+  },
+
   // Clear all auth data
   clearAll: () => {
     try {
       localStorage.removeItem("authToken");
       localStorage.removeItem("userData");
+      localStorage.removeItem("refreshToken");
     } catch (error) {
       console.error("Failed to clear auth data:", error);
     }

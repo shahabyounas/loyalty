@@ -10,7 +10,7 @@ import {
 
 // API Configuration
 const API_BASE_URL =
-  process.env.REACT_APP_API_URL || "http://localhost:3001/api";
+  process.env.REACT_APP_API_URL || "http://localhost:3000/api";
 const API_TIMEOUT = 10000; // 10 seconds
 
 /**
@@ -112,40 +112,47 @@ const makeRequest = async (endpoint, options = {}) => {
 export const authAPI = {
   // Login user
   login: async (email, password) => {
-    const response = await makeRequest("/auth/login", {
+    const response = await makeRequest("/auth/signin", {
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
 
-    // Store token and user data
-    if (response.token) {
-      tokenStorage.setToken(response.token);
-      tokenStorage.setUser(response.user);
+    // Store token and user data from Supabase response
+    if (response.data && response.data.session) {
+      tokenStorage.setToken(response.data.session.accessToken);
+      tokenStorage.setRefreshToken(response.data.session.refreshToken);
+      tokenStorage.setUser(response.data.user);
     }
 
-    return response;
+    return response.data;
   },
 
   // Register user
   register: async (userData) => {
-    const response = await makeRequest("/auth/register", {
+    const response = await makeRequest("/auth/signup", {
       method: "POST",
-      body: JSON.stringify(userData),
+      body: JSON.stringify({
+        email: userData.email,
+        password: userData.password,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+      }),
     });
 
-    // Store token and user data
-    if (response.token) {
-      tokenStorage.setToken(response.token);
-      tokenStorage.setUser(response.user);
+    // Store token and user data from Supabase response
+    if (response.data && response.data.session) {
+      tokenStorage.setToken(response.data.session.accessToken);
+      tokenStorage.setRefreshToken(response.data.session.refreshToken);
+      tokenStorage.setUser(response.data.user);
     }
 
-    return response;
+    return response.data;
   },
 
   // Logout user
   logout: async () => {
     try {
-      await makeRequest("/auth/logout", {
+      await makeRequest("/auth/signout", {
         method: "POST",
       });
     } catch (error) {
@@ -158,15 +165,22 @@ export const authAPI = {
 
   // Refresh token
   refreshToken: async () => {
-    const response = await makeRequest("/auth/refresh", {
-      method: "POST",
-    });
-
-    if (response.token) {
-      tokenStorage.setToken(response.token);
+    const refreshToken = tokenStorage.getRefreshToken();
+    if (!refreshToken) {
+      throw new Error("No refresh token available");
     }
 
-    return response;
+    const response = await makeRequest("/auth/refresh-token", {
+      method: "POST",
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (response.data && response.data.session) {
+      tokenStorage.setToken(response.data.session.accessToken);
+      tokenStorage.setRefreshToken(response.data.session.refreshToken);
+    }
+
+    return response.data;
   },
 
   // Change password

@@ -1,5 +1,8 @@
 {
   "name": "@loyalty/dv",
   "version": "0.0.1",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "qrcode.react": "^4.2.0"
+  }
 }
