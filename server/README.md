@@ -1,330 +1,249 @@
 # Loyalty API Server
 
-A demo Express.js API server with JWT authentication for testing the frontend authentication system.
+A comprehensive Node.js/Express backend API for the Loyalty application with JWT authentication, role-based access control, and enterprise-grade security features.
 
-## Features
+## 🏗️ Architecture
 
-- 🔐 JWT-based authentication
-- 🔄 Automatic token refresh
-- 🛡️ Security middleware (Helmet, CORS, Rate limiting)
-- ✅ Input validation
-- 🔒 Password hashing with bcrypt
-- 📧 Password reset functionality
-- 👤 User profile management
-- 🎭 Role-based access control
+```
+server/
+├── src/
+│   ├── config/           # Configuration files
+│   │   ├── database.js   # Database configuration
+│   │   └── jwt.js        # JWT configuration
+│   ├── controllers/      # Request handlers
+│   │   └── auth.controller.js
+│   ├── middleware/       # Custom middleware
+│   │   ├── auth.middleware.js
+│   │   ├── error.middleware.js
+│   │   ├── notFound.middleware.js
+│   │   └── validation.middleware.js
+│   ├── models/          # Data models
+│   │   └── user.model.js
+│   ├── routes/          # API routes
+│   │   ├── auth.routes.js
+│   │   ├── user.routes.js
+│   │   └── loyalty.routes.js
+│   ├── services/        # Business logic
+│   │   └── auth.service.js
+│   ├── utils/           # Utility functions
+│   │   ├── logger.js
+│   │   └── response.js
+│   ├── app.js          # Express app setup
+│   └── server.js       # Server entry point
+├── tests/              # Test files
+│   ├── unit/
+│   └── integration/
+├── logs/               # Application logs
+├── package.json
+└── README.md
+```
 
-## Quick Start
+## 🚀 Features
 
-### Prerequisites
+- **JWT Authentication** with access and refresh tokens
+- **Role-based Access Control** (RBAC)
+- **Input Validation** using express-validator
+- **Rate Limiting** to prevent abuse
+- **Security Headers** with Helmet
+- **CORS Configuration** for frontend integration
+- **Structured Logging** with Winston
+- **Error Handling** with custom error middleware
+- **API Response Standardization**
+- **Graceful Shutdown** handling
+- **Health Check** endpoint
+
+## 📋 Prerequisites
 
 - Node.js (v16 or higher)
 - npm or yarn
 
-### Installation
+## 🛠️ Installation
 
-1. Navigate to the server directory:
-```bash
-cd server
-```
-
-2. Install dependencies:
+1. Install dependencies:
 ```bash
 npm install
 ```
 
-3. Create environment file (optional):
+2. Create environment file:
 ```bash
 cp .env.example .env
 ```
 
-4. Start the server:
-```bash
-# Development mode with auto-restart
-npm run dev
+3. Update environment variables in `.env` file
 
-# Production mode
-npm start
-```
+## 🔧 Configuration
 
-The server will start on `http://localhost:3001`
+### Environment Variables
 
-## Environment Variables
-
-Create a `.env` file in the server directory:
+Create a `.env` file in the server directory with the following variables:
 
 ```env
 # Server Configuration
-PORT=3001
 NODE_ENV=development
+PORT=3000
+FRONTEND_URL=http://localhost:4200
 
 # JWT Configuration
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
+JWT_EXPIRES_IN=24h
+JWT_REFRESH_SECRET=your-super-secret-refresh-key-change-in-production
+JWT_REFRESH_EXPIRES_IN=7d
+JWT_ISSUER=loyalty-api
+JWT_AUDIENCE=loyalty-users
 
-# Frontend URL (for CORS)
-FRONTEND_URL=http://localhost:4200
+# Database Configuration (for future use)
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=loyalty_dev
+DB_USER=postgres
+DB_PASSWORD=password
+DB_DIALECT=postgres
+
+# Logging
+LOG_LEVEL=info
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
 ```
 
-## Demo Users
+## 🏃‍♂️ Running the Application
 
-The server comes with pre-configured demo users:
-
-| Email | Password | Role |
-|-------|----------|------|
-| `demo@example.com` | `password` | user |
-| `admin@example.com` | `password` | admin |
-
-## API Endpoints
-
-### Authentication
-
-#### POST `/api/auth/login`
-Login with email and password.
-
-**Request:**
-```json
-{
-  "email": "demo@example.com",
-  "password": "password"
-}
+### Development
+```bash
+npm run dev
 ```
 
-**Response:**
-```json
-{
-  "message": "Login successful",
-  "user": {
-    "id": 1,
-    "email": "demo@example.com",
-    "firstName": "Demo",
-    "lastName": "User",
-    "role": "user"
-  },
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
+### Production
+```bash
+npm start
 ```
 
-#### POST `/api/auth/register`
-Register a new user.
-
-**Request:**
-```json
-{
-  "email": "newuser@example.com",
-  "password": "password123",
-  "firstName": "New",
-  "lastName": "User"
-}
-```
-
-#### POST `/api/auth/logout`
-Logout user (requires authentication).
-
-#### POST `/api/auth/refresh`
-Refresh access token using refresh token.
-
-**Request:**
-```json
-{
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-### Password Management
-
-#### POST `/api/auth/change-password`
-Change user password (requires authentication).
-
-**Request:**
-```json
-{
-  "currentPassword": "oldpassword",
-  "newPassword": "newpassword123"
-}
-```
-
-#### POST `/api/auth/reset-password`
-Request password reset email.
-
-**Request:**
-```json
-{
-  "email": "user@example.com"
-}
-```
-
-#### POST `/api/auth/verify-reset-token`
-Verify password reset token.
-
-**Request:**
-```json
-{
-  "token": "reset-token-here"
-}
-```
-
-#### POST `/api/auth/set-new-password`
-Set new password with reset token.
-
-**Request:**
-```json
-{
-  "token": "reset-token-here",
-  "newPassword": "newpassword123"
-}
-```
-
-### User Profile
-
-#### GET `/api/auth/profile`
-Get current user profile (requires authentication).
-
-#### PUT `/api/auth/profile`
-Update user profile (requires authentication).
-
-**Request:**
-```json
-{
-  "firstName": "Updated",
-  "lastName": "Name"
-}
-```
-
-### Health Check
-
-#### GET `/api/health`
-Check server status.
-
-**Response:**
-```json
-{
-  "status": "OK",
-  "timestamp": "2024-01-01T00:00:00.000Z",
-  "message": "API server is running"
-}
-```
-
-## Authentication
-
-### JWT Token Structure
-
-The server issues two types of tokens:
-
-1. **Access Token** (1 hour expiry)
-   - Used for API authentication
-   - Contains user ID, email, and role
-
-2. **Refresh Token** (7 days expiry)
-   - Used to get new access tokens
-   - Contains user ID and email
-
-### Authorization Header
-
-Include the access token in the Authorization header:
-
-```
-Authorization: Bearer <access-token>
-```
-
-### Error Responses
-
-#### 401 Unauthorized
-```json
-{
-  "message": "Access token required"
-}
-```
-
-#### 403 Forbidden
-```json
-{
-  "message": "Invalid or expired token"
-}
-```
-
-#### 400 Bad Request
-```json
-{
-  "message": "Validation failed",
-  "errors": [
-    {
-      "field": "email",
-      "message": "Invalid email format"
-    }
-  ]
-}
-```
-
-## Security Features
-
-### Rate Limiting
-- 100 requests per 15 minutes per IP
-- Applied to all `/api/` routes
-
-### Input Validation
-- Email format validation
-- Password length requirements
-- Required field validation
-
-### Security Headers
-- Helmet.js for security headers
-- CORS configuration
-- Content-Type validation
-
-### Password Security
-- bcrypt hashing (12 rounds)
-- Minimum 6 character passwords
-
-## Development
-
-### Running Tests
+### Testing
 ```bash
 npm test
+npm run test:watch
+npm run test:coverage
 ```
 
-### API Testing with curl
-
-#### Login
+### Linting
 ```bash
-curl -X POST http://localhost:3001/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"demo@example.com","password":"password"}'
+npm run lint
+npm run lint:fix
 ```
 
-#### Get Profile (with token)
+## 📡 API Endpoints
+
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `POST /api/auth/refresh-token` - Refresh access token
+- `POST /api/auth/change-password` - Change password (authenticated)
+- `POST /api/auth/logout` - User logout (authenticated)
+- `GET /api/auth/profile` - Get user profile (authenticated)
+
+### Health Check
+- `GET /health` - Server health status
+
+## 🔐 Authentication
+
+The API uses JWT (JSON Web Tokens) for authentication:
+
+1. **Register/Login** to get access and refresh tokens
+2. **Include access token** in Authorization header: `Bearer <token>`
+3. **Use refresh token** to get new access token when expired
+
+### Token Structure
+```json
+{
+  "id": "user_id",
+  "email": "user@example.com",
+  "role": "user"
+}
+```
+
+## 🛡️ Security Features
+
+- **Password Hashing** with bcrypt (12 salt rounds)
+- **JWT Token Security** with issuer and audience validation
+- **Rate Limiting** to prevent brute force attacks
+- **Security Headers** with Helmet
+- **CORS Protection** with configurable origins
+- **Input Validation** and sanitization
+- **Error Handling** without exposing sensitive information
+
+## 📝 API Response Format
+
+All API responses follow a consistent format:
+
+### Success Response
+```json
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": { ... },
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+```
+
+### Error Response
+```json
+{
+  "success": false,
+  "message": "Error description",
+  "errors": [ ... ],
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+```
+
+## 🧪 Testing
+
+The application includes comprehensive testing setup:
+
+- **Unit Tests** for individual functions
+- **Integration Tests** for API endpoints
+- **Test Coverage** reporting
+- **Supertest** for HTTP assertions
+
+## 📊 Logging
+
+Structured logging with Winston:
+
+- **Console logging** in development
+- **File logging** in production
+- **Error tracking** with stack traces
+- **Request/response logging** for debugging
+
+## 🔄 Database Integration
+
+The application is prepared for database integration:
+
+- **Database configuration** for multiple environments
+- **Model structure** ready for ORM integration
+- **Connection pooling** configuration
+- **Migration support** structure
+
+## 🚀 Deployment
+
+### Docker
 ```bash
-curl -X GET http://localhost:3001/api/auth/profile \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+docker build -t loyalty-api .
+docker run -p 3000:3000 loyalty-api
 ```
 
-## Production Considerations
+### Environment Variables
+Ensure all required environment variables are set in production.
 
-1. **Database**: Replace in-memory storage with a proper database
-2. **JWT Secret**: Use a strong, unique secret key
-3. **HTTPS**: Enable HTTPS in production
-4. **Logging**: Add proper logging middleware
-5. **Monitoring**: Add health checks and monitoring
-6. **Email Service**: Integrate with a real email service for password resets
-7. **Token Blacklisting**: Implement token blacklisting for logout
-8. **Rate Limiting**: Adjust rate limits based on your needs
+### Health Checks
+Use the `/health` endpoint for load balancer health checks.
 
-## Troubleshooting
+## 🤝 Contributing
 
-### Common Issues
+1. Follow the existing code structure
+2. Add tests for new features
+3. Update documentation
+4. Follow security best practices
 
-1. **CORS Errors**: Check `FRONTEND_URL` in environment variables
-2. **Token Expired**: Use refresh token to get new access token
-3. **Validation Errors**: Check request body format and required fields
-4. **Server Not Starting**: Check if port 3001 is available
+## 📄 License
 
-### Logs
-
-The server logs important events to the console:
-- Server startup
-- Authentication attempts
-- Password reset tokens (for demo purposes)
-- Errors and exceptions
-
-## License
-
-MIT License - see LICENSE file for details. 
+MIT License - see LICENSE file for details 
