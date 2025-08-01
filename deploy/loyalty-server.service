@@ -1,0 +1,30 @@
+[Unit]
+Description=Loyalty API Server
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=loyalty
+Group=loyalty
+WorkingDirectory=/opt/loyalty/server
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/loyalty/server/logs
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=loyalty-server
+
+[Install]
+WantedBy=multi-user.target 

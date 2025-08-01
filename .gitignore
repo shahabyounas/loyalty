@@ -44,3 +44,21 @@ Thumbs.db
 .github/instructions/nx.instructions.md
 
 test-output
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Server deployment workflow (temporary)
+.github/workflows/server-deploy.yml
+
+# Server logs
+server/logs/
+*.log
+
+# Database
+*.sqlite
+*.db
