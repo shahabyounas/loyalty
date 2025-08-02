@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { useAuth } from "../../contexts/AuthContext";
 import "./login.css";
 
@@ -29,8 +29,8 @@ export function Login({ onToggleToSignup, isEmbedded = false }) {
 
     try {
       await login(formData.email, formData.password);
-      // Success - user will be redirected to dashboard
-      navigate("/dashboard");
+      // Success - user will be redirected to home page
+      navigate("/");
     } catch (err) {
       setError(err.message);
     } finally {

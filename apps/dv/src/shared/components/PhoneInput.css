@@ -1,0 +1,288 @@
+/* Phone Input Styles - Matching Signup Form Design */
+.phone-input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+}
+
+.phone-label {
+    display: block;
+    margin-bottom: 0.5em;
+    color: var(--text-color);
+    font-weight: 500;
+    font-size: 0.875em;
+    display: flex;
+    align-items: center;
+    gap: 0.25em;
+}
+
+.required {
+    color: var(--error-400);
+    font-weight: 600;
+}
+
+.phone-input-wrapper {
+    display: flex;
+    align-items: stretch;
+    border: 0.0625em solid var(--ai-border-medium);
+    border-radius: var(--m-border-radius);
+    overflow: visible;
+    transition: all 0.2s ease;
+    background: var(--console-surface);
+    position: relative;
+}
+
+.phone-input-wrapper:focus-within {
+    outline: none;
+    border-color: var(--focus-border-color);
+    box-shadow: 0 0 0 0.1875em rgba(32, 146, 234, 0.1);
+}
+
+.phone-input-wrapper.error {
+    border-color: var(--error-400);
+}
+
+.phone-input-wrapper.error:focus-within {
+    border-color: var(--error-400);
+    box-shadow: 0 0 0 0.1875em rgba(239, 68, 68, 0.1);
+}
+
+/* Country Selector */
+.country-selector {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.country-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.75em;
+    background: var(--console-surface-hover);
+    border: none;
+    border-right: 0.0625em solid var(--ai-border-medium);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 6em;
+    font-size: 0.875em;
+    color: var(--text-color);
+}
+
+.country-button:hover:not(:disabled) {
+    background: var(--console-surface-active);
+}
+
+.country-button:focus {
+    outline: none;
+    background: var(--console-surface-active);
+}
+
+.country-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.country-flag {
+    font-size: 1.125em;
+    line-height: 1;
+}
+
+.country-code {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.dropdown-arrow {
+    width: 1em;
+    height: 1em;
+    color: var(--text-muted);
+    transition: transform 0.2s ease;
+}
+
+.country-selector.open .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+/* Country Dropdown */
+.country-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 0.0625em solid var(--ai-border-medium);
+    border-radius: var(--m-border-radius);
+    box-shadow: var(--component-box-shadow);
+    z-index: 99999;
+    max-height: 20em;
+    overflow: hidden;
+    animation: slideDown 0.2s ease-out;
+    min-width: 16em;
+    margin-top: 0.25em;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-0.5em);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Search Container */
+.search-container {
+    padding: 0.75em;
+    border-bottom: 0.0625em solid var(--ai-border-subtle);
+}
+
+.country-search {
+    width: 100%;
+    padding: 0.5em;
+    border: 0.0625em solid var(--ai-border-medium);
+    border-radius: var(--sm-border-radius);
+    font-size: 0.875em;
+    background: #ffffff;
+    transition: border-color 0.2s ease;
+    color: #111827;
+}
+
+.country-search:focus {
+    outline: none;
+    border-color: var(--focus-border-color);
+    box-shadow: 0 0 0 0.1875em rgba(32, 146, 234, 0.1);
+}
+
+.country-search::placeholder {
+    color: #9ca3af;
+}
+
+/* Country List */
+.country-list {
+    max-height: 15em;
+    overflow-y: auto;
+}
+
+.country-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75em;
+    width: 100%;
+    padding: 0.75em;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    text-align: left;
+    font-size: 0.875em;
+    color: #111827;
+}
+
+.country-option:hover {
+    background: #f3f4f6;
+}
+
+.country-option.selected {
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 500;
+}
+
+.country-option .country-flag {
+    font-size: 1em;
+    flex-shrink: 0;
+}
+
+.country-option .country-name {
+    flex: 1;
+    font-weight: 400;
+}
+
+.country-option .country-dial-code {
+    color: #6b7280;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+/* Phone Input */
+.phone-input {
+    flex: 1;
+    padding: 0.75em;
+    border: none;
+    outline: none;
+    font-size: 0.875em;
+    color: var(--text-color);
+    background: var(--console-surface);
+}
+
+.phone-input::placeholder {
+    color: var(--text-muted);
+}
+
+.phone-input:disabled {
+    background: var(--interactive-disabled);
+    color: var(--text-disabled);
+    cursor: not-allowed;
+}
+
+.phone-input.error {
+    color: var(--error-400);
+}
+
+/* Error Message */
+.error-message {
+    color: var(--error-400);
+    font-size: 0.75em;
+    margin-top: 0.25em;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .phone-input-wrapper {
+        flex-direction: column;
+    }
+
+    .country-button {
+        justify-content: center;
+        min-width: auto;
+    }
+
+    .country-dropdown {
+        left: -0.5em;
+        right: -0.5em;
+    }
+
+    .country-option {
+        padding: 0.625em;
+        font-size: 0.8125em;
+    }
+
+    .country-search {
+        font-size: 0.8125em;
+    }
+}
+
+@media (max-width: 480px) {
+    .country-button {
+        padding: 0.625em;
+        font-size: 0.8125em;
+    }
+
+    .phone-input {
+        padding: 0.625em;
+        font-size: 0.8125em;
+    }
+
+    .country-option {
+        padding: 0.5em;
+        font-size: 0.75em;
+    }
+
+    .country-flag {
+        font-size: 0.875em;
+    }
+}

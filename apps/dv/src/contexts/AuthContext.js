@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import {
   tokenStorage,
   isTokenValid,
@@ -61,24 +61,22 @@ export const AuthProvider = ({ children }) => {
   const checkAuthStatus = async () => {
     try {
       const token = tokenStorage.getToken();
-      const storedUser = tokenStorage.getUser();
 
-      if (token && storedUser) {
-        // Validate token
-        if (isTokenValid(token)) {
-          // Extract user data from token to ensure it matches stored data
-          const tokenUser = getUserFromToken(token);
-          if (tokenUser && tokenUser.email === storedUser.email) {
-            setUser(storedUser);
-            setIsAuthenticated(true);
-          } else {
-            // Token user data doesn't match stored data
-            clearAuthData();
-          }
+      if (token && isTokenValid(token)) {
+        // Extract user data from token
+        const tokenUser = getUserFromToken(token);
+        if (tokenUser) {
+          setUser(tokenUser);
+          setIsAuthenticated(true);
+          // Update stored user data to match token
+          tokenStorage.setUser(tokenUser);
         } else {
-          // Token is invalid, clear storage
+          // Token is valid but no user data, clear storage
           clearAuthData();
         }
+      } else {
+        // No token or invalid token, clear storage
+        clearAuthData();
       }
     } catch (error) {
       console.error("Auth check failed:", error);

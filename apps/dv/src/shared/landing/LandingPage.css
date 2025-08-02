@@ -10,7 +10,6 @@
 /* Ensure content is above particles */
 .landing-page>*:not(.particle-canvas) {
     position: relative;
-    z-index: 2;
 }
 
 /* Loading styles */

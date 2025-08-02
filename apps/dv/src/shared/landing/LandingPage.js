@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { useAuth } from "../../contexts/AuthContext";
 import { ParticleBackground } from "../../../../../libs/animations";
 import dimonvape from "../../assets/images/dimonvape.png";

@@ -94,6 +94,7 @@ const makeRequest = async (endpoint, options = {}) => {
 
     requestOptions.signal = controller.signal;
 
+    console.log("requestOptions", url, headers);
     const response = await fetch(url, requestOptions);
     clearTimeout(timeoutId);
 
@@ -328,7 +329,7 @@ export const requestInterceptor = {
   addRequestId: (options = {}) => {
     const requestId = `req_${Date.now()}_${Math.random()
       .toString(36)
-      .substr(2, 9)}`;
+      .substring(2, 11)}`;
     return {
       ...options,
       headers: {

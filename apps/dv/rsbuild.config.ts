@@ -14,7 +14,7 @@ export default defineConfig({
         tsconfigPath: './tsconfig.app.json',
         // Environment variables support
         define: {
-            'process.env.REACT_APP_API_URL': JSON.stringify(process.env.REACT_APP_API_URL || 'http://localhost:3001/api'),
+            'process.env.REACT_APP_API_URL': JSON.stringify(process.env.REACT_APP_API_URL || 'http://localhost:3000/api'),
             'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
             // Set base path for GitHub Pages
             '__PUBLIC_PATH__': JSON.stringify(process.env.NODE_ENV === 'production' ? './' : '/')

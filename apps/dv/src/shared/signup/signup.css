@@ -72,7 +72,10 @@
 
 form button {
     width: 100%;
-    margin: 0.5em 0;
+}
+
+.btn-submit-signup {
+    margin-top: 1.5em;
 }
 
 

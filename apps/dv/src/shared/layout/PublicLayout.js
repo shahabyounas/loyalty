@@ -1,6 +1,7 @@
 import React from "react";
 import "./PublicLayout.css";
 import dmlogo from "../../assets/images/dmlogo.png";
+import HamburgerMenu from "./HamburgerMenu";
 
 function PublicLayout({ children }) {
   return (
@@ -10,12 +11,8 @@ function PublicLayout({ children }) {
         <div>
           <img src={dmlogo} alt="Diamond Vape Logo" className="h-12 w-auto" />
         </div>
-        <div className="flex flex-col">
-          <h1 className="text-xl font-bold text-white">Diamond Vape</h1>
-          <h6 className="text-sm text-white/80 font-medium">
-            The best vape shop in the UK
-          </h6>
-        </div>
+
+        <HamburgerMenu />
       </header>
 
       {/* Main content area */}

@@ -1,52 +1,13 @@
 // JWT Token Utilities
 // This module handles JWT token operations for authentication
 
-// JWT Token Structure (for demo purposes)
-// In a real app, you would use a proper JWT library like 'jsonwebtoken'
-// This is a simplified implementation for demonstration
+import { jwtDecode } from "jwt-decode";
 
-const JWT_SECRET = "your-secret-key-change-in-production";
-const TOKEN_EXPIRY = 60 * 60 * 1000; // 1 hour in milliseconds
+// Token expiry threshold for refresh
+const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Create a JWT token
- * @param {Object} payload - The data to encode in the token
- * @param {number} expiresIn - Token expiry time in milliseconds (default: 1 hour)
- * @returns {string} JWT token
- */
-export const createToken = (payload, expiresIn = TOKEN_EXPIRY) => {
-  try {
-    const header = {
-      alg: "HS256",
-      typ: "JWT",
-    };
-
-    const now = Date.now();
-    const exp = now + expiresIn;
-
-    const tokenPayload = {
-      ...payload,
-      iat: now, // issued at
-      exp: exp, // expires at
-    };
-
-    // In a real app, you would use a proper JWT library
-    // This is a simplified base64 encoding for demo purposes
-    const encodedHeader = btoa(JSON.stringify(header));
-    const encodedPayload = btoa(JSON.stringify(tokenPayload));
-
-    // Simple signature (in real app, use proper HMAC)
-    const signature = btoa(JWT_SECRET + encodedPayload);
-
-    return `${encodedHeader}.${encodedPayload}.${signature}`;
-  } catch (error) {
-    console.error("Token creation failed:", error);
-    throw new Error("Failed to create authentication token");
-  }
-};
-
-/**
- * Decode and validate a JWT token
+ * Decode a JWT token
  * @param {string} token - The JWT token to decode
  * @returns {Object|null} Decoded token payload or null if invalid
  */
@@ -56,23 +17,7 @@ export const decodeToken = (token) => {
       return null;
     }
 
-    const parts = token.split(".");
-    if (parts.length !== 3) {
-      return null;
-    }
-
-    const [encodedHeader, encodedPayload, signature] = parts;
-
-    // Decode payload
-    const payload = JSON.parse(atob(encodedPayload));
-
-    // Validate signature (simplified for demo)
-    const expectedSignature = btoa(JWT_SECRET + encodedPayload);
-    if (signature !== expectedSignature) {
-      return null;
-    }
-
-    return payload;
+    return jwtDecode(token);
   } catch (error) {
     console.error("Token decoding failed:", error);
     return null;
@@ -93,7 +38,8 @@ export const isTokenValid = (token) => {
 
     // Check if token is expired
     const now = Date.now();
-    if (payload.exp && now >= payload.exp) {
+    if (payload.exp && now >= payload.exp * 1000) {
+      // JWT exp is in seconds
       return false;
     }
 
@@ -112,7 +58,7 @@ export const isTokenValid = (token) => {
 export const getTokenExpiry = (token) => {
   try {
     const payload = decodeToken(token);
-    return payload?.exp || null;
+    return payload?.exp ? payload.exp * 1000 : null; // Convert to milliseconds
   } catch (error) {
     console.error("Failed to get token expiry:", error);
     return null;
@@ -125,7 +71,10 @@ export const getTokenExpiry = (token) => {
  * @param {number} threshold - Time threshold in milliseconds (default: 5 minutes)
  * @returns {boolean} True if token expires soon
  */
-export const isTokenExpiringSoon = (token, threshold = 5 * 60 * 1000) => {
+export const isTokenExpiringSoon = (
+  token,
+  threshold = TOKEN_REFRESH_THRESHOLD
+) => {
   try {
     const expiry = getTokenExpiry(token);
     if (!expiry) {
@@ -141,27 +90,17 @@ export const isTokenExpiringSoon = (token, threshold = 5 * 60 * 1000) => {
 };
 
 /**
- * Refresh a token (create new token with same payload but new expiry)
+ * Refresh a token via API (not local refresh since we can't create new Supabase tokens)
  * @param {string} token - The current JWT token
- * @param {number} expiresIn - New expiry time in milliseconds
- * @returns {string|null} New JWT token or null if original is invalid
+ * @returns {string|null} New JWT token or null if refresh failed
  */
-export const refreshToken = (token, expiresIn = TOKEN_EXPIRY) => {
-  try {
-    const payload = decodeToken(token);
-    if (!payload) {
-      return null;
-    }
-
-    // Remove timestamp fields from payload
-    const { iat, exp, ...userData } = payload;
-
-    // Create new token with same user data
-    return createToken(userData, expiresIn);
-  } catch (error) {
-    console.error("Token refresh failed:", error);
-    return null;
-  }
+export const refreshToken = (token) => {
+  // For Supabase tokens, we need to use the API refresh endpoint
+  // Local refresh is not possible since we don't have the signing key
+  console.warn(
+    "Local token refresh not supported for Supabase tokens. Use API refresh instead."
+  );
+  return null;
 };
 
 /**
@@ -176,9 +115,15 @@ export const getUserFromToken = (token) => {
       return null;
     }
 
-    // Remove JWT-specific fields
-    const { iat, exp, ...userData } = payload;
-    return userData;
+    // Extract user data from Supabase JWT
+    return {
+      id: payload.sub,
+      email: payload.email,
+      firstName: payload.user_metadata?.first_name || payload.first_name,
+      lastName: payload.user_metadata?.last_name || payload.last_name,
+      role: payload.user_metadata?.role || payload.role || "user",
+      emailVerified: payload.email_verified || false,
+    };
   } catch (error) {
     console.error("Failed to extract user data from token:", error);
     return null;

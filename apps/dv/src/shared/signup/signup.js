@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { useAuth } from "../../contexts/AuthContext";
+import PhoneInput from "../components/PhoneInput";
 import "./signup.css";
 
 export function Signup({ onToggleToLogin, isEmbedded = false }) {
@@ -11,6 +12,7 @@ export function Signup({ onToggleToLogin, isEmbedded = false }) {
     password: "",
     firstName: "",
     lastName: "",
+    phone: "+44 ",
   });
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,8 +33,8 @@ export function Signup({ onToggleToLogin, isEmbedded = false }) {
 
     try {
       await signup(formData);
-      // Success - user will be redirected to dashboard
-      navigate("/dashboard");
+      // Success - user will be redirected to home page
+      navigate("/");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -111,7 +113,21 @@ export function Signup({ onToggleToLogin, isEmbedded = false }) {
           />
         </div>
 
-        <button type="submit" className="btn-primary" disabled={isSubmitting}>
+        <PhoneInput
+          value={formData.phone}
+          onChange={(value) =>
+            setFormData((prev) => ({ ...prev, phone: value }))
+          }
+          error={error}
+          disabled={isSubmitting}
+          required
+        />
+
+        <button
+          type="submit"
+          className="btn-primary btn-submit-signup"
+          disabled={isSubmitting}
+        >
           {isSubmitting ? (
             <span className="loading-text">Processing...</span>
           ) : (
