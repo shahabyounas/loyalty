@@ -45,6 +45,7 @@ function LandingPage() {
       <ParticleBackground />
 
       {/* Hero Section with Auth Forms */}
+
       <section className="hero-section" ref={heroRef}>
         <div className="container">
           <div className="hero-content">
@@ -56,36 +57,19 @@ function LandingPage() {
               />
             </div>
 
-            <div className="hero-actions">
+            <div>
               <div className="auth-container">
-                <div className="auth-toggle">
-                  <button
-                    className={`toggle-btn ${showLogin ? "active" : ""}`}
-                    onClick={() => setShowLogin(true)}
-                  >
-                    Sign In
-                  </button>
-                  <button
-                    className={`toggle-btn ${!showLogin ? "active" : ""}`}
-                    onClick={() => setShowLogin(false)}
-                  >
-                    Create Account
-                  </button>
-                </div>
-
-                <div className="auth-form-container">
-                  {showLogin ? (
-                    <Login
-                      onToggleToSignup={() => setShowLogin(false)}
-                      isEmbedded={true}
-                    />
-                  ) : (
-                    <Signup
-                      onToggleToLogin={() => setShowLogin(true)}
-                      isEmbedded={true}
-                    />
-                  )}
-                </div>
+                {showLogin ? (
+                  <Login
+                    onToggleToSignup={() => setShowLogin(false)}
+                    isEmbedded={true}
+                  />
+                ) : (
+                  <Signup
+                    onToggleToLogin={() => setShowLogin(true)}
+                    isEmbedded={true}
+                  />
+                )}
               </div>
             </div>
           </div>

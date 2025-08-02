@@ -11,10 +11,8 @@
     pointer-events: none;
 }
 
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    .particle-canvas {
-        background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-        opacity: 0.4;
-    }
+/* Theme-aware background */
+.particle-canvas {
+    background: linear-gradient(135deg, var(--background-color) 0%, var(--secondary-background-color) 100%);
+    opacity: 0.3;
 }

@@ -88,7 +88,7 @@ function App() {
                       onClick={() => (window.location.href = "/")}
                       style={{
                         padding: "0.5em 1em",
-                        background: "#667eea",
+                        background: "var(--loyalty-gradient-primary)",
                         color: "white",
                         border: "none",
                         borderRadius: "0.5em",
@@ -111,8 +111,7 @@ function App() {
                     style={{
                       padding: "2em",
                       textAlign: "center",
-                      background:
-                        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      background: "var(--loyalty-gradient-primary)",
                       minHeight: "50vh",
                       display: "flex",
                       alignItems: "center",

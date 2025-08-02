@@ -30,7 +30,16 @@ function ParticleBackground() {
         this.vy = (Math.random() - 0.5) * 0.5;
         this.size = Math.random() * 3 + 2;
         this.opacity = Math.random() * 0.7 + 0.3;
-        this.color = `hsl(${Math.random() * 60 + 200}, 70%, 80%)`;
+        // Use theme colors - fallback to blue if CSS variables not available
+        const purple =
+          getComputedStyle(document.documentElement).getPropertyValue(
+            "--loyalty-accent-purple"
+          ) || "#38bdf8";
+        const blue =
+          getComputedStyle(document.documentElement).getPropertyValue(
+            "--loyalty-accent-blue"
+          ) || "#0ea5e9";
+        this.color = Math.random() > 0.5 ? purple : blue;
       }
 
       update() {
@@ -74,9 +83,19 @@ function ParticleBackground() {
             ctx.beginPath();
             ctx.moveTo(particle.x, particle.y);
             ctx.lineTo(otherParticle.x, otherParticle.y);
-            ctx.strokeStyle = `rgba(102, 126, 234, ${
-              0.3 * (1 - distance / 100)
-            })`;
+            // Use theme colors for connections
+            const purple =
+              getComputedStyle(document.documentElement).getPropertyValue(
+                "--loyalty-accent-purple"
+              ) || "#38bdf8";
+            const rgb = purple.startsWith("#")
+              ? parseInt(purple.slice(1, 3), 16) +
+                "," +
+                parseInt(purple.slice(3, 5), 16) +
+                "," +
+                parseInt(purple.slice(5, 7), 16)
+              : "56, 189, 248";
+            ctx.strokeStyle = `rgba(${rgb}, ${0.3 * (1 - distance / 100)})`;
             ctx.lineWidth = 2;
             ctx.stroke();
           }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { QRCodeSVG } from "qrcode.react";
+import ParticleBackground from "../../../../libs/animations/ParticleBackground";
 import "./HomePage.css";
 
 export default function Home() {
@@ -90,8 +91,8 @@ export default function Home() {
                   x2="100%"
                   y2="100%"
                 >
-                  <stop offset="0%" stopColor="#667eea" />
-                  <stop offset="100%" stopColor="#764ba2" />
+                  <stop offset="0%" stopColor="var(--loyalty-accent-purple)" />
+                  <stop offset="100%" stopColor="var(--loyalty-accent-blue)" />
                 </linearGradient>
               </defs>
             </svg>
@@ -130,6 +131,7 @@ export default function Home() {
 
   return (
     <div className="home-page">
+      <ParticleBackground />
       <div className="loyalty-hero">
         <div className="container">
           {/* Animated Background Elements */}
@@ -138,13 +140,6 @@ export default function Home() {
             <div className="floating-card card-2"></div>
             <div className="floating-card card-3"></div>
             <div className="neural-grid"></div>
-            <div className="floating-particles">
-              <div className="particle"></div>
-              <div className="particle"></div>
-              <div className="particle"></div>
-              <div className="particle"></div>
-              <div className="particle"></div>
-            </div>
           </div>
 
           {/* Main Content */}

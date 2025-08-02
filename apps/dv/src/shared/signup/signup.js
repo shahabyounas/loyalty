@@ -49,97 +49,89 @@ export function Signup({ onToggleToLogin, isEmbedded = false }) {
   };
 
   return (
-    <div className="signup-page">
-      <div className="signup-container">
-        <div className="signup-form">
-          <div className="form-header">
-            <h2>Join Us</h2>
-            <p>Create your account</p>
-          </div>
+    <div className="signup-form">
+      <div className="form-header">
+        <h2>Join Us</h2>
+        <p>Create your account</p>
+      </div>
 
-          {error && <div className="error-message">{error}</div>}
+      {error && <div className="error-message">{error}</div>}
 
-          <form onSubmit={handleSubmit}>
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="firstName">First Name</label>
-                <input
-                  type="text"
-                  id="firstName"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="lastName">Last Name</label>
-                <input
-                  type="text"
-                  id="lastName"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                required
-                disabled={isSubmitting}
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="btn-primary btn-full"
+      <form onSubmit={handleSubmit}>
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="firstName">First Name</label>
+            <input
+              type="text"
+              id="firstName"
+              name="firstName"
+              value={formData.firstName}
+              onChange={handleInputChange}
+              required
               disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <span className="loading-text">Processing...</span>
-              ) : (
-                <span>Create Account</span>
-              )}
-            </button>
-          </form>
-
-          <div className="form-footer">
-            <p>
-              Already have an account?{" "}
-              <button
-                type="button"
-                className="link-button"
-                onClick={handleToggleToLogin}
-                disabled={isSubmitting}
-              >
-                Sign in
-              </button>
-            </p>
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="lastName">Last Name</label>
+            <input
+              type="text"
+              id="lastName"
+              name="lastName"
+              value={formData.lastName}
+              onChange={handleInputChange}
+              required
+              disabled={isSubmitting}
+            />
           </div>
         </div>
+
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            required
+            disabled={isSubmitting}
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleInputChange}
+            required
+            disabled={isSubmitting}
+          />
+        </div>
+
+        <button type="submit" className="btn-primary" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <span className="loading-text">Processing...</span>
+          ) : (
+            <div>Create Account</div>
+          )}
+        </button>
+      </form>
+
+      <div className="form-footer">
+        <p>
+          Already have an account?{" "}
+          <button
+            type="button"
+            className="link-button"
+            onClick={handleToggleToLogin}
+            disabled={isSubmitting}
+          >
+            Sign in
+          </button>
+        </p>
       </div>
     </div>
   );

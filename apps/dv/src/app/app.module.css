@@ -3,7 +3,84 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    background: var(--background-color);
+    color: var(--text-color);
 }
+
+/* CSS-Only Theme Toggle */
+.theme-toggle {
+    position: fixed;
+    top: 1em;
+    right: 1em;
+    z-index: 1000;
+    background: var(--ai-surface-card);
+    border: 1px solid var(--ai-border-medium);
+    border-radius: 0.5em;
+    padding: 0.5em;
+    backdrop-filter: blur(10px);
+}
+
+.theme-switch {
+    display: none;
+}
+
+.theme-switch-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3em;
+    height: 1.5em;
+    background: var(--loyalty-gradient-primary);
+    border-radius: 0.75em;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.theme-switch-label::before {
+    content: '';
+    position: absolute;
+    top: 0.125em;
+    left: 0.125em;
+    width: 1.25em;
+    height: 1.25em;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+    z-index: 2;
+}
+
+.theme-switch:checked+.theme-switch-label::before {
+    transform: translateX(1.5em);
+}
+
+.theme-icon {
+    position: absolute;
+    font-size: 0.75em;
+    transition: opacity 0.3s ease;
+    z-index: 1;
+}
+
+.theme-icon:first-child {
+    left: 0.375em;
+    opacity: 1;
+}
+
+.theme-icon:last-child {
+    right: 0.375em;
+    opacity: 0;
+}
+
+.theme-switch:checked+.theme-switch-label .theme-icon:first-child {
+    opacity: 0;
+}
+
+.theme-switch:checked+.theme-switch-label .theme-icon:last-child {
+    opacity: 1;
+}
+
+/* Theme switching is handled in colors.css using :root selectors */
 
 /* Header */
 .header {

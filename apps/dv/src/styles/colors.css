@@ -153,36 +153,150 @@
 /* Dark Mode Support - AI Application Dark Theme */
 @media (prefers-color-scheme: dark) {
     :root {
-        --background-color: #0f172a;
-        --secondary-background-color: #1e293b;
-        --text-color: #f8fafc;
-        --text-secondary: #cbd5e1;
-        --text-muted: #94a3b8;
-        --text-disabled: #64748b;
-        --text-inverse: #0f172a;
+        --background-color: #0f0f23;
+        --secondary-background-color: #1a1a2e;
+        --text-color: #ffffff;
+        --text-secondary: rgba(255, 255, 255, 0.7);
+        --text-muted: rgba(255, 255, 255, 0.5);
+        --text-disabled: rgba(255, 255, 255, 0.3);
+        --text-inverse: #0f0f23;
 
         --control-color: var(--primary-500);
         --control-text-color: #ffffff;
         --control-highlight-color: var(--primary-400);
         --control-highlight-text-color: #ffffff;
 
-        --interactive-hover: rgba(32, 146, 234, 0.1);
-        --interactive-active: rgba(32, 146, 234, 0.2);
-        --interactive-selected: rgba(32, 146, 234, 0.15);
-        --interactive-disabled: #334155;
+        --interactive-hover: rgba(255, 255, 255, 0.1);
+        --interactive-active: rgba(255, 255, 255, 0.2);
+        --interactive-selected: rgba(255, 255, 255, 0.15);
+        --interactive-disabled: rgba(255, 255, 255, 0.05);
 
-        --console-surface: #1e293b;
-        --console-surface-hover: #334155;
-        --console-surface-active: #475569;
-        --console-border: #334155;
-        --console-border-hover: #475569;
+        --console-surface: rgba(255, 255, 255, 0.1);
+        --console-surface-hover: rgba(255, 255, 255, 0.15);
+        --console-surface-active: rgba(255, 255, 255, 0.2);
+        --console-border: rgba(255, 255, 255, 0.2);
+        --console-border-hover: rgba(255, 255, 255, 0.3);
 
-        --color-border-container: #334155;
+        --color-border-container: rgba(255, 255, 255, 0.2);
 
-        --ai-surface-elevated: #1e293b;
-        --ai-surface-card: #1e293b;
-        --ai-border-subtle: #334155;
-        --ai-border-medium: #475569;
-        --ai-border-strong: #64748b;
+        --ai-surface-elevated: rgba(255, 255, 255, 0.05);
+        --ai-surface-card: rgba(255, 255, 255, 0.1);
+        --ai-border-subtle: rgba(255, 255, 255, 0.1);
+        --ai-border-medium: rgba(255, 255, 255, 0.2);
+        --ai-border-strong: rgba(255, 255, 255, 0.3);
     }
+}
+
+/* Default Dark Theme - Purple/Blue Gradient */
+:root {
+    --background-color: #0f0f23;
+    --secondary-background-color: #1a1a2e;
+    --text-color: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-muted: rgba(255, 255, 255, 0.5);
+    --text-disabled: rgba(255, 255, 255, 0.3);
+    --text-inverse: #0f0f23;
+
+    /* Blue Gradient Theme */
+    --loyalty-gradient-primary: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+    --loyalty-gradient-secondary: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+    --loyalty-accent-purple: #38bdf8;
+    --loyalty-accent-blue: #0ea5e9;
+    --loyalty-accent-light: #38bdf8;
+
+    --control-color: var(--loyalty-accent-purple);
+    --control-text-color: #ffffff;
+    --control-highlight-color: var(--loyalty-accent-blue);
+    --control-highlight-text-color: #ffffff;
+
+    --interactive-hover: rgba(255, 255, 255, 0.1);
+    --interactive-active: rgba(255, 255, 255, 0.2);
+    --interactive-selected: rgba(255, 255, 255, 0.15);
+    --interactive-disabled: rgba(255, 255, 255, 0.05);
+
+    --console-surface: rgba(255, 255, 255, 0.1);
+    --console-surface-hover: rgba(255, 255, 255, 0.15);
+    --console-surface-active: rgba(255, 255, 255, 0.2);
+    --console-border: rgba(255, 255, 255, 0.2);
+    --console-border-hover: rgba(255, 255, 255, 0.3);
+
+    --color-border-container: rgba(255, 255, 255, 0.2);
+
+    --ai-surface-elevated: rgba(255, 255, 255, 0.05);
+    --ai-surface-card: rgba(255, 255, 255, 0.1);
+    --ai-border-subtle: rgba(255, 255, 255, 0.1);
+    --ai-border-medium: rgba(255, 255, 255, 0.2);
+    --ai-border-strong: rgba(255, 255, 255, 0.3);
+
+    /* Shadow System for Dark Theme */
+    --component-box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --shadow-container: 0 4px 15px rgba(56, 189, 248, 0.4);
+}
+
+/* Light Theme - Applied when checkbox is checked */
+:root:has(#theme-switch:checked) {
+    --background-color: #ffffff;
+    --secondary-background-color: #f8fafc;
+    --text-color: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --text-disabled: #94a3b8;
+    --text-inverse: #ffffff;
+
+    --interactive-hover: rgba(56, 189, 248, 0.1);
+    --interactive-active: rgba(56, 189, 248, 0.2);
+    --interactive-selected: rgba(56, 189, 248, 0.15);
+    --interactive-disabled: #f1f5f9;
+
+    --console-surface: #ffffff;
+    --console-surface-hover: #f8fafc;
+    --console-surface-active: #f1f5f9;
+    --console-border: #e2e8f0;
+    --console-border-hover: #cbd5e1;
+
+    --color-border-container: #e2e8f0;
+
+    --ai-surface-elevated: #ffffff;
+    --ai-surface-card: #ffffff;
+    --ai-border-subtle: #f1f5f9;
+    --ai-border-medium: #e2e8f0;
+    --ai-border-strong: #cbd5e1;
+
+    /* Shadow System for Light Theme */
+    --component-box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-container: 0 4px 15px rgba(102, 126, 234, 0.2);
+}
+
+/* Fallback for browsers that don't support :has() */
+.light-theme {
+    --background-color: #ffffff;
+    --secondary-background-color: #f8fafc;
+    --text-color: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --text-disabled: #94a3b8;
+    --text-inverse: #ffffff;
+
+    --interactive-hover: rgba(56, 189, 248, 0.1);
+    --interactive-active: rgba(56, 189, 248, 0.2);
+    --interactive-selected: rgba(56, 189, 248, 0.15);
+    --interactive-disabled: #f1f5f9;
+
+    --console-surface: #ffffff;
+    --console-surface-hover: #f8fafc;
+    --console-surface-active: #f1f5f9;
+    --console-border: #e2e8f0;
+    --console-border-hover: #cbd5e1;
+
+    --color-border-container: #e2e8f0;
+
+    --ai-surface-elevated: #ffffff;
+    --ai-surface-card: #ffffff;
+    --ai-border-subtle: #f1f5f9;
+    --ai-border-medium: #e2e8f0;
+    --ai-border-strong: #cbd5e1;
+
+    /* Shadow System for Light Theme */
+    --component-box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-container: 0 4px 15px rgba(102, 126, 234, 0.2);
 }
