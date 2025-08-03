@@ -31,6 +31,43 @@ export function Signup({ onToggleToLogin, isEmbedded = false }) {
     setIsSubmitting(true);
     setError("");
 
+    // Client-side validation
+    if (!formData.firstName.trim()) {
+      setError("First name is required.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!formData.lastName.trim()) {
+      setError("Last name is required.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      setError("Email is required.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!formData.email.includes("@")) {
+      setError("Please enter a valid email address.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!formData.password || formData.password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!formData.phone || formData.phone.trim() === "+44 ") {
+      setError("Please enter a valid phone number.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       await signup(formData);
       // Success - user will be redirected to home page

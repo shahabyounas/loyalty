@@ -2,12 +2,20 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { QRCodeSVG } from "qrcode.react";
 import ParticleBackground from "../../../../libs/animations/ParticleBackground";
+import {
+  vapeAvatars,
+  getAvatarById,
+  getRandomAvatar,
+} from "../assets/avatars/vape-avatars";
+import AvatarSelector from "../shared/components/AvatarSelector";
 import "./HomePage.css";
 
 export default function Home() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("progress");
   const [qrCode, setQrCode] = useState("");
+  const [selectedAvatarId, setSelectedAvatarId] = useState("cloud-wizard");
+  const [isAvatarSelectorOpen, setIsAvatarSelectorOpen] = useState(false);
   const [loyaltyData, setLoyaltyData] = useState({
     points: 2847,
     level: 7,
@@ -29,6 +37,19 @@ export default function Home() {
     }
   }, [user]);
 
+  // Get current avatar
+  const currentAvatar = getAvatarById(selectedAvatarId);
+
+  const handleAvatarSelect = (avatarId) => {
+    setSelectedAvatarId(avatarId);
+    // Here you could save the avatar selection to the user's profile
+    // For now, we'll just update the local state
+  };
+
+  const handleAvatarClick = () => {
+    setIsAvatarSelectorOpen(true);
+  };
+
   const renderQRCode = () => {
     return (
       <div className="qr-code-container">
@@ -37,7 +58,7 @@ export default function Home() {
             value={qrCode}
             size={200}
             level="H"
-            includeMargin={true}
+            marginSize={1}
             bgColor="#ffffff"
             fgColor="#000000"
           />
@@ -147,8 +168,27 @@ export default function Home() {
             {/* User Info Card */}
             <div className="user-card">
               <div className="user-avatar">
-                <div className="avatar-circle">
-                  <span>{user?.firstName?.charAt(0) || "U"}</span>
+                <div className="avatar-circle" onClick={handleAvatarClick}>
+                  {user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={`${user.firstName} ${user.lastName}`}
+                      className="avatar-image"
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                        e.target.nextSibling.style.display = "flex";
+                      }}
+                    />
+                  ) : null}
+                  <div className="avatar-fallback">
+                    <div
+                      className="avatar-svg-container"
+                      dangerouslySetInnerHTML={{ __html: currentAvatar.svg }}
+                    />
+                  </div>
+                  <div className="avatar-edit-overlay">
+                    <span className="edit-icon">✏️</span>
+                  </div>
                 </div>
               </div>
               <div className="user-info">
@@ -193,6 +233,14 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Avatar Selector Modal */}
+      <AvatarSelector
+        selectedAvatarId={selectedAvatarId}
+        onAvatarSelect={handleAvatarSelect}
+        isOpen={isAvatarSelectorOpen}
+        onClose={() => setIsAvatarSelectorOpen(false)}
+      />
     </div>
   );
 }

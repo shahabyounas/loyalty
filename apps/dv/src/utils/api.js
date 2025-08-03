@@ -94,15 +94,29 @@ const makeRequest = async (endpoint, options = {}) => {
 
     requestOptions.signal = controller.signal;
 
-    console.log("requestOptions", url, headers);
+    console.log("Making request to:", url);
     const response = await fetch(url, requestOptions);
     clearTimeout(timeoutId);
 
     return await handleResponse(response);
   } catch (error) {
+    console.error("Request failed:", error);
+
     if (error.name === "AbortError") {
       throw new Error("Request timeout. Please try again.");
     }
+
+    // Handle network errors
+    if (
+      error.message.includes("Failed to fetch") ||
+      error.message.includes("fetch")
+    ) {
+      throw new Error(
+        "Unable to connect to the server. Please check your internet connection and try again."
+      );
+    }
+
+    // Re-throw other errors
     throw error;
   }
 };
@@ -128,8 +142,12 @@ export const authAPI = {
     return response.data;
   },
 
-  // Register user
+  // Register user (phone is mandatory)
   register: async (userData) => {
+    if (!userData.phone) {
+      throw new Error("Phone number is required for signup.");
+    }
+
     const response = await makeRequest("/auth/signup", {
       method: "POST",
       body: JSON.stringify({
@@ -137,6 +155,7 @@ export const authAPI = {
         password: userData.password,
         firstName: userData.firstName,
         lastName: userData.lastName,
+        phone: userData.phone,
       }),
     });
 
@@ -292,23 +311,83 @@ export const apiErrorHandler = {
       return "No internet connection. Please check your network.";
     }
 
+    // Failed to fetch errors (network/server issues)
+    if (
+      error.message.includes("Failed to fetch") ||
+      error.message.includes("fetch")
+    ) {
+      return "Unable to connect to the server. Please check your internet connection and try again.";
+    }
+
     // Timeout errors
-    if (error.message.includes("timeout")) {
+    if (
+      error.message.includes("timeout") ||
+      error.message.includes("AbortError")
+    ) {
       return "Request timed out. Please try again.";
     }
 
     // Authentication errors
-    if (error.message.includes("Authentication failed")) {
+    if (
+      error.message.includes("Authentication failed") ||
+      error.message.includes("401")
+    ) {
       return "Your session has expired. Please log in again.";
     }
 
-    // Server errors
-    if (error.message.includes("HTTP 5")) {
+    // Server errors (5xx)
+    if (
+      error.message.includes("HTTP 5") ||
+      error.message.includes("500") ||
+      error.message.includes("502") ||
+      error.message.includes("503")
+    ) {
       return "Server error. Please try again later.";
     }
 
-    // Return original error message
-    return error.message || "An unexpected error occurred.";
+    // Client errors (4xx)
+    if (
+      error.message.includes("HTTP 4") ||
+      error.message.includes("400") ||
+      error.message.includes("403") ||
+      error.message.includes("404")
+    ) {
+      if (error.message.includes("400")) {
+        return "Invalid request. Please check your information and try again.";
+      }
+      if (error.message.includes("403")) {
+        return "Access denied. You don't have permission to perform this action.";
+      }
+      if (error.message.includes("404")) {
+        return "The requested resource was not found.";
+      }
+      return "Request error. Please check your information and try again.";
+    }
+
+    // Specific validation errors
+    if (error.message.includes("Phone number is required")) {
+      return "Phone number is required for signup.";
+    }
+
+    if (error.message.includes("email") && error.message.includes("already")) {
+      return "An account with this email already exists. Please use a different email or try signing in.";
+    }
+
+    if (error.message.includes("password")) {
+      return "Password must be at least 8 characters long and contain letters and numbers.";
+    }
+
+    // Return original error message if it's user-friendly
+    if (
+      error.message &&
+      !error.message.includes("fetch") &&
+      !error.message.includes("Failed to fetch")
+    ) {
+      return error.message;
+    }
+
+    // Generic fallback
+    return "An unexpected error occurred. Please try again.";
   },
 
   // Check if error is retryable

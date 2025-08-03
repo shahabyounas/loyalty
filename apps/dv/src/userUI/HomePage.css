@@ -97,61 +97,177 @@
 
 /* User Card */
 .user-card {
-    background: var(--ai-surface-card);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
     backdrop-filter: blur(20px);
-    border: 1px solid var(--ai-border-medium);
-    border-radius: 20px;
-    padding: 1.5em;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    padding: 2em;
     display: flex;
+    flex-direction: row;
     align-items: center;
-    gap: 1.5em;
+    gap: 2em;
     width: 100%;
-    max-width: 400px;
-    box-shadow: var(--component-box-shadow);
+    max-width: 37em;
+    box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.1),
+        0 8px 16px rgba(56, 189, 248, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
 }
+
 
 .user-avatar {
     flex-shrink: 0;
+    position: relative;
 }
 
 .avatar-circle {
-    width: 60px;
-    height: 60px;
-    background: var(--loyalty-gradient-primary);
+    width: 5em;
+    height: 5em;
+    background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 50%, #0284c7 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5em;
+    font-size: 1.8em;
     font-weight: bold;
     color: white;
-    box-shadow: var(--shadow-container);
+    box-shadow:
+        0 10px 25px rgba(56, 189, 248, 0.3),
+        0 4px 10px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    position: relative;
+    transition: all 0.3s ease;
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+    flex-shrink: 0;
+    cursor: pointer;
 }
+
+.avatar-circle:hover {
+    transform: scale(1.05);
+    box-shadow:
+        0 15px 35px rgba(56, 189, 248, 0.4),
+        0 6px 15px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.avatar-circle:hover .avatar-edit-overlay {
+    opacity: 1;
+}
+
+.avatar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.avatar-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.avatar-svg {
+    width: 80%;
+    height: 80%;
+}
+
+.avatar-svg-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-svg-container svg {
+    width: 80%;
+    height: 80%;
+}
+
+.avatar-edit-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    border-radius: 50%;
+}
+
+.edit-icon {
+    font-size: 1.2em;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+
 
 .user-info {
     flex: 1;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5em;
 }
 
 .user-name {
-    margin: 0 0 0.5em 0;
-    font-size: 1.3em;
-    font-weight: 600;
-    color: var(--text-color);
+    margin: 0;
+    font-size: 1.4em;
+    font-weight: 700;
+    background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .user-email {
-    margin: 0 0 0.5em 0;
-    color: var(--text-secondary);
-    font-size: 0.9em;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.95em;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+}
+
+.user-level {
+    margin-top: 0.5em;
 }
 
 .level-badge {
-    background: var(--loyalty-gradient-primary);
+    background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
     color: white;
-    padding: 0.3em 0.8em;
-    border-radius: 15px;
-    font-size: 0.8em;
-    font-weight: 500;
+    padding: 0.4em 1em;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+    box-shadow:
+        0 4px 15px rgba(56, 189, 248, 0.3),
+        0 2px 5px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
 }
 
 /* Main Card */
@@ -369,6 +485,47 @@
     100% {
         transform: translate(50px, 50px);
     }
+}
+
+@keyframes rotate {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes borderRotate {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Hover effects for user card */
+.user-card:hover {
+    transform: translateY(-5px);
+    box-shadow:
+        0 25px 50px rgba(0, 0, 0, 0.15),
+        0 12px 25px rgba(56, 189, 248, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.user-card:hover .avatar-circle {
+    transform: scale(1.05);
+    box-shadow:
+        0 15px 35px rgba(56, 189, 248, 0.4),
+        0 6px 15px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 /* Particle animation is now handled by ParticleBackground component */
