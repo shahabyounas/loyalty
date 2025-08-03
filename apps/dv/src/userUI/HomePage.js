@@ -14,7 +14,7 @@ export default function Home() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("progress");
   const [qrCode, setQrCode] = useState("");
-  const [selectedAvatarId, setSelectedAvatarId] = useState("cloud-wizard");
+  const [selectedAvatarId, setSelectedAvatarId] = useState("neural-cloud");
   const [isAvatarSelectorOpen, setIsAvatarSelectorOpen] = useState(false);
   const [loyaltyData, setLoyaltyData] = useState({
     points: 2847,
@@ -167,7 +167,7 @@ export default function Home() {
           <div className="loyalty-content">
             {/* User Info Card */}
             <div className="user-card">
-              <div className="user-avatar">
+              <div className="user-avatar-home">
                 <div className="avatar-circle" onClick={handleAvatarClick}>
                   {user?.avatar ? (
                     <img
