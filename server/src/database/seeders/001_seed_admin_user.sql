@@ -1,46 +1,49 @@
--- Seed: Create admin user
--- Password: Admin123! (bcrypt hash)
--- Only run this in development/test environment
+-- Seed: Additional system configuration
+-- This file contains any additional SQL seeding that might be needed
+-- The main seeding is now handled by the JavaScript seeder
 
+-- Insert default tenant configurations (if needed)
+-- These will be created automatically by the JavaScript seeder
+
+-- Insert any additional system-wide settings
+-- Note: Most seeding is now handled by the JavaScript seeder for better control
+
+-- Insert default tenant configurations
+-- These will be used as templates for new tenants
 INSERT INTO
-    users (
-        email,
-        password_hash,
-        first_name,
-        last_name,
-        role,
-        email_verified,
-        is_active
+    tenant_configurations (
+        tenant_id,
+        config_key,
+        config_value,
+        config_type
     )
 VALUES (
-        'admin@loyalty.com',
-        '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj/RK.s5uO.G', -- Admin123!
-        'Admin',
-        'User',
-        'admin',
-        true,
-        true
-    ) ON CONFLICT (email) DO NOTHING;
-
--- Seed: Create test user
--- Password: Test123! (bcrypt hash)
-
-INSERT INTO
-    users (
-        email,
-        password_hash,
-        first_name,
-        last_name,
-        role,
-        email_verified,
-        is_active
-    )
-VALUES (
-        'test@loyalty.com',
-        '$2a$12$8K1p/a0dL1LXMIgoEDFrwOfgqwAGcwZQh3UPHz6M8CgHpVqKqKqKq', -- Test123!
-        'Test',
-        'User',
-        'user',
-        true,
-        true
-    ) ON CONFLICT (email) DO NOTHING;
+        NULL,
+        'default_points_per_pound',
+        '1',
+        'number'
+    ),
+    (
+        NULL,
+        'default_loyalty_level',
+        'Bronze',
+        'string'
+    ),
+    (
+        NULL,
+        'points_expiry_days',
+        '365',
+        'number'
+    ),
+    (
+        NULL,
+        'stamp_card_expiry_days',
+        '30',
+        'number'
+    ),
+    (
+        NULL,
+        'max_stamps_per_card',
+        '10',
+        'number'
+    ) ON CONFLICT DO NOTHING;

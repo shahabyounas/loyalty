@@ -12,6 +12,7 @@ class MigrationRunner {
 
   async init() {
     try {
+      console.log("Initializing migrations table...");
       // Create migrations table if it doesn't exist
       await db.query(`
         CREATE TABLE IF NOT EXISTS ${this.migrationsTable} (
@@ -20,8 +21,10 @@ class MigrationRunner {
           executed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         )
       `);
+      console.log("Migrations table initialized");
       logger.info("Migrations table initialized");
     } catch (error) {
+      console.error("Failed to initialize migrations table:", error);
       logger.error("Failed to initialize migrations table:", error);
       throw error;
     }
@@ -29,11 +32,17 @@ class MigrationRunner {
 
   async getExecutedMigrations() {
     try {
+      console.log("Getting executed migrations...");
       const result = await db.query(
         `SELECT name FROM ${this.migrationsTable} ORDER BY id`
       );
+      console.log(
+        "Executed migrations:",
+        result.rows.map((row) => row.name)
+      );
       return result.rows.map((row) => row.name);
     } catch (error) {
+      console.error("Failed to get executed migrations:", error);
       logger.error("Failed to get executed migrations:", error);
       throw error;
     }
@@ -41,9 +50,13 @@ class MigrationRunner {
 
   async getMigrationFiles() {
     try {
+      console.log("Reading migration files from:", this.migrationsPath);
       const files = await fs.readdir(this.migrationsPath);
-      return files.filter((file) => file.endsWith(".sql")).sort(); // Sort alphabetically to ensure order
+      const sqlFiles = files.filter((file) => file.endsWith(".sql")).sort();
+      console.log("Migration files found:", sqlFiles);
+      return sqlFiles;
     } catch (error) {
+      console.error("Failed to read migration files:", error);
       logger.error("Failed to read migration files:", error);
       throw error;
     }
@@ -51,6 +64,7 @@ class MigrationRunner {
 
   async executeMigration(migrationName) {
     try {
+      console.log(`Executing migration: ${migrationName}`);
       const filePath = path.join(this.migrationsPath, migrationName);
       const sql = await fs.readFile(filePath, "utf8");
 
@@ -62,8 +76,10 @@ class MigrationRunner {
         migrationName,
       ]);
 
+      console.log(`Migration executed: ${migrationName}`);
       logger.info(`Migration executed: ${migrationName}`);
     } catch (error) {
+      console.error(`Failed to execute migration ${migrationName}:`, error);
       logger.error(`Failed to execute migration ${migrationName}:`, error);
       throw error;
     }
@@ -71,6 +87,7 @@ class MigrationRunner {
 
   async runMigrations() {
     try {
+      console.log("Starting migration process...");
       await this.init();
 
       const executedMigrations = await this.getExecutedMigrations();
@@ -80,19 +97,24 @@ class MigrationRunner {
         (file) => !executedMigrations.includes(file)
       );
 
+      console.log("Pending migrations:", pendingMigrations);
+
       if (pendingMigrations.length === 0) {
+        console.log("No pending migrations");
         logger.info("No pending migrations");
         return;
       }
 
-      logger.info(`Found ${pendingMigrations.length} pending migrations`);
+      console.log(`Found ${pendingMigrations.length} pending migrations`);
 
       for (const migration of pendingMigrations) {
         await this.executeMigration(migration);
       }
 
+      console.log("All migrations completed successfully");
       logger.info("All migrations completed successfully");
     } catch (error) {
+      console.error("Migration failed:", error);
       logger.error("Migration failed:", error);
       throw error;
     }
@@ -104,8 +126,10 @@ class MigrationRunner {
       await db.query(`DELETE FROM ${this.migrationsTable} WHERE name = $1`, [
         migrationName,
       ]);
+      console.log(`Migration rolled back: ${migrationName}`);
       logger.info(`Migration rolled back: ${migrationName}`);
     } catch (error) {
+      console.error(`Failed to rollback migration ${migrationName}:`, error);
       logger.error(`Failed to rollback migration ${migrationName}:`, error);
       throw error;
     }
@@ -113,10 +137,19 @@ class MigrationRunner {
 
   async status() {
     try {
+      console.log("Getting migration status...");
       await this.init();
 
       const executedMigrations = await this.getExecutedMigrations();
       const migrationFiles = await this.getMigrationFiles();
+
+      console.log("Migration Status:");
+      migrationFiles.forEach((file) => {
+        const status = executedMigrations.includes(file)
+          ? "✓ Executed"
+          : "⏳ Pending";
+        console.log(`  ${file}: ${status}`);
+      });
 
       logger.info("Migration Status:");
       migrationFiles.forEach((file) => {
@@ -126,6 +159,7 @@ class MigrationRunner {
         logger.info(`  ${file}: ${status}`);
       });
     } catch (error) {
+      console.error("Failed to get migration status:", error);
       logger.error("Failed to get migration status:", error);
       throw error;
     }
@@ -134,21 +168,36 @@ class MigrationRunner {
 
 // CLI interface
 if (require.main === module) {
+  console.log("Migration runner started");
   const runner = new MigrationRunner();
   const command = process.argv[2];
+
+  console.log("Command:", command);
 
   switch (command) {
     case "run":
       runner
         .runMigrations()
-        .then(() => process.exit(0))
-        .catch(() => process.exit(1));
+        .then(() => {
+          console.log("Migration completed successfully");
+          process.exit(0);
+        })
+        .catch((error) => {
+          console.error("Migration failed:", error);
+          process.exit(1);
+        });
       break;
     case "status":
       runner
         .status()
-        .then(() => process.exit(0))
-        .catch(() => process.exit(1));
+        .then(() => {
+          console.log("Status check completed");
+          process.exit(0);
+        })
+        .catch((error) => {
+          console.error("Status check failed:", error);
+          process.exit(1);
+        });
       break;
     default:
       console.log("Usage: node migrate.js [run|status]");

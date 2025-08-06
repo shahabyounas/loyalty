@@ -14,7 +14,8 @@
     "lint:fix": "eslint src/ --fix",
     "db:migrate": "node src/database/migrate.js run",
     "db:migrate:status": "node src/database/migrate.js status",
-    "db:seed": "node src/database/seed.js"
+    "db:seed": "node src/database/seed.js",
+    "db:setup": "node setup-database.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.53.0",
