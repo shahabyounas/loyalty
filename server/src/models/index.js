@@ -7,6 +7,8 @@ const Store = require("./store.model");
 const CustomerLoyalty = require("./customerLoyalty.model");
 const StampCard = require("./stampCard.model");
 const Reward = require("./reward.model");
+const Role = require("./role.model");
+const AccessControl = require("./accessControl.model");
 
 module.exports = {
   Tenant,
@@ -15,4 +17,6 @@ module.exports = {
   CustomerLoyalty,
   StampCard,
   Reward,
+  Role,
+  AccessControl,
 };

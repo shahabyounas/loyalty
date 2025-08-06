@@ -5,15 +5,20 @@ class Tenant {
   constructor(data) {
     this.id = data.id;
     this.business_name = data.business_name;
-    this.business_email = data.business_email;
-    this.business_phone = data.business_phone;
-    this.business_address = data.business_address;
-    this.business_logo_url = data.business_logo_url;
-    this.subscription_plan = data.subscription_plan || 'basic';
-    this.subscription_status = data.subscription_status || 'active';
+    this.business_type = data.business_type;
+    this.subscription_plan = data.subscription_plan || "basic";
     this.max_stores = data.max_stores || 1;
-    this.max_customers = data.max_customers || 1000;
+    this.max_users = data.max_users || 10;
+    this.contact_email = data.contact_email;
+    this.contact_phone = data.contact_phone;
+    this.address = data.address;
+    this.city = data.city;
+    this.country = data.country || "UK";
+    this.postal_code = data.postal_code;
+    this.tax_id = data.tax_id;
     this.is_active = data.is_active !== false;
+    this.trial_ends_at = data.trial_ends_at;
+    this.subscription_ends_at = data.subscription_ends_at;
     this.created_at = data.created_at || new Date();
     this.updated_at = data.updated_at || new Date();
   }
@@ -22,21 +27,25 @@ class Tenant {
     try {
       const query = `
         INSERT INTO tenants (
-          business_name, business_email, business_phone, business_address,
-          business_logo_url, subscription_plan, max_stores, max_customers
+          business_name, business_type, subscription_plan, max_stores, max_users,
+          contact_email, contact_phone, address, city, country, postal_code, tax_id
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING *
       `;
       const params = [
         tenantData.business_name,
-        tenantData.business_email,
-        tenantData.business_phone,
-        tenantData.business_address,
-        tenantData.business_logo_url,
-        tenantData.subscription_plan || 'basic',
+        tenantData.business_type,
+        tenantData.subscription_plan || "basic",
         tenantData.max_stores || 1,
-        tenantData.max_customers || 1000
+        tenantData.max_users || 10,
+        tenantData.contact_email,
+        tenantData.contact_phone,
+        tenantData.address,
+        tenantData.city,
+        tenantData.country || "UK",
+        tenantData.postal_code,
+        tenantData.tax_id,
       ];
 
       const result = await db.getOne(query, params);
@@ -65,7 +74,7 @@ class Tenant {
     try {
       const query = `
         SELECT * FROM tenants 
-        WHERE business_email = $1 AND is_active = true
+        WHERE contact_email = $1 AND is_active = true
       `;
       const result = await db.getOne(query, [email]);
       return result ? new Tenant(result) : null;
@@ -115,10 +124,10 @@ class Tenant {
         UPDATE tenants 
         SET is_active = false, updated_at = CURRENT_TIMESTAMP
         WHERE id = $1
-        RETURNING id
+        RETURNING *
       `;
       const result = await db.getOne(query, [id]);
-      return result !== null;
+      return result ? new Tenant(result) : null;
     } catch (error) {
       logger.error("Error deleting tenant:", error);
       throw error;
@@ -128,18 +137,24 @@ class Tenant {
   static async findAll(options = {}) {
     try {
       let query = "SELECT * FROM tenants WHERE is_active = true";
-      const values = [];
+      const params = [];
       let paramCount = 1;
-
-      if (options.subscription_status) {
-        query += ` AND subscription_status = $${paramCount}`;
-        values.push(options.subscription_status);
-        paramCount++;
-      }
 
       if (options.subscription_plan) {
         query += ` AND subscription_plan = $${paramCount}`;
-        values.push(options.subscription_plan);
+        params.push(options.subscription_plan);
+        paramCount++;
+      }
+
+      if (options.city) {
+        query += ` AND city ILIKE $${paramCount}`;
+        params.push(`%${options.city}%`);
+        paramCount++;
+      }
+
+      if (options.search) {
+        query += ` AND (business_name ILIKE $${paramCount} OR contact_email ILIKE $${paramCount})`;
+        params.push(`%${options.search}%`);
         paramCount++;
       }
 
@@ -147,19 +162,19 @@ class Tenant {
 
       if (options.limit) {
         query += ` LIMIT $${paramCount}`;
-        values.push(options.limit);
+        params.push(options.limit);
         paramCount++;
       }
 
       if (options.offset) {
         query += ` OFFSET $${paramCount}`;
-        values.push(options.offset);
+        params.push(options.offset);
       }
 
-      const results = await db.getMany(query, values);
+      const results = await db.getMany(query, params);
       return results.map((row) => new Tenant(row));
     } catch (error) {
-      logger.error("Error finding all tenants:", error);
+      logger.error("Error finding tenants:", error);
       throw error;
     }
   }
@@ -168,20 +183,23 @@ class Tenant {
     try {
       const query = `
         SELECT 
-          t.*,
-          COUNT(DISTINCT u.id) as total_users,
+          t.id,
+          t.business_name,
+          t.subscription_plan,
           COUNT(DISTINCT s.id) as total_stores,
-          COUNT(DISTINCT cl.id) as total_loyalty_accounts,
-          COUNT(DISTINCT CASE WHEN s.is_active = true THEN s.id END) as active_stores,
-          COUNT(DISTINCT CASE WHEN u.is_active = true THEN u.id END) as active_users
+          COUNT(DISTINCT u.id) as total_users,
+          COUNT(DISTINCT cl.id) as total_customers,
+          COUNT(DISTINCT p.id) as total_purchases,
+          COALESCE(SUM(p.final_amount), 0) as total_revenue
         FROM tenants t
-        LEFT JOIN users u ON u.tenant_id = t.id
-        LEFT JOIN stores s ON s.tenant_id = t.id
-        LEFT JOIN customer_loyalty cl ON cl.tenant_id = t.id
-        WHERE t.id = $1
-        GROUP BY t.id
+        LEFT JOIN stores s ON t.id = s.tenant_id AND s.is_active = true
+        LEFT JOIN users u ON t.id = u.tenant_id AND u.is_active = true
+        LEFT JOIN customer_loyalty cl ON t.id = cl.tenant_id AND cl.is_active = true
+        LEFT JOIN purchases p ON t.id = p.tenant_id
+        WHERE t.id = $1 AND t.is_active = true
+        GROUP BY t.id, t.business_name, t.subscription_plan
       `;
-      
+
       const result = await db.getOne(query, [tenantId]);
       return result;
     } catch (error) {
@@ -195,21 +213,21 @@ class Tenant {
       const query = `
         UPDATE tenants 
         SET 
-          subscription_plan = $1,
-          subscription_status = $2,
+          subscription_plan = $2,
           max_stores = $3,
-          max_customers = $4,
+          max_users = $4,
+          subscription_ends_at = $5,
           updated_at = CURRENT_TIMESTAMP
-        WHERE id = $5
+        WHERE id = $1
         RETURNING *
       `;
-      
+
       const params = [
-        subscriptionData.plan,
-        subscriptionData.status,
+        tenantId,
+        subscriptionData.subscription_plan,
         subscriptionData.max_stores,
-        subscriptionData.max_customers,
-        tenantId
+        subscriptionData.max_users,
+        subscriptionData.subscription_ends_at,
       ];
 
       const result = await db.getOne(query, params);
@@ -224,29 +242,32 @@ class Tenant {
     return {
       id: this.id,
       business_name: this.business_name,
-      business_email: this.business_email,
-      business_phone: this.business_phone,
-      business_address: this.business_address,
-      business_logo_url: this.business_logo_url,
+      business_type: this.business_type,
       subscription_plan: this.subscription_plan,
-      subscription_status: this.subscription_status,
       max_stores: this.max_stores,
-      max_customers: this.max_customers,
+      max_users: this.max_users,
+      contact_email: this.contact_email,
+      contact_phone: this.contact_phone,
+      address: this.address,
+      city: this.city,
+      country: this.country,
+      postal_code: this.postal_code,
+      tax_id: this.tax_id,
       is_active: this.is_active,
+      trial_ends_at: this.trial_ends_at,
+      subscription_ends_at: this.subscription_ends_at,
       created_at: this.created_at,
-      updated_at: this.updated_at
+      updated_at: this.updated_at,
     };
   }
 
   async save() {
     if (this.id) {
-      return await Tenant.update(this.id, this);
+      return await Tenant.update(this.id, this.toJSON());
     } else {
-      const newTenant = await Tenant.create(this);
-      this.id = newTenant.id;
-      return newTenant;
+      return await Tenant.create(this.toJSON());
     }
   }
 }
 
-module.exports = Tenant; 
+module.exports = Tenant;
