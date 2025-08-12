@@ -7,6 +7,16 @@ export default defineConfig({
 	},	
 	plugins: [pluginReact()],
 	
+	// CSS handling configuration
+	tools: {
+		cssLoader: {
+			modules: {
+				auto: true,
+				localIdentName: '[name]__[local]___[hash:base64:5]'
+			}
+		}
+	},
+	
     source: {
         entry: {
             index: './src/main.js'

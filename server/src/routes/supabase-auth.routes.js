@@ -33,6 +33,50 @@ const signUpValidation = [
     .withMessage("Last name must be between 2 and 50 characters"),
 ];
 
+const createUserValidation = [
+  body("email")
+    .isEmail()
+    .normalizeEmail()
+    .withMessage("Please provide a valid email address"),
+  body("password")
+    .isLength({ min: 6 })
+    .withMessage("Password must be at least 6 characters long"),
+  body("firstName")
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage("First name must be between 2 and 50 characters"),
+  body("lastName")
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage("Last name must be between 2 and 50 characters"),
+  body("role")
+    .optional()
+    .isIn(["super_admin", "admin", "manager", "staff", "customer"])
+    .withMessage("Invalid role specified"),
+  body("phone")
+    .optional()
+    .isMobilePhone()
+    .withMessage("Please provide a valid phone number"),
+];
+
+const updateUserValidation = [
+  body("firstName")
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage("First name must be between 2 and 50 characters"),
+  body("lastName")
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage("Last name must be between 2 and 50 characters"),
+  body("role")
+    .isIn(["super_admin", "admin", "manager", "staff", "customer"])
+    .withMessage("Invalid role specified"),
+  body("phone")
+    .optional()
+    .isMobilePhone()
+    .withMessage("Please provide a valid phone number"),
+];
+
 const signInValidation = [
   body("email")
     .isEmail()
@@ -112,6 +156,22 @@ router.get(
   authenticateUser,
   requireAdmin,
   SupabaseAuthController.getAllUsers
+);
+router.post(
+  "/users",
+  createUserValidation,
+  validate,
+  authenticateUser,
+  requireAdmin,
+  SupabaseAuthController.createUser
+);
+router.put(
+  "/users/:userId",
+  updateUserValidation,
+  validate,
+  authenticateUser,
+  requireAdmin,
+  SupabaseAuthController.updateUser
 );
 router.delete(
   "/users/:userId",

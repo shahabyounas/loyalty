@@ -1,0 +1,871 @@
+import React, { useState, useEffect, useRef } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+import "./Rewards.css";
+
+const Rewards = () => {
+  const { user, token } = useAuth();
+  const [rewards, setRewards] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editingReward, setEditingReward] = useState(null);
+  const [deletingReward, setDeletingReward] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // DOM-driven refs for search and filters
+  const searchInputRef = useRef(null);
+  const typeSelectRef = useRef(null);
+  const statusSelectRef = useRef(null);
+  const lastFetchedRewardsRef = useRef([]);
+  const searchDebounceRef = useRef(null);
+
+  // Modal refs
+  const createModalRef = useRef(null);
+  const editModalRef = useRef(null);
+  const deleteModalRef = useRef(null);
+  const createFormRef = useRef(null);
+
+  const rewardTypes = [
+    { value: "discount", label: "Discount" },
+    { value: "free_item", label: "Free Item" },
+    { value: "points", label: "Points Bonus" },
+    { value: "cashback", label: "Cashback" },
+  ];
+
+  useEffect(() => {
+    fetchRewards();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const dialog = createModalRef.current;
+    if (!dialog) return;
+    if (showCreateForm) {
+      if (typeof dialog.showModal === "function") {
+        try {
+          dialog.showModal();
+        } catch (_) {}
+      }
+      if (createFormRef.current) {
+        createFormRef.current.reset();
+      }
+    } else if (dialog.open) {
+      dialog.close();
+    }
+  }, [showCreateForm]);
+
+  useEffect(() => {
+    const dialog = editModalRef.current;
+    if (!dialog) return;
+    if (showEditForm) {
+      if (typeof dialog.showModal === "function") {
+        try {
+          dialog.showModal();
+        } catch (_) {}
+      }
+    } else if (dialog.open) {
+      dialog.close();
+    }
+  }, [showEditForm]);
+
+  useEffect(() => {
+    const dialog = deleteModalRef.current;
+    if (!dialog) return;
+    if (showDeleteConfirm) {
+      if (typeof dialog.showModal === "function") {
+        try {
+          dialog.showModal();
+        } catch (_) {}
+      }
+    } else if (dialog.open) {
+      dialog.close();
+    }
+  }, [showDeleteConfirm]);
+
+  const applyFilters = (list) => {
+    let result = Array.isArray(list) ? [...list] : [];
+    const term = (searchInputRef.current?.value || "").trim().toLowerCase();
+    const typeFilter = typeSelectRef.current?.value || "all";
+    const statusFilter = statusSelectRef.current?.value || "all";
+
+    if (term) {
+      result = result.filter(
+        (reward) =>
+          reward.name.toLowerCase().includes(term) ||
+          reward.description.toLowerCase().includes(term)
+      );
+    }
+
+    if (typeFilter !== "all") {
+      result = result.filter((reward) => reward.type === typeFilter);
+    }
+
+    if (statusFilter !== "all") {
+      const isActive = statusFilter === "active";
+      result = result.filter((reward) => reward.is_active === isActive);
+    }
+
+    return result;
+  };
+
+  const fetchRewards = async () => {
+    try {
+      const params = new URLSearchParams({
+        page: currentPage,
+        limit: 10,
+        search: searchTerm,
+        type: filterType !== "all" ? filterType : "",
+      });
+
+      const response = await fetch(`/api/admin/rewards?${params}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRewards(data.rewards);
+        setTotalPages(data.totalPages);
+        lastFetchedRewardsRef.current = data.rewards;
+      }
+    } catch (error) {
+      console.error("Error fetching rewards:", error);
+      // Set mock data for development
+      const mockRewards = [
+        {
+          id: 1,
+          name: "Free Coffee",
+          description: "Get a free coffee with any purchase",
+          type: "free_item",
+          value: "1",
+          points_required: 100,
+          is_active: true,
+          expiry_date: "2024-12-31",
+          created_at: "2024-01-15",
+        },
+        {
+          id: 2,
+          name: "20% Off",
+          description: "20% discount on all items",
+          type: "discount",
+          value: "20",
+          points_required: 200,
+          is_active: true,
+          expiry_date: "2024-11-30",
+          created_at: "2024-01-10",
+        },
+        {
+          id: 3,
+          name: "Double Points",
+          description: "Earn double points on your next purchase",
+          type: "points",
+          value: "2x",
+          points_required: 50,
+          is_active: false,
+          expiry_date: "2024-10-15",
+          created_at: "2024-01-05",
+        },
+      ];
+      setRewards(mockRewards);
+      setTotalPages(1);
+      lastFetchedRewardsRef.current = mockRewards;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFiltersChange = () => {
+    const filtered = applyFilters(lastFetchedRewardsRef.current);
+    setRewards(filtered);
+  };
+
+  const handleSearchInput = () => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    searchDebounceRef.current = setTimeout(() => {
+      handleFiltersChange();
+    }, 300);
+  };
+
+  const openCreateModal = () => {
+    setShowCreateForm(true);
+  };
+
+  const closeCreateModal = () => {
+    setShowCreateForm(false);
+  };
+
+  const openEditModal = (reward) => {
+    setEditingReward(reward);
+    setShowEditForm(true);
+  };
+
+  const closeEditModal = () => {
+    setShowEditForm(false);
+    setEditingReward(null);
+  };
+
+  const openDeleteModal = (reward) => {
+    setDeletingReward(reward);
+    setShowDeleteConfirm(true);
+  };
+
+  const closeDeleteModal = () => {
+    setShowDeleteConfirm(false);
+    setDeletingReward(null);
+  };
+
+  const handleCreateSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const rewardData = {
+      name: formData.get("name"),
+      description: formData.get("description"),
+      type: formData.get("type"),
+      value: formData.get("value"),
+      points_required: parseInt(formData.get("points_required")),
+      is_active: formData.get("is_active") === "true",
+      expiry_date: formData.get("expiry_date"),
+    };
+
+    try {
+      const response = await fetch("/api/admin/rewards", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(rewardData),
+      });
+
+      if (response.ok) {
+        closeCreateModal();
+        fetchRewards();
+      } else {
+        console.error("Failed to create reward");
+      }
+    } catch (error) {
+      console.error("Error creating reward:", error);
+    }
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const rewardData = {
+      name: formData.get("name"),
+      description: formData.get("description"),
+      type: formData.get("type"),
+      value: formData.get("value"),
+      points_required: parseInt(formData.get("points_required")),
+      is_active: formData.get("is_active") === "true",
+      expiry_date: formData.get("expiry_date"),
+    };
+
+    try {
+      const response = await fetch(`/api/admin/rewards/${editingReward.id}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(rewardData),
+      });
+
+      if (response.ok) {
+        closeEditModal();
+        fetchRewards();
+      } else {
+        console.error("Failed to update reward");
+      }
+    } catch (error) {
+      console.error("Error updating reward:", error);
+    }
+  };
+
+  const handleDeleteConfirm = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`/api/admin/rewards/${deletingReward.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        closeDeleteModal();
+        fetchRewards();
+      } else {
+        console.error("Failed to delete reward");
+      }
+    } catch (error) {
+      console.error("Error deleting reward:", error);
+    }
+  };
+
+  const getTypeBadgeColor = (type) => {
+    const colors = {
+      discount: "bg-blue-100 text-blue-800",
+      free_item: "bg-green-100 text-green-800",
+      points: "bg-purple-100 text-purple-800",
+      cashback: "bg-orange-100 text-orange-800",
+    };
+    return colors[type] || colors.discount;
+  };
+
+  const getTypeIcon = (type) => {
+    const icons = {
+      discount: "💰",
+      free_item: "🎁",
+      points: "⭐",
+      cashback: "💳",
+    };
+    return icons[type] || "🎁";
+  };
+
+  if (loading) {
+    return (
+      <div className="rewards-loading">
+        <div className="rewards-loading-spinner"></div>
+        <p>Loading rewards...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rewards">
+      {/* Header with search, filter, and create button */}
+      <div className="rewards-search-filter-section">
+        <input
+          type="text"
+          placeholder="Search rewards..."
+          ref={searchInputRef}
+          onInput={handleSearchInput}
+          className="rewards-search-input"
+        />
+        <select
+          ref={typeSelectRef}
+          defaultValue="all"
+          onChange={handleFiltersChange}
+          className="rewards-filter-select"
+        >
+          <option value="all">All Types</option>
+          {rewardTypes.map((type) => (
+            <option key={type.value} value={type.value}>
+              {type.label}
+            </option>
+          ))}
+        </select>
+        <select
+          ref={statusSelectRef}
+          defaultValue="all"
+          onChange={handleFiltersChange}
+          className="rewards-filter-select"
+        >
+          <option value="all">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+
+        <button className="rewards-create-btn" onClick={openCreateModal}>
+          Create Reward
+        </button>
+      </div>
+
+      {/* Create Reward Modal */}
+      {showCreateForm && (
+        <dialog
+          ref={createModalRef}
+          className="rewards-modal create-reward-modal"
+          onCancel={closeCreateModal}
+          onClose={closeCreateModal}
+          onClick={(e) => {
+            if (e.target === createModalRef.current) closeCreateModal();
+          }}
+          aria-label="Create reward dialog"
+        >
+          <div className="rewards-panel-header">
+            <h3 className="rewards-panel-title">Create Reward</h3>
+            <button
+              type="button"
+              className="rewards-panel-close"
+              onClick={closeCreateModal}
+              aria-label="Close create reward form"
+            >
+              ✕
+            </button>
+          </div>
+          <form
+            className="rewards-form"
+            ref={createFormRef}
+            onSubmit={handleCreateSubmit}
+            autoComplete="off"
+          >
+            <div className="rewards-form-grid">
+              <div className="rewards-form-field">
+                <label className="rewards-form-label" htmlFor="rewardName">
+                  Reward Name
+                </label>
+                <input
+                  id="rewardName"
+                  name="name"
+                  type="text"
+                  className="rewards-form-input"
+                  autoComplete="off"
+                  required
+                />
+              </div>
+              <div className="rewards-form-field">
+                <label
+                  className="rewards-form-label"
+                  htmlFor="rewardDescription"
+                >
+                  Description
+                </label>
+                <textarea
+                  id="rewardDescription"
+                  name="description"
+                  className="rewards-form-textarea"
+                  autoComplete="off"
+                  rows="3"
+                  required
+                />
+              </div>
+              <div className="rewards-form-field">
+                <label className="rewards-form-label" htmlFor="rewardType">
+                  Type
+                </label>
+                <select
+                  id="rewardType"
+                  name="type"
+                  className="rewards-form-select"
+                  autoComplete="off"
+                  required
+                >
+                  <option value="">Select Type</option>
+                  {rewardTypes.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="rewards-form-field">
+                <label className="rewards-form-label" htmlFor="rewardValue">
+                  Value
+                </label>
+                <input
+                  id="rewardValue"
+                  name="value"
+                  type="text"
+                  className="rewards-form-input"
+                  autoComplete="off"
+                  placeholder="e.g., 20, 1, 2x"
+                  required
+                />
+              </div>
+              <div className="rewards-form-field">
+                <label className="rewards-form-label" htmlFor="rewardPoints">
+                  Points Required
+                </label>
+                <input
+                  id="rewardPoints"
+                  name="points_required"
+                  type="number"
+                  className="rewards-form-input"
+                  autoComplete="off"
+                  min="0"
+                  required
+                />
+              </div>
+              <div className="rewards-form-field">
+                <label className="rewards-form-label" htmlFor="rewardStatus">
+                  Status
+                </label>
+                <select
+                  id="rewardStatus"
+                  name="is_active"
+                  className="rewards-form-select"
+                  autoComplete="off"
+                  defaultValue="true"
+                >
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+              </div>
+              <div className="rewards-form-field">
+                <label className="rewards-form-label" htmlFor="rewardExpiry">
+                  Expiry Date
+                </label>
+                <input
+                  id="rewardExpiry"
+                  name="expiry_date"
+                  type="date"
+                  className="rewards-form-input"
+                  autoComplete="off"
+                  required
+                />
+              </div>
+            </div>
+            <div className="rewards-form-actions">
+              <button
+                type="button"
+                className="rewards-button-secondary"
+                onClick={closeCreateModal}
+              >
+                Cancel
+              </button>
+              <button type="submit" className="rewards-create-btn">
+                Create Reward
+              </button>
+            </div>
+          </form>
+        </dialog>
+      )}
+
+      {/* Edit Reward Modal */}
+      {showEditForm && (
+        <dialog
+          ref={editModalRef}
+          className="rewards-modal edit-reward-modal"
+          onCancel={closeEditModal}
+          onClose={closeEditModal}
+          onClick={(e) => {
+            if (e.target === editModalRef.current) closeEditModal();
+          }}
+          aria-label="Edit reward dialog"
+        >
+          <div className="rewards-panel-header">
+            <h3 className="rewards-panel-title">Edit Reward</h3>
+            <button
+              type="button"
+              className="rewards-panel-close"
+              onClick={closeEditModal}
+              aria-label="Close edit reward form"
+            >
+              ✕
+            </button>
+          </div>
+          <form className="rewards-form" onSubmit={handleEditSubmit}>
+            <div className="rewards-form-grid">
+              <div className="rewards-form-field">
+                <label className="rewards-form-label" htmlFor="edit-rewardName">
+                  Reward Name
+                </label>
+                <input
+                  id="edit-rewardName"
+                  name="name"
+                  type="text"
+                  className="rewards-form-input"
+                  defaultValue={editingReward?.name || ""}
+                  required
+                />
+              </div>
+              <div className="rewards-form-field">
+                <label
+                  className="rewards-form-label"
+                  htmlFor="edit-rewardDescription"
+                >
+                  Description
+                </label>
+                <textarea
+                  id="edit-rewardDescription"
+                  name="description"
+                  className="rewards-form-textarea"
+                  rows="3"
+                  defaultValue={editingReward?.description || ""}
+                  required
+                />
+              </div>
+              <div className="rewards-form-field">
+                <label className="rewards-form-label" htmlFor="edit-rewardType">
+                  Type
+                </label>
+                <select
+                  id="edit-rewardType"
+                  name="type"
+                  className="rewards-form-select"
+                  defaultValue={editingReward?.type || ""}
+                  required
+                >
+                  <option value="">Select Type</option>
+                  {rewardTypes.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="rewards-form-field">
+                <label
+                  className="rewards-form-label"
+                  htmlFor="edit-rewardValue"
+                >
+                  Value
+                </label>
+                <input
+                  id="edit-rewardValue"
+                  name="value"
+                  type="text"
+                  className="rewards-form-input"
+                  defaultValue={editingReward?.value || ""}
+                  placeholder="e.g., 20, 1, 2x"
+                  required
+                />
+              </div>
+              <div className="rewards-form-field">
+                <label
+                  className="rewards-form-label"
+                  htmlFor="edit-rewardPoints"
+                >
+                  Points Required
+                </label>
+                <input
+                  id="edit-rewardPoints"
+                  name="points_required"
+                  type="number"
+                  className="rewards-form-input"
+                  defaultValue={editingReward?.points_required || ""}
+                  min="0"
+                  required
+                />
+              </div>
+              <div className="rewards-form-field">
+                <label
+                  className="rewards-form-label"
+                  htmlFor="edit-rewardStatus"
+                >
+                  Status
+                </label>
+                <select
+                  id="edit-rewardStatus"
+                  name="is_active"
+                  className="rewards-form-select"
+                  defaultValue={editingReward?.is_active ? "true" : "false"}
+                >
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+              </div>
+              <div className="rewards-form-field">
+                <label
+                  className="rewards-form-label"
+                  htmlFor="edit-rewardExpiry"
+                >
+                  Expiry Date
+                </label>
+                <input
+                  id="edit-rewardExpiry"
+                  name="expiry_date"
+                  type="date"
+                  className="rewards-form-input"
+                  defaultValue={editingReward?.expiry_date || ""}
+                  required
+                />
+              </div>
+            </div>
+            <div className="rewards-form-actions">
+              <button
+                type="button"
+                className="rewards-button-secondary"
+                onClick={closeEditModal}
+              >
+                Cancel
+              </button>
+              <button type="submit" className="rewards-create-btn">
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </dialog>
+      )}
+
+      {/* Delete Reward Modal */}
+      {showDeleteConfirm && (
+        <dialog
+          ref={deleteModalRef}
+          className="rewards-modal delete-reward-modal"
+          onCancel={closeDeleteModal}
+          onClose={closeDeleteModal}
+          onClick={(e) => {
+            if (e.target === deleteModalRef.current) closeDeleteModal();
+          }}
+          aria-label="Delete reward confirmation dialog"
+        >
+          <div className="rewards-panel-header">
+            <h3 className="rewards-panel-title">Delete Reward</h3>
+            <button
+              type="button"
+              className="rewards-panel-close"
+              onClick={closeDeleteModal}
+              aria-label="Close delete confirmation"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="rewards-form" role="document">
+            <p className="rewards-confirm-text">
+              Are you sure you want to delete this reward
+              {deletingReward
+                ? `: ${deletingReward.name} (${deletingReward.type})`
+                : ""}
+              ?
+            </p>
+            <div className="rewards-form-actions">
+              <button
+                type="button"
+                className="rewards-button-secondary"
+                onClick={closeDeleteModal}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rewards-button-danger"
+                onClick={handleDeleteConfirm}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </dialog>
+      )}
+
+      {/* Rewards Grid */}
+      <div className="rewards-grid">
+        {rewards.map((reward) => (
+          <div key={reward.id} className="rewards-reward-card">
+            <div className="rewards-reward-header">
+              <div className="rewards-reward-icon">
+                {getTypeIcon(reward.type)}
+              </div>
+              <div className="rewards-reward-info">
+                <h3 className="rewards-reward-name">{reward.name}</h3>
+                <p className="rewards-reward-description">
+                  {reward.description}
+                </p>
+              </div>
+              <div className="rewards-reward-actions">
+                <button
+                  className="rewards-action-btn edit"
+                  onClick={() => openEditModal(reward)}
+                  title="Edit reward"
+                >
+                  ✏️
+                </button>
+                <button
+                  className="rewards-action-btn delete"
+                  onClick={() => openDeleteModal(reward)}
+                  title="Delete reward"
+                >
+                  🗑️
+                </button>
+              </div>
+            </div>
+
+            <div className="rewards-reward-details">
+              <div className="rewards-reward-type">
+                <span
+                  className={`rewards-type-badge ${getTypeBadgeColor(
+                    reward.type
+                  )}`}
+                >
+                  {reward.type.replace("_", " ")}
+                </span>
+              </div>
+
+              <div className="rewards-reward-value">
+                <span className="rewards-value-label">Value:</span>
+                <span className="rewards-value-amount">{reward.value}</span>
+              </div>
+
+              <div className="rewards-reward-points">
+                <span className="rewards-points-label">Points Required:</span>
+                <span className="rewards-points-amount">
+                  {reward.points_required}
+                </span>
+              </div>
+
+              <div className="rewards-reward-status">
+                <span
+                  className={`rewards-status-badge ${
+                    reward.is_active ? "active" : "inactive"
+                  }`}
+                >
+                  {reward.is_active ? "Active" : "Inactive"}
+                </span>
+              </div>
+
+              <div className="rewards-reward-expiry">
+                <span className="rewards-expiry-label">Expires:</span>
+                <span className="rewards-expiry-date">
+                  {new Date(reward.expiry_date).toLocaleDateString()}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {rewards.length === 0 && (
+          <div className="rewards-no-rewards">
+            <div className="rewards-no-rewards-icon">🎁</div>
+            <p>No rewards found</p>
+          </div>
+        )}
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button
+            className="pagination-btn"
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+          >
+            ← Previous
+          </button>
+
+          <div className="page-numbers">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                className={`page-btn ${currentPage === page ? "active" : ""}`}
+                onClick={() => setCurrentPage(page)}
+              >
+                {page}
+              </button>
+            ))}
+          </div>
+
+          <button
+            className="pagination-btn"
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+            }
+            disabled={currentPage === totalPages}
+          >
+            Next →
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Rewards;

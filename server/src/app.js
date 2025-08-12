@@ -7,6 +7,7 @@ require("dotenv").config();
 const supabaseAuthRoutes = require("./routes/supabase-auth.routes");
 const userRoutes = require("./routes/user.routes");
 const loyaltyRoutes = require("./routes/loyalty.routes");
+const storesRoutes = require("./routes/stores.routes");
 const { errorHandler } = require("./middleware/error.middleware");
 const { notFoundHandler } = require("./middleware/notFound.middleware");
 
@@ -51,6 +52,7 @@ app.get("/health", (req, res) => {
 app.use("/api/auth", supabaseAuthRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/loyalty", loyaltyRoutes);
+app.use("/api/stores", storesRoutes);
 
 // Error handling middleware
 app.use(notFoundHandler);

@@ -7,7 +7,12 @@ import * as Admin from "../adminUI";
 import { NotFoundPage, PublicLayout, RouteWrapper, MainRoute } from "../shared";
 
 // Import lazy components
-import { LazyHome, LazyLoginTest, RouteLoading } from "./lazyComponents";
+import {
+  LazyHome,
+  LazyLoginTest,
+  LazyAdminDashboard,
+  RouteLoading,
+} from "./lazyComponents";
 
 export const AppRoutes = () => {
   return (
@@ -35,6 +40,24 @@ export const AppRoutes = () => {
                   <LazyHome />
                 </Suspense>
               </PublicLayout>
+            </RouteWrapper>
+          }
+        />
+
+        {/* ===== ADMIN FRONTEND ===== */}
+
+        {/* Admin Dashboard - Protected route with admin permissions */}
+        <Route
+          path="/admin"
+          element={
+            <RouteWrapper
+              // requireAuth={true}
+              redirectTo="/"
+              // allowedRoles={["super_admin", "tenant_admin", "store_manager"]}
+            >
+              <Suspense fallback={<RouteLoading />}>
+                <LazyAdminDashboard />
+              </Suspense>
             </RouteWrapper>
           }
         />

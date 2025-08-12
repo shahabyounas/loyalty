@@ -1,5 +1,5 @@
 require("dotenv").config();
-const { Pool } = require("pg");
+const { Client } = require("pg");
 const { logger } = require("../utils/logger");
 
 // Supabase PostgreSQL connection configuration
@@ -10,10 +10,7 @@ const config = {
     database: process.env.SUPABASE_DATABASE || "postgres",
     user: process.env.SUPABASE_USER || "postgres",
     password: process.env.SUPABASE_PASSWORD || "password",
-    ssl: { rejectUnauthorized: false }, // Supabase requires SSL
-    max: 20, // Maximum number of clients in the pool
-    idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-    connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
+    ssl: false, // Disable SSL for local development
   },
   test: {
     host: process.env.SUPABASE_HOST || "localhost",
@@ -22,9 +19,6 @@ const config = {
     user: process.env.SUPABASE_USER || "postgres",
     password: process.env.SUPABASE_PASSWORD || "password",
     ssl: { rejectUnauthorized: false }, // Supabase requires SSL
-    max: 5,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
   },
   production: {
     host: process.env.SUPABASE_HOST,
@@ -33,70 +27,85 @@ const config = {
     user: process.env.SUPABASE_USER,
     password: process.env.SUPABASE_PASSWORD,
     ssl: { rejectUnauthorized: false },
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
   },
 };
 
 const env = process.env.NODE_ENV || "development";
-console.log("SSL enabled:", true);
-console.log("Database host:", process.env.SUPABASE_HOST);
-console.log("Database user:", process.env.SUPABASE_USER);
-const poolConfig = config[env];
+const clientConfig = config[env];
 
-// Create connection pool
-const pool = new Pool(poolConfig);
+// Prefer a single connection string if provided (e.g., DATABASE_URL)
+// Note: SUPABASE_DATABASE is the database name, NOT a connection string.
+const connectionString =
+  process.env.DATABASE_URL ||
+  process.env.SUPABASE_DATABASE_URL ||
+  process.env.SUPABASE_DB_URL ||
+  process.env.SUPABASE_CONNECTION_STRING ||
+  "";
 
-// Test database connection
-pool.on("connect", () => {
-  logger.info("Connected to PostgreSQL database");
-});
-
-pool.on("error", (err) => {
-  logger.error("Unexpected error on idle client", err);
-  process.exit(-1);
-});
-
-// Graceful shutdown
-process.on("SIGINT", async () => {
-  logger.info("Closing database pool...");
-  await pool.end();
-  process.exit(0);
-});
-
+// Helpful logs
+console.log("DB env:", env);
+if (connectionString) {
+  console.log("Using connection string:", Boolean(connectionString));
+} else {
+  // If in development but targeting a remote host, enable SSL automatically
+  const isLocalHost = ["localhost", "127.0.0.1"].includes(
+    String(clientConfig.host || "").toLowerCase()
+  );
+  if (env === "development" && !isLocalHost) {
+    clientConfig.ssl = { rejectUnauthorized: false };
+  }
+  console.log("DB host:", clientConfig.host);
+  console.log("DB user:", clientConfig.user);
+  console.log("DB ssl:", Boolean(clientConfig.ssl));
+}
+console.log("connectionString", connectionString);
 // Database utility functions
 const db = {
-  // Execute a query with parameters
+  // Execute a query with parameters using a new client connection
   query: async (text, params = []) => {
     const start = Date.now();
+    const client = new Client(
+      connectionString
+        ? { connectionString, ssl: { rejectUnauthorized: false } }
+        : clientConfig
+    );
+
     try {
-      const result = await pool.query(text, params);
+      await client.connect();
+      const result = await client.query(text, params);
       const duration = Date.now() - start;
       logger.info("Executed query", { text, duration, rows: result.rowCount });
       return result;
     } catch (error) {
       logger.error("Database query error", { text, error: error.message });
       throw error;
+    } finally {
+      await client.end();
     }
   },
 
   // Get a single row
   getOne: async (text, params = []) => {
-    const result = await pool.query(text, params);
+    const result = await db.query(text, params);
     return result.rows[0] || null;
   },
 
   // Get multiple rows
   getMany: async (text, params = []) => {
-    const result = await pool.query(text, params);
+    const result = await db.query(text, params);
     return result.rows;
   },
 
-  // Execute a transaction
+  // Execute a transaction using a single client connection
   transaction: async (callback) => {
-    const client = await pool.connect();
+    const client = new Client(
+      connectionString
+        ? { connectionString, ssl: { rejectUnauthorized: false } }
+        : clientConfig
+    );
+
     try {
+      await client.connect();
       await client.query("BEGIN");
       const result = await callback(client);
       await client.query("COMMIT");
@@ -105,14 +114,29 @@ const db = {
       await client.query("ROLLBACK");
       throw error;
     } finally {
-      client.release();
+      await client.end();
     }
   },
 
-  // Close the pool
-  close: async () => {
-    await pool.end();
+  // Test database connection
+  testConnection: async () => {
+    const client = new Client(
+      connectionString
+        ? { connectionString, ssl: { rejectUnauthorized: false } }
+        : clientConfig
+    );
+
+    try {
+      await client.connect();
+      logger.info("Connected to PostgreSQL database");
+      await client.end();
+      return true;
+    } catch (error) {
+      logger.error("Database connection test failed", { error: error.message });
+      await client.end();
+      return false;
+    }
   },
 };
 
-module.exports = { pool, db };
+module.exports = { db };

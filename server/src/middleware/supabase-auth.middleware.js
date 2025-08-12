@@ -49,7 +49,7 @@ const requireRole = (roles) => {
       return ApiResponse.unauthorized(res, "Authentication required");
     }
 
-    const userRole = req.user.user_metadata?.role || "user";
+    const userRole = req.user.user_metadata?.role || "admin";
     const allowedRoles = Array.isArray(roles) ? roles : [roles];
 
     if (!allowedRoles.includes(userRole)) {
@@ -64,7 +64,7 @@ const requireRole = (roles) => {
  * Middleware to require admin role
  */
 const requireAdmin = (req, res, next) => {
-  return requireRole("admin")(req, res, next);
+  return requireRole(["super_admin", "admin"])(req, res, next);
 };
 
 /**

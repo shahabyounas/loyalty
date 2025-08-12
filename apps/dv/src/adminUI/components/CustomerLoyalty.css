@@ -1,0 +1,99 @@
+/* Customer Loyalty Component - Specific Styles */
+
+.customer-loyalty-component {
+    padding: 1.5em;
+    background: var(--background-color);
+    border-radius: var(--m-border-radius);
+    box-shadow: var(--component-box-shadow);
+}
+
+.loyalty-header {
+    margin-bottom: 2em;
+}
+
+.loyalty-header h2 {
+    color: var(--text-color);
+    font-size: 1.75em;
+    margin: 0 0 0.5em 0;
+}
+
+.loyalty-header p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.loyalty-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2em;
+}
+
+.loyalty-overview {
+    margin-bottom: 1.5em;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5em;
+}
+
+.stat-card {
+    background: var(--console-surface);
+    border: 1px solid var(--console-border);
+    border-radius: var(--m-border-radius);
+    padding: 1.5em;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    border-color: var(--console-border-hover);
+    box-shadow: var(--shadow-container);
+}
+
+.stat-card h3 {
+    color: var(--text-secondary);
+    font-size: 0.875em;
+    margin: 0 0 0.5em 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stat-number {
+    color: var(--primary-600);
+    font-size: 2em;
+    font-weight: 600;
+    margin: 0;
+}
+
+.loyalty-actions {
+    display: flex;
+    gap: 1em;
+    flex-wrap: wrap;
+}
+
+.loyalty-programs {
+    background: var(--console-surface);
+    border: 1px solid var(--console-border);
+    border-radius: var(--m-border-radius);
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.empty-state p {
+    margin: 0 0 1em 0;
+    font-size: 1.125em;
+}
+
+/* Mobile cards - hidden on desktop */
+.mobile-cards {
+    display: none;
+}

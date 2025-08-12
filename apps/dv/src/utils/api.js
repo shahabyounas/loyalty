@@ -43,8 +43,7 @@ const handleResponse = async (response) => {
 
     // Handle authentication errors
     if (response.status === 401) {
-      tokenStorage.clearAll();
-      throw new Error("Authentication failed. Please log in again.");
+      throw new Error("TOKEN_EXPIRED");
     }
 
     // Handle other errors
@@ -63,19 +62,59 @@ const handleResponse = async (response) => {
 };
 
 /**
+ * Refresh token using direct fetch (to avoid infinite loops)
+ * @returns {Promise<Object>} Refresh result
+ */
+const refreshTokenDirect = async () => {
+  const refreshToken = tokenStorage.getRefreshToken();
+  if (!refreshToken) {
+    throw new Error("No refresh token available");
+  }
+
+  const url = `${API_BASE_URL}/auth/refresh-token`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || "Token refresh failed");
+  }
+
+  const data = await response.json();
+  if (data.data && data.data.session) {
+    tokenStorage.setToken(data.data.session.accessToken);
+    tokenStorage.setRefreshToken(data.data.session.refreshToken);
+  }
+
+  return data.data;
+};
+
+/**
  * Make an authenticated API request with automatic token refresh
  * @param {string} endpoint - API endpoint
  * @param {Object} options - Fetch options
+ * @param {boolean} isRetry - Whether this is a retry attempt after token refresh
  * @returns {Promise<Object>} API response
  */
-const makeRequest = async (endpoint, options = {}) => {
+const makeRequest = async (endpoint, options = {}, isRetry = false) => {
   try {
     // Check if token needs refresh before making request
     const token = tokenStorage.getToken();
     if (token && isTokenExpiringSoon(token)) {
-      const newToken = refreshToken(token);
-      if (newToken) {
-        tokenStorage.setToken(newToken);
+      console.log("Token expiring soon, attempting refresh...");
+      try {
+        const refreshResult = await refreshTokenDirect();
+        if (refreshResult && refreshResult.session) {
+          console.log("Token refreshed successfully");
+        }
+      } catch (refreshError) {
+        console.error("Token refresh failed:", refreshError);
+        // Continue with current token if refresh fails
       }
     }
 
@@ -101,6 +140,35 @@ const makeRequest = async (endpoint, options = {}) => {
     return await handleResponse(response);
   } catch (error) {
     console.error("Request failed:", error);
+
+    // Handle token expiration with automatic refresh
+    if (error.message === "TOKEN_EXPIRED" && !isRetry) {
+      console.log("Token expired, attempting refresh...");
+      try {
+        const refreshResult = await refreshTokenDirect();
+        if (refreshResult && refreshResult.session) {
+          console.log("Token refreshed, retrying request...");
+
+          // Retry the original request with new token
+          return await makeRequest(endpoint, options, true);
+        } else {
+          // Refresh failed, clear tokens and redirect to login
+          tokenStorage.clearAll();
+          throw new Error("Authentication failed. Please log in again.");
+        }
+      } catch (refreshError) {
+        console.error("Token refresh failed:", refreshError);
+        // Clear tokens and redirect to login
+        tokenStorage.clearAll();
+        throw new Error("Authentication failed. Please log in again.");
+      }
+    }
+
+    // Handle other authentication errors
+    if (error.message.includes("Authentication failed") && !isRetry) {
+      tokenStorage.clearAll();
+      throw new Error("Authentication failed. Please log in again.");
+    }
 
     if (error.name === "AbortError") {
       throw new Error("Request timeout. Please try again.");
@@ -190,17 +258,29 @@ export const authAPI = {
       throw new Error("No refresh token available");
     }
 
-    const response = await makeRequest("/auth/refresh-token", {
+    // Use direct fetch to avoid infinite loop with makeRequest
+    const url = `${API_BASE_URL}/auth/refresh-token`;
+    const response = await fetch(url, {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ refreshToken }),
+      timeout: API_TIMEOUT,
     });
 
-    if (response.data && response.data.session) {
-      tokenStorage.setToken(response.data.session.accessToken);
-      tokenStorage.setRefreshToken(response.data.session.refreshToken);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || "Token refresh failed");
     }
 
-    return response.data;
+    const data = await response.json();
+    if (data.data && data.data.session) {
+      tokenStorage.setToken(data.data.session.accessToken);
+      tokenStorage.setRefreshToken(data.data.session.refreshToken);
+    }
+
+    return data.data;
   },
 
   // Change password
@@ -246,6 +326,126 @@ export const authAPI = {
       method: "PUT",
       body: JSON.stringify(profileData),
     });
+  },
+};
+
+/**
+ * API methods for user management (admin only)
+ */
+export const userAPI = {
+  // Get all users with pagination and filters
+  getAllUsers: async (params = {}) => {
+    const queryParams = new URLSearchParams({
+      page: params.page || 1,
+      limit: params.limit || 10,
+      search: params.search || "",
+      role: params.role || "",
+    }).toString();
+
+    return await makeRequest(`/auth/users?${queryParams}`);
+  },
+
+  // Create new user
+  createUser: async (userData) => {
+    return await makeRequest("/auth/users", {
+      method: "POST",
+      body: JSON.stringify({
+        email: userData.email,
+        password: userData.password,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        role: userData.role,
+        phone: userData.phone,
+      }),
+    });
+  },
+
+  // Update existing user
+  updateUser: async (userId, userData) => {
+    return await makeRequest(`/auth/users/${userId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        role: userData.role,
+        phone: userData.phone,
+      }),
+    });
+  },
+
+  // Delete user
+  deleteUser: async (userId) => {
+    return await makeRequest(`/auth/users/${userId}`, {
+      method: "DELETE",
+    });
+  },
+
+  // Get user by ID
+  getUserById: async (userId) => {
+    return await makeRequest(`/auth/users/${userId}`);
+  },
+};
+
+/**
+ * API methods for store management (admin only)
+ */
+export const storeAPI = {
+  // Get all stores with pagination and filters
+  getAllStores: async (params = {}) => {
+    const queryParams = new URLSearchParams({
+      page: params.page || 1,
+      limit: params.limit || 10,
+      search: params.search || "",
+      city: params.city || "",
+    }).toString();
+
+    return await makeRequest(`/stores?${queryParams}`);
+  },
+
+  // Create new store
+  createStore: async (storeData) => {
+    return await makeRequest("/stores", {
+      method: "POST",
+      body: JSON.stringify({
+        name: storeData.name,
+        address: storeData.address,
+        city: storeData.city,
+        country: storeData.country,
+        postal_code: storeData.postal_code,
+        phone: storeData.phone,
+        email: storeData.email,
+        is_active: storeData.is_active,
+      }),
+    });
+  },
+
+  // Update existing store
+  updateStore: async (storeId, storeData) => {
+    return await makeRequest(`/stores/${storeId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        name: storeData.name,
+        address: storeData.address,
+        city: storeData.city,
+        country: storeData.country,
+        postal_code: storeData.postal_code,
+        phone: storeData.phone,
+        email: storeData.email,
+        is_active: storeData.is_active,
+      }),
+    });
+  },
+
+  // Delete store
+  deleteStore: async (storeId) => {
+    return await makeRequest(`/stores/${storeId}`, {
+      method: "DELETE",
+    });
+  },
+
+  // Get store by ID
+  getStoreById: async (storeId) => {
+    return await makeRequest(`/stores/${storeId}`);
   },
 };
 

@@ -77,8 +77,24 @@ const requireRole = (roles) => {
   };
 };
 
+const requireAdmin = (req, res, next) => {
+  if (!req.user) {
+    return ApiResponse.unauthorized(res, "Authentication required");
+  }
+
+  const userRole = req.user.role;
+  const adminRoles = ["super_admin", "admin"];
+
+  if (!adminRoles.includes(userRole)) {
+    return ApiResponse.forbidden(res, "Admin access required");
+  }
+
+  next();
+};
+
 module.exports = {
   authenticateToken,
   authenticateRefreshToken,
   requireRole,
+  requireAdmin,
 };

@@ -17,4 +17,30 @@ const validate = (req, res, next) => {
   next();
 };
 
-module.exports = { validate };
+// Joi validation middleware
+const validateRequest = (schema) => {
+  return (req, res, next) => {
+    const { error, value } = schema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
+
+    if (error) {
+      const formattedErrors = error.details.map((detail) => ({
+        field: detail.path.join("."),
+        message: detail.message,
+        value: detail.context?.value,
+      }));
+
+      return res.status(400).json({
+        error: "Validation failed",
+        details: formattedErrors,
+      });
+    }
+
+    req.body = value;
+    next();
+  };
+};
+
+module.exports = { validate, validateRequest };

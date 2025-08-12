@@ -1,302 +1,63 @@
-/* AI Application Design System - Professional Blue Theme */
+/* Simple Color Palette - Based on #38bdf8 */
 :root {
-    /* Primary Colors - Client Blue */
-    --primary-50: #f0f8ff;
-    --primary-100: #e0f2fe;
-    --primary-200: #bae6fd;
-    --primary-300: #7dd3fc;
-    --primary-400: #38bdf8;
-    --primary-500: #2092ea;
-    --primary-600: #208fea;
-    --primary-700: #0284c7;
-    --primary-800: #0369a1;
-    --primary-900: #075985;
-    --primary-950: #0c4a6e;
+    /* Primary Colors (3 colors) */
+    --primary: #38bdf8;
+    --primary-dark: #0ea5e9;
+    --primary-light: #7dd3fc;
 
-    /* Secondary Colors - Blue Variations */
-    --secondary-50: #f8fafc;
-    --secondary-100: #f1f5f9;
-    --secondary-200: #e2e8f0;
-    --secondary-300: #cbd5e1;
-    --secondary-400: #94a3b8;
-    --secondary-500: #64748b;
-    --secondary-600: #475569;
-    --secondary-700: #334155;
-    --secondary-800: #1e293b;
-    --secondary-900: #0f172a;
-    --secondary-950: #020617;
+    /* Neutral Colors (3 colors) */
+    --white: #ffffff;
+    --gray-light: #f8fafc;
+    --gray-dark: #1e293b;
 
-    /* Success Colors - Modern Green */
-    --success-50: #f0fdf4;
-    --success-100: #dcfce7;
-    --success-200: #bbf7d0;
-    --success-300: #86efac;
-    --success-400: #4ade80;
-    --success-500: #22c55e;
-    --success-600: #16a34a;
-    --success-700: #15803d;
-    --success-800: #166534;
-    --success-900: #14532d;
-    --success-950: #052e16;
+    /* Status Colors (1 color) */
+    --error: #ef4444;
 
-    /* Warning Colors - Bright Orange */
-    --warning-50: #fff7ed;
-    --warning-100: #ffedd5;
-    --warning-200: #fed7aa;
-    --warning-300: #fdba74;
-    --warning-400: #fb923c;
-    --warning-500: #f97316;
-    --warning-600: #ea580c;
-    --warning-700: #c2410c;
-    --warning-800: #9a3412;
-    --warning-900: #7c2d12;
-    --warning-950: #431407;
+    /* AI & Sci-Fi Colors (4 colors) */
+    --ai-cyan: #00d4ff;
+    --ai-purple: #8b5cf6;
+    --ai-glow: #38bdf8;
+    --ai-dark: #0f172a;
 
-    /* Error Colors - Modern Red */
-    --error-50: #fef2f2;
-    --error-100: #fee2e2;
-    --error-200: #fecaca;
-    --error-300: #fca5a5;
-    --error-400: #f87171;
-    --error-500: #ef4444;
-    --error-600: #dc2626;
-    --error-700: #b91c1c;
-    --error-800: #991b1b;
-    --error-900: #7f1d1d;
-    --error-950: #450a0a;
-
-    /* Neutral Colors - Pure White to Deep Gray */
-    --neutral-50: #ffffff;
-    --neutral-100: #fafafa;
-    --neutral-200: #f5f5f5;
-    --neutral-300: #e5e5e5;
-    --neutral-400: #d4d4d4;
-    --neutral-500: #a3a3a3;
-    --neutral-600: #737373;
-    --neutral-700: #525252;
-    --neutral-800: #404040;
-    --neutral-900: #262626;
-    --neutral-950: #171717;
-
-    /* AI Application Colors - Bright & Professional */
-    --background-color: #ffffff;
-    --secondary-background-color: #f8fafc;
-    --text-color: #0f172a;
-    --text-secondary: #475569;
+    /* Application Colors */
+    --background: var(--white);
+    --text: var(--gray-dark);
     --text-muted: #64748b;
-    --text-disabled: #94a3b8;
-    --text-inverse: #ffffff;
-    --text-link: var(--primary-600);
-    --text-link-hover: var(--primary-700);
+    --border: #e2e8f0;
+    --border-focus: var(--primary);
 
-    /* Control Colors - AI Blue Theme */
-    --control-color: var(--primary-500);
-    --control-text-color: #ffffff;
-    --control-highlight-color: var(--primary-600);
-    --control-highlight-text-color: #ffffff;
+    /* Interactive States */
+    --hover: var(--gray-light);
+    --active: var(--primary-light);
 
-    /* Interactive States - Bright & Responsive */
-    --interactive-hover: #f0f8ff;
-    --interactive-active: #e0f2fe;
-    --interactive-selected: #bae6fd;
-    --interactive-disabled: #f1f5f9;
+    /* AI Interactive States */
+    --ai-hover: rgba(56, 189, 248, 0.1);
+    --ai-active: rgba(56, 189, 248, 0.2);
+    --ai-glow-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+    --ai-pulse: 0 0 0 0 rgba(56, 189, 248, 0.7);
 
-    /* Console UI Colors - Clean & Modern */
-    --console-surface: #ffffff;
-    --console-surface-hover: #f8fafc;
-    --console-surface-active: #f1f5f9;
-    --console-border: #e2e8f0;
-    --console-border-hover: #cbd5e1;
+    /* Shadows */
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --shadow-focus: 0 0 0 3px rgba(56, 189, 248, 0.1);
+    --ai-shadow: 0 4px 15px rgba(56, 189, 248, 0.15);
+    --ai-shadow-hover: 0 8px 25px rgba(56, 189, 248, 0.25);
 
-    /* Focus and Border Colors - AI Blue Accent */
-    --focus-border-color: var(--primary-500);
-    --color-border-container: #e2e8f0;
-
-    /* Shadow System - Subtle & Professional */
-    --component-box-shadow: 0 0.625em 0.9375em -0.1875em rgba(32, 146, 234, 0.1), 0 0.25em 0.375em -0.125em rgba(32, 146, 234, 0.05);
-    --shadow-container: 0 0 0.0625em 0.0625em rgba(32, 146, 234, 0.05), 0 0.0625em 0.5em 0.125em rgba(32, 146, 234, 0.08);
-
-    /* Status Colors - AI Application Theme */
-    --status-info: var(--primary-500);
-    --status-success: var(--success-500);
-    --status-warning: var(--warning-500);
-    --status-error: var(--error-500);
-
-    /* Border Radius - Modern & Clean */
-    --sm-border-radius: 0.25em;
-    --m-border-radius: 0.5em;
-    --l-border-radius: 0.75em;
-    --xl-border-radius: 1em;
-
-    /* Icon System - AI Blue Theme */
-    --icon-scale: 1;
-    --icon-stroke: currentcolor;
-    --icon-fill-alert: var(--error-500);
-    --icon-fill-active: var(--primary-500);
-
-    /* AI Application Specific Colors */
-    --ai-gradient-primary: linear-gradient(135deg, var(--primary-500), var(--primary-600));
-    --ai-gradient-secondary: linear-gradient(135deg, #ffffff, var(--primary-50));
-    --ai-accent-blue: #2092ea;
-    --ai-accent-blue-light: #208fea;
-    --ai-surface-elevated: #ffffff;
-    --ai-surface-card: #ffffff;
-    --ai-border-subtle: #f1f5f9;
-    --ai-border-medium: #e2e8f0;
-    --ai-border-strong: #cbd5e1;
-
-    /* Transitions */
-    transition-duration: 0.3s;
-    transition-property: --background-color --secondary-background-color --text-color --control-color --control-text-color --control-highlight-color --control-highlight-text-color;
+    /* Gradients */
+    --ai-gradient: linear-gradient(135deg, var(--primary) 0%, var(--ai-cyan) 100%);
+    --ai-gradient-hover: linear-gradient(135deg, var(--primary-dark) 0%, var(--ai-cyan) 100%);
+    --ai-glow-gradient: linear-gradient(45deg, var(--ai-cyan), var(--ai-purple), var(--primary));
 }
 
-/* Dark Mode Support - AI Application Dark Theme */
+/* Dark Mode */
 @media (prefers-color-scheme: dark) {
     :root {
-        --background-color: #0f0f23;
-        --secondary-background-color: #1a1a2e;
-        --text-color: #ffffff;
-        --text-secondary: rgba(255, 255, 255, 0.7);
-        --text-muted: rgba(255, 255, 255, 0.5);
-        --text-disabled: rgba(255, 255, 255, 0.3);
-        --text-inverse: #0f0f23;
-
-        --control-color: var(--primary-500);
-        --control-text-color: #ffffff;
-        --control-highlight-color: var(--primary-400);
-        --control-highlight-text-color: #ffffff;
-
-        --interactive-hover: rgba(255, 255, 255, 0.1);
-        --interactive-active: rgba(255, 255, 255, 0.2);
-        --interactive-selected: rgba(255, 255, 255, 0.15);
-        --interactive-disabled: rgba(255, 255, 255, 0.05);
-
-        --console-surface: rgba(255, 255, 255, 0.1);
-        --console-surface-hover: rgba(255, 255, 255, 0.15);
-        --console-surface-active: rgba(255, 255, 255, 0.2);
-        --console-border: rgba(255, 255, 255, 0.2);
-        --console-border-hover: rgba(255, 255, 255, 0.3);
-
-        --color-border-container: rgba(255, 255, 255, 0.2);
-
-        --ai-surface-elevated: rgba(255, 255, 255, 0.05);
-        --ai-surface-card: rgba(255, 255, 255, 0.1);
-        --ai-border-subtle: rgba(255, 255, 255, 0.1);
-        --ai-border-medium: rgba(255, 255, 255, 0.2);
-        --ai-border-strong: rgba(255, 255, 255, 0.3);
+        --background: var(--ai-dark);
+        --text: var(--white);
+        --text-muted: #94a3b8;
+        --border: #334155;
+        --hover: #334155;
+        --ai-glow-shadow: 0 0 30px rgba(56, 189, 248, 0.5);
+        --ai-shadow: 0 4px 20px rgba(56, 189, 248, 0.3);
+        --ai-shadow-hover: 0 8px 30px rgba(56, 189, 248, 0.4);
     }
-}
-
-/* Default Dark Theme - Purple/Blue Gradient */
-:root {
-    --background-color: #0f0f23;
-    --secondary-background-color: #1a1a2e;
-    --text-color: #ffffff;
-    --text-secondary: rgba(255, 255, 255, 0.7);
-    --text-muted: rgba(255, 255, 255, 0.5);
-    --text-disabled: rgba(255, 255, 255, 0.3);
-    --text-inverse: #0f0f23;
-
-    /* Blue Gradient Theme */
-    --loyalty-gradient-primary: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
-    --loyalty-gradient-secondary: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
-    --loyalty-accent-purple: #38bdf8;
-    --loyalty-accent-blue: #0ea5e9;
-    --loyalty-accent-light: #38bdf8;
-
-    --control-color: var(--loyalty-accent-purple);
-    --control-text-color: #ffffff;
-    --control-highlight-color: var(--loyalty-accent-blue);
-    --control-highlight-text-color: #ffffff;
-
-    --interactive-hover: rgba(255, 255, 255, 0.1);
-    --interactive-active: rgba(255, 255, 255, 0.2);
-    --interactive-selected: rgba(255, 255, 255, 0.15);
-    --interactive-disabled: rgba(255, 255, 255, 0.05);
-
-    --console-surface: rgba(255, 255, 255, 0.1);
-    --console-surface-hover: rgba(255, 255, 255, 0.15);
-    --console-surface-active: rgba(255, 255, 255, 0.2);
-    --console-border: rgba(255, 255, 255, 0.2);
-    --console-border-hover: rgba(255, 255, 255, 0.3);
-
-    --color-border-container: rgba(255, 255, 255, 0.2);
-
-    --ai-surface-elevated: rgba(255, 255, 255, 0.05);
-    --ai-surface-card: rgba(255, 255, 255, 0.1);
-    --ai-border-subtle: rgba(255, 255, 255, 0.1);
-    --ai-border-medium: rgba(255, 255, 255, 0.2);
-    --ai-border-strong: rgba(255, 255, 255, 0.3);
-
-    /* Shadow System for Dark Theme */
-    --component-box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    --shadow-container: 0 4px 15px rgba(56, 189, 248, 0.4);
-}
-
-/* Light Theme - Applied when checkbox is checked */
-:root:has(#theme-switch:checked) {
-    --background-color: #ffffff;
-    --secondary-background-color: #f8fafc;
-    --text-color: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #64748b;
-    --text-disabled: #94a3b8;
-    --text-inverse: #ffffff;
-
-    --interactive-hover: rgba(56, 189, 248, 0.1);
-    --interactive-active: rgba(56, 189, 248, 0.2);
-    --interactive-selected: rgba(56, 189, 248, 0.15);
-    --interactive-disabled: #f1f5f9;
-
-    --console-surface: #ffffff;
-    --console-surface-hover: #f8fafc;
-    --console-surface-active: #f1f5f9;
-    --console-border: #e2e8f0;
-    --console-border-hover: #cbd5e1;
-
-    --color-border-container: #e2e8f0;
-
-    --ai-surface-elevated: #ffffff;
-    --ai-surface-card: #ffffff;
-    --ai-border-subtle: #f1f5f9;
-    --ai-border-medium: #e2e8f0;
-    --ai-border-strong: #cbd5e1;
-
-    /* Shadow System for Light Theme */
-    --component-box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-container: 0 4px 15px rgba(102, 126, 234, 0.2);
-}
-
-/* Fallback for browsers that don't support :has() */
-.light-theme {
-    --background-color: #ffffff;
-    --secondary-background-color: #f8fafc;
-    --text-color: #0f172a;
-    --text-secondary: #475569;
-    --text-muted: #64748b;
-    --text-disabled: #94a3b8;
-    --text-inverse: #ffffff;
-
-    --interactive-hover: rgba(56, 189, 248, 0.1);
-    --interactive-active: rgba(56, 189, 248, 0.2);
-    --interactive-selected: rgba(56, 189, 248, 0.15);
-    --interactive-disabled: #f1f5f9;
-
-    --console-surface: #ffffff;
-    --console-surface-hover: #f8fafc;
-    --console-surface-active: #f1f5f9;
-    --console-border: #e2e8f0;
-    --console-border-hover: #cbd5e1;
-
-    --color-border-container: #e2e8f0;
-
-    --ai-surface-elevated: #ffffff;
-    --ai-surface-card: #ffffff;
-    --ai-border-subtle: #f1f5f9;
-    --ai-border-medium: #e2e8f0;
-    --ai-border-strong: #cbd5e1;
-
-    /* Shadow System for Light Theme */
-    --component-box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-container: 0 4px 15px rgba(102, 126, 234, 0.2);
 }

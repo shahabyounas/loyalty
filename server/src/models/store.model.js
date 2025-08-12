@@ -299,7 +299,14 @@ class Store {
       `;
 
       const results = await db.getMany(query, [storeId, tenantId]);
-      return results;
+      // Return a consistent shape without referencing User model
+      return results.map((row) => ({
+        user_id: row.user_id,
+        first_name: row.first_name,
+        last_name: row.last_name,
+        email: row.email,
+        role: row.role,
+      }));
     } catch (error) {
       logger.error("Error getting store staff:", error);
       throw error;

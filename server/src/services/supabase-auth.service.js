@@ -15,6 +15,7 @@ class SupabaseAuthService {
           first_name: userData.firstName,
           last_name: userData.lastName,
           role: userData.role || "user",
+          phone: userData.phone || "",
         },
       });
 
@@ -30,6 +31,26 @@ class SupabaseAuthService {
       return signInResult;
     } catch (error) {
       logger.error("Sign up failed:", error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get user by email
+   */
+  static async getUserByEmail(email) {
+    try {
+      const { data, error } = await supabase.auth.admin.listUsers();
+
+      if (error) {
+        logger.error("Get user by email error:", error);
+        throw new Error(error.message);
+      }
+
+      const user = data.users.find((user) => user.email === email);
+      return user || null;
+    } catch (error) {
+      logger.error("Get user by email failed:", error.message);
       throw error;
     }
   }

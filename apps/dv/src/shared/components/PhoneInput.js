@@ -1,9 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./PhoneInput.css";
 
-// Import colors from the design system
-import "../../styles/colors.css";
-
 // Country data with phone codes
 const countries = [
   { code: "GB", name: "United Kingdom", dialCode: "+44", flag: "🇬🇧" },

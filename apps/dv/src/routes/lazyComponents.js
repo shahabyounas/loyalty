@@ -11,6 +11,10 @@ export const LazyLoginTest = lazy(() =>
   }))
 );
 
+export const LazyAdminDashboard = lazy(() =>
+  import("../adminUI").then((module) => ({ default: module.AdminDashboard }))
+);
+
 // Loading component for Suspense fallback
 export const RouteLoading = () => (
   <div className="loading-container">

@@ -1,6 +1,7 @@
 const SupabaseAuthService = require("../services/supabase-auth.service");
 const ApiResponse = require("../utils/response");
 const { logger } = require("../utils/logger");
+const { db } = require("../config/database");
 
 class SupabaseAuthController {
   /**
@@ -38,6 +39,109 @@ class SupabaseAuthController {
       );
     } catch (error) {
       logger.error("Registration error:", error.message);
+      next(error);
+    }
+  }
+
+  /**
+   * Create a new user (admin only)
+   */
+  static async createUser(req, res, next) {
+    try {
+      const { email, password, firstName, lastName, role, phone } = req.body;
+
+      // Validate required fields
+      if (!email || !password || !firstName || !lastName) {
+        return ApiResponse.badRequest(
+          res,
+          "Email, password, first name, and last name are required"
+        );
+      }
+
+      // Validate password strength
+      if (password.length < 6) {
+        return ApiResponse.badRequest(
+          res,
+          "Password must be at least 6 characters long"
+        );
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return ApiResponse.badRequest(res, "Invalid email format");
+      }
+
+      // Check if user already exists
+      const existingUser = await SupabaseAuthService.getUserByEmail(email);
+      if (existingUser) {
+        return ApiResponse.conflict(res, "User with this email already exists");
+      }
+
+      // First create the user in Supabase Auth
+      const authResult = await SupabaseAuthService.signUp(email, password, {
+        firstName,
+        lastName,
+        role: role || "staff",
+        phone: phone || "",
+      });
+
+      if (!authResult?.user?.id) {
+        throw new Error("Failed to create user in Supabase Auth");
+      }
+
+      // Then create the user record in our database
+      const userRecord = await db.query(
+        `INSERT INTO users (
+          auth_user_id,
+          email,
+          first_name,
+          last_name,
+          role,
+          phone,
+          email_verified,
+          created_at,
+          updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)
+        RETURNING *`,
+        [
+          authResult.user.id,
+          email,
+          firstName,
+          lastName,
+          role || "staff",
+          phone || "",
+          authResult.user.email_confirmed_at ? true : false,
+          new Date(),
+        ]
+      );
+
+      if (!userRecord.rows[0]) {
+        // If user record creation fails, attempt to delete the auth user
+        await SupabaseAuthService.deleteUser(authResult.user.id);
+        throw new Error("Failed to create user record in database");
+      }
+
+      logger.info(`Admin created user successfully: ${email}`);
+      return ApiResponse.created(
+        res,
+        {
+          user: {
+            id: authResult.user.id,
+            email: authResult.user.email,
+            firstName: authResult.user.user_metadata?.first_name,
+            lastName: authResult.user.user_metadata?.last_name,
+            role: authResult.user.user_metadata?.role,
+            phone: authResult.user.user_metadata?.phone,
+            emailVerified: authResult.user.email_confirmed_at ? true : false,
+            createdAt: authResult.user.created_at,
+          },
+          dbUser: userRecord.rows[0],
+        },
+        "User created successfully"
+      );
+    } catch (error) {
+      logger.error("Create user error:", error.message);
       next(error);
     }
   }
@@ -222,6 +326,7 @@ class SupabaseAuthController {
         firstName: user.user_metadata?.first_name,
         lastName: user.user_metadata?.last_name,
         role: user.user_metadata?.role,
+        phone: user.user_metadata?.phone,
         emailVerified: user.email_confirmed_at ? true : false,
         createdAt: user.created_at,
         lastSignIn: user.last_sign_in_at,
@@ -235,6 +340,41 @@ class SupabaseAuthController {
       );
     } catch (error) {
       logger.error("Get all users error:", error.message);
+      next(error);
+    }
+  }
+
+  /**
+   * Update user (admin only)
+   */
+  static async updateUser(req, res, next) {
+    try {
+      const { userId } = req.params;
+      const { firstName, lastName, role, phone } = req.body;
+
+      const updatedUser = await SupabaseAuthService.updateUser(userId, {
+        first_name: firstName,
+        last_name: lastName,
+        role: role,
+        phone: phone,
+      });
+
+      logger.info(`User updated successfully: ${userId}`);
+      return ApiResponse.success(
+        res,
+        {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          firstName: updatedUser.user_metadata?.first_name,
+          lastName: updatedUser.user_metadata?.last_name,
+          role: updatedUser.user_metadata?.role,
+          phone: updatedUser.user_metadata?.phone,
+          emailVerified: updatedUser.email_confirmed_at ? true : false,
+        },
+        "User updated successfully"
+      );
+    } catch (error) {
+      logger.error("Update user error:", error.message);
       next(error);
     }
   }
