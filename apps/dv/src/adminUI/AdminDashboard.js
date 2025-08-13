@@ -33,24 +33,20 @@ const AdminDashboard = () => {
       //   },
       // });
 
-      // console.log("response", response);
-
-      if (response.ok) {
-        // const permissions = await response.json();
+      // if (response.ok) {
+      //   const permissions = await response.json();
+      //   setUserPermissions(permissions);
+      // } else {
+      // If API fails, check if user is super admin based on role
+      if (user.role === "super_admin") {
+        console.log("user.role", user.role);
         user.role = "super_admin";
         setUserPermissions([MENU_PERMISSIONS.SUPER_ADMIN]);
-        // setUserPermissions(permissions);
       } else {
-        // If API fails, check if user is super admin based on role
-        if (user.role === "super_admin") {
-          console.log("user.role", user.role);
-          user.role = "super_admin";
-          setUserPermissions([MENU_PERMISSIONS.SUPER_ADMIN]);
-        } else {
-          // Fallback to basic permissions
-          setUserPermissions([MENU_PERMISSIONS.SYSTEM_ADMIN]);
-        }
+        // Fallback to basic permissions
+        setUserPermissions([MENU_PERMISSIONS.SYSTEM_ADMIN]);
       }
+      // }
     } catch (error) {
       console.error("Error fetching permissions:", error);
       // Fallback: if user has super_admin role, give them super admin permissions
@@ -72,6 +68,8 @@ const AdminDashboard = () => {
   const renderActiveComponent = () => {
     const activeItem = getMenuItemById(activeMenu);
     if (!activeItem) return renderComponentByName("Dashboard");
+
+    console.log("activeItem", activeItem.component);
 
     return renderComponentByName(activeItem.component);
   };

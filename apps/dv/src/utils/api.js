@@ -450,6 +450,68 @@ export const storeAPI = {
 };
 
 /**
+ * API methods for reward management (admin only)
+ */
+export const rewardAPI = {
+  // Get all rewards with pagination and filters
+  getAllRewards: async (params = {}) => {
+    const queryParams = new URLSearchParams({
+      page: params.page || 1,
+      limit: params.limit || 10,
+      search: params.search || "",
+      type: params.type || "",
+      status: params.status || "",
+    }).toString();
+
+    return await makeRequest(`/rewards?${queryParams}`);
+  },
+
+  // Create new reward
+  createReward: async (rewardData) => {
+    return await makeRequest("/rewards", {
+      method: "POST",
+      body: JSON.stringify({
+        name: rewardData.name,
+        description: rewardData.description,
+        type: rewardData.type,
+        value: rewardData.value,
+        points_required: rewardData.points_required,
+        is_active: rewardData.is_active,
+        expiry_date: rewardData.expiry_date,
+      }),
+    });
+  },
+
+  // Update existing reward
+  updateReward: async (rewardId, rewardData) => {
+    return await makeRequest(`/rewards/${rewardId}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        name: rewardData.name,
+        description: rewardData.description,
+        type: rewardData.type,
+        value: rewardData.value,
+        points_required: rewardData.points_required,
+        is_active: rewardData.is_active,
+        expiry_date: rewardData.expiry_date,
+      }),
+    });
+  },
+
+  // Delete reward
+  deleteReward: async (rewardId) => {
+    return await makeRequest(`/rewards/${rewardId}`, {
+      method: "DELETE",
+    });
+  },
+
+  // Get reward by ID
+  getRewardById: async (rewardId) => {
+    return await makeRequest(`/rewards/${rewardId}`);
+  },
+};
+
+/**
  * Generic API methods for other endpoints
  */
 export const api = {

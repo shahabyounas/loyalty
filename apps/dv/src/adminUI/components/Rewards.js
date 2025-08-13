@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { rewardAPI } from "../../utils/api";
+import { apiErrorHandler } from "../../utils/api";
 import "./Rewards.css";
 
 const Rewards = () => {
@@ -11,8 +13,6 @@ const Rewards = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [editingReward, setEditingReward] = useState(null);
   const [deletingReward, setDeletingReward] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -121,28 +121,27 @@ const Rewards = () => {
 
   const fetchRewards = async () => {
     try {
-      const params = new URLSearchParams({
+      const response = await rewardAPI.getAllRewards({
         page: currentPage,
         limit: 10,
-        search: searchTerm,
-        type: filterType !== "all" ? filterType : "",
+        search: searchInputRef.current?.value || "",
+        type:
+          (typeSelectRef.current?.value || "all") !== "all"
+            ? typeSelectRef.current?.value
+            : "",
+        status:
+          (statusSelectRef.current?.value || "all") !== "all"
+            ? statusSelectRef.current?.value
+            : "",
       });
-
-      const response = await fetch(`/api/admin/rewards?${params}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setRewards(data.rewards);
-        setTotalPages(data.totalPages);
-        lastFetchedRewardsRef.current = data.rewards;
-      }
+      lastFetchedRewardsRef.current = Array.isArray(response.data)
+        ? response.data
+        : [];
+      setRewards(applyFilters(lastFetchedRewardsRef.current));
     } catch (error) {
       console.error("Error fetching rewards:", error);
+      alert(apiErrorHandler.handleError(error));
+
       // Set mock data for development
       const mockRewards = [
         {
@@ -179,17 +178,16 @@ const Rewards = () => {
           created_at: "2024-01-05",
         },
       ];
-      setRewards(mockRewards);
-      setTotalPages(1);
       lastFetchedRewardsRef.current = mockRewards;
+      setRewards(applyFilters(lastFetchedRewardsRef.current));
     } finally {
       setLoading(false);
     }
   };
 
   const handleFiltersChange = () => {
-    const filtered = applyFilters(lastFetchedRewardsRef.current);
-    setRewards(filtered);
+    // Re-fetch to respect server search/type/status, then apply client filters
+    fetchRewards();
   };
 
   const handleSearchInput = () => {
@@ -197,7 +195,7 @@ const Rewards = () => {
       clearTimeout(searchDebounceRef.current);
     }
     searchDebounceRef.current = setTimeout(() => {
-      handleFiltersChange();
+      fetchRewards();
     }, 300);
   };
 
@@ -231,91 +229,135 @@ const Rewards = () => {
 
   const handleCreateSubmit = async (e) => {
     e.preventDefault();
-    const formData = new FormData(e.target);
-    const rewardData = {
-      name: formData.get("name"),
-      description: formData.get("description"),
-      type: formData.get("type"),
-      value: formData.get("value"),
-      points_required: parseInt(formData.get("points_required")),
-      is_active: formData.get("is_active") === "true",
-      expiry_date: formData.get("expiry_date"),
-    };
+    const fd = new FormData(e.currentTarget);
+    const data = Object.fromEntries(fd.entries());
+
+    // Minimal validation for visibility and correctness
+    if (!data.name) {
+      alert("Reward name is required.");
+      return;
+    }
+    if (!data.description) {
+      alert("Description is required.");
+      return;
+    }
+    if (!data.type) {
+      alert("Type is required.");
+      return;
+    }
+    if (!data.value) {
+      alert("Value is required.");
+      return;
+    }
+    if (!data.points_required) {
+      alert("Points required is required.");
+      return;
+    }
+    if (!data.expiry_date) {
+      alert("Expiry date is required.");
+      return;
+    }
+
+    const submitBtn = e.nativeEvent && e.nativeEvent.submitter;
+    const originalText = submitBtn ? submitBtn.textContent : null;
+    if (submitBtn) submitBtn.disabled = true;
+    if (submitBtn) submitBtn.textContent = "Creating...";
 
     try {
-      const response = await fetch("/api/admin/rewards", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(rewardData),
+      await rewardAPI.createReward({
+        name: data.name,
+        description: data.description,
+        type: data.type,
+        value: data.value,
+        points_required: parseInt(data.points_required),
+        is_active: data.is_active === "true",
+        expiry_date: data.expiry_date,
       });
-
-      if (response.ok) {
-        closeCreateModal();
-        fetchRewards();
-      } else {
-        console.error("Failed to create reward");
-      }
+      // Refresh list
+      await fetchRewards();
+      // Close and reset form
+      closeCreateModal();
     } catch (error) {
-      console.error("Error creating reward:", error);
+      alert(apiErrorHandler.handleError(error));
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+      if (submitBtn && originalText != null)
+        submitBtn.textContent = originalText;
     }
   };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    const formData = new FormData(e.target);
-    const rewardData = {
-      name: formData.get("name"),
-      description: formData.get("description"),
-      type: formData.get("type"),
-      value: formData.get("value"),
-      points_required: parseInt(formData.get("points_required")),
-      is_active: formData.get("is_active") === "true",
-      expiry_date: formData.get("expiry_date"),
-    };
+    if (!editingReward) return;
+    const fd = new FormData(e.currentTarget);
+    const data = Object.fromEntries(fd.entries());
+
+    if (!data.name) {
+      alert("Reward name is required.");
+      return;
+    }
+    if (!data.description) {
+      alert("Description is required.");
+      return;
+    }
+    if (!data.type) {
+      alert("Type is required.");
+      return;
+    }
+    if (!data.value) {
+      alert("Value is required.");
+      return;
+    }
+    if (!data.points_required) {
+      alert("Points required is required.");
+      return;
+    }
+    if (!data.expiry_date) {
+      alert("Expiry date is required.");
+      return;
+    }
+
+    const submitBtn = e.nativeEvent && e.nativeEvent.submitter;
+    const originalText = submitBtn ? submitBtn.textContent : null;
+    if (submitBtn) submitBtn.disabled = true;
+    if (submitBtn) submitBtn.textContent = "Saving...";
 
     try {
-      const response = await fetch(`/api/admin/rewards/${editingReward.id}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(rewardData),
+      await rewardAPI.updateReward(editingReward.id, {
+        name: data.name,
+        description: data.description,
+        type: data.type,
+        value: data.value,
+        points_required: parseInt(data.points_required),
+        is_active: data.is_active === "true",
+        expiry_date: data.expiry_date,
       });
-
-      if (response.ok) {
-        closeEditModal();
-        fetchRewards();
-      } else {
-        console.error("Failed to update reward");
-      }
+      await fetchRewards();
+      closeEditModal();
     } catch (error) {
-      console.error("Error updating reward:", error);
+      alert(apiErrorHandler.handleError(error));
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+      if (submitBtn && originalText != null)
+        submitBtn.textContent = originalText;
     }
   };
 
   const handleDeleteConfirm = async (e) => {
-    e.preventDefault();
+    if (!deletingReward) return;
+    const btn = e.currentTarget;
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Deleting...";
     try {
-      const response = await fetch(`/api/admin/rewards/${deletingReward.id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        closeDeleteModal();
-        fetchRewards();
-      } else {
-        console.error("Failed to delete reward");
-      }
+      await rewardAPI.deleteReward(deletingReward.id);
+      await fetchRewards();
+      closeDeleteModal();
     } catch (error) {
-      console.error("Error deleting reward:", error);
+      alert(apiErrorHandler.handleError(error));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
     }
   };
 

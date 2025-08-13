@@ -111,23 +111,16 @@ class Reward {
       throw error;
     }
   }
-
-  static async delete(id, tenantId = null) {
+  // The delete method below only accepts the reward id and updates is_active to false for that id.
+  static async delete(id) {
     try {
-      let query = `
+      const query = `
         UPDATE rewards 
         SET is_active = false, updated_at = CURRENT_TIMESTAMP
         WHERE id = $1
+        RETURNING id
       `;
       const params = [id];
-
-      if (tenantId) {
-        query += ` AND tenant_id = $2`;
-        params.push(tenantId);
-      }
-
-      query += ` RETURNING id`;
-
       const result = await db.getOne(query, params);
       return result !== null;
     } catch (error) {
@@ -135,6 +128,30 @@ class Reward {
       throw error;
     }
   }
+  // static async delete(id, tenantId = null) {
+  //   try {
+  //     let query = `
+  //       UPDATE rewards
+  //       SET is_active = false, updated_at = CURRENT_TIMESTAMP
+  //       WHERE id = $1
+  //     `;
+  //     const params = [id];
+
+  //     // if (tenantId) {
+  //     //   query += ` AND tenant_id = $2`;
+  //     //   params.push(tenantId);
+  //     // }
+
+  //     query += ` RETURNING id`;
+
+  //     const result = await db.getOne(query);
+  //     console.log("result", result);
+  //     return result !== null;
+  //   } catch (error) {
+  //     logger.error("Error deleting reward:", error);
+  //     throw error;
+  //   }
+  // }
 
   static async findAll(options = {}, tenantId = null) {
     try {
@@ -142,50 +159,54 @@ class Reward {
       const values = [];
       let paramCount = 1;
 
-      if (tenantId) {
-        query += ` AND tenant_id = $${paramCount}`;
-        values.push(tenantId);
-        paramCount++;
-      }
+      // if (tenantId) {
+      //   query += ` AND tenant_id = $${paramCount}`;
+      //   values.push(tenantId);
+      //   paramCount++;
+      // }
 
-      if (options.reward_type) {
-        query += ` AND reward_type = $${paramCount}`;
-        values.push(options.reward_type);
-        paramCount++;
-      }
+      // if (options.reward_type) {
+      //   query += ` AND reward_type = $${paramCount}`;
+      //   values.push(options.reward_type);
+      //   paramCount++;
+      // }
 
-      if (options.search) {
-        query += ` AND (name ILIKE $${paramCount} OR description ILIKE $${paramCount})`;
-        values.push(`%${options.search}%`);
-        paramCount++;
-      }
+      // if (options.search) {
+      //   query += ` AND (name ILIKE $${paramCount} OR description ILIKE $${paramCount})`;
+      //   values.push(`%${options.search}%`);
+      //   paramCount++;
+      // }
 
-      if (options.max_points) {
-        query += ` AND points_cost <= $${paramCount}`;
-        values.push(options.max_points);
-        paramCount++;
-      }
+      // if (options.max_points) {
+      //   query += ` AND points_cost <= $${paramCount}`;
+      //   values.push(options.max_points);
+      //   paramCount++;
+      // }
 
-      if (options.available === true) {
-        query += ` AND (start_date IS NULL OR start_date <= CURRENT_TIMESTAMP)`;
-        query += ` AND (end_date IS NULL OR end_date >= CURRENT_TIMESTAMP)`;
-        query += ` AND (max_redemptions IS NULL OR current_redemptions < max_redemptions)`;
-      }
+      // if (options.available === true) {
+      //   query += ` AND (start_date IS NULL OR start_date <= CURRENT_TIMESTAMP)`;
+      //   query += ` AND (end_date IS NULL OR end_date >= CURRENT_TIMESTAMP)`;
+      //   query += ` AND (max_redemptions IS NULL OR current_redemptions < max_redemptions)`;
+      // }
 
-      query += " ORDER BY points_cost ASC";
+      // query += " ORDER BY points_cost ASC";
 
-      if (options.limit) {
-        query += ` LIMIT $${paramCount}`;
-        values.push(options.limit);
-        paramCount++;
-      }
+      // if (options.limit) {
+      //   query += ` LIMIT $${paramCount}`;
+      //   values.push(options.limit);
+      //   paramCount++;
+      // }
 
-      if (options.offset) {
-        query += ` OFFSET $${paramCount}`;
-        values.push(options.offset);
-      }
+      // if (options.offset) {
+      //   query += ` OFFSET $${paramCount}`;
+      //   values.push(options.offset);
+      // }
 
       const results = await db.getMany(query, values);
+      console.log(
+        "results",
+        results.map((row) => new Reward(row))
+      );
       return results.map((row) => new Reward(row));
     } catch (error) {
       logger.error("Error finding all rewards:", error);
@@ -412,6 +433,51 @@ class Reward {
       return results.map((row) => new Reward(row));
     } catch (error) {
       logger.error("Error getting popular rewards:", error);
+      throw error;
+    }
+  }
+
+  static async count(options = {}, tenantId = null) {
+    try {
+      let query =
+        "SELECT COUNT(*) as count FROM rewards WHERE is_active = true";
+      const values = [];
+      let paramCount = 1;
+
+      if (tenantId) {
+        query += ` AND tenant_id = $${paramCount}`;
+        values.push(tenantId);
+        paramCount++;
+      }
+
+      if (options.reward_type) {
+        query += ` AND reward_type = $${paramCount}`;
+        values.push(options.reward_type);
+        paramCount++;
+      }
+
+      if (options.search) {
+        query += ` AND (name ILIKE $${paramCount} OR description ILIKE $${paramCount})`;
+        values.push(`%${options.search}%`);
+        paramCount++;
+      }
+
+      if (options.max_points) {
+        query += ` AND points_cost <= $${paramCount}`;
+        values.push(options.max_points);
+        paramCount++;
+      }
+
+      if (options.available === true) {
+        query += ` AND (start_date IS NULL OR start_date <= CURRENT_TIMESTAMP)`;
+        query += ` AND (end_date IS NULL OR end_date >= CURRENT_TIMESTAMP)`;
+        query += ` AND (max_redemptions IS NULL OR current_redemptions < max_redemptions)`;
+      }
+
+      const result = await db.getOne(query, values);
+      return parseInt(result.count);
+    } catch (error) {
+      logger.error("Error counting rewards:", error);
       throw error;
     }
   }
