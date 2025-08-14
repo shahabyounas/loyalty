@@ -34,6 +34,8 @@ const allowedOrigins = [
   process.env.FRONTEND_URL || "http://localhost:4200",
   "http://localhost:3000",
   "http://localhost:4200",
+  "https://loyalty-f30a.onrender.com",
+  // Add any other frontend domains you're using
 ];
 
 app.use(
@@ -42,16 +44,30 @@ app.use(
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
 
+      // Log all origins for debugging
+      console.log("Request origin:", origin);
+
       if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
         console.log("CORS blocked origin:", origin);
-        callback(new Error("Not allowed by CORS"));
+        // For development, allow all origins temporarily
+        if (process.env.NODE_ENV === "development") {
+          console.log("Allowing origin in development mode:", origin);
+          callback(null, true);
+        } else {
+          callback(new Error("Not allowed by CORS"));
+        }
       }
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+    ],
   })
 );
 
@@ -65,6 +81,19 @@ app.get("/health", (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || "development",
+    cors: {
+      origin: req.headers.origin,
+      allowedOrigins: allowedOrigins,
+    },
+  });
+});
+
+// CORS test endpoint
+app.get("/api/cors-test", (req, res) => {
+  res.status(200).json({
+    message: "CORS is working!",
+    origin: req.headers.origin,
+    timestamp: new Date().toISOString(),
   });
 });
 
