@@ -29,45 +29,24 @@ app.use("/api/", limiter);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// CORS configuration
-const allowedOrigins = [
-  process.env.FRONTEND_URL || "http://localhost:4200",
-  "http://localhost:3000",
-  "http://localhost:4200",
-  "https://loyalty-f30a.onrender.com",
-  // Add any other frontend domains you're using
-];
-
+// CORS configuration - Allow any origin and any method
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-
-      // Log all origins for debugging
-      console.log("Request origin:", origin);
-
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        console.log("CORS blocked origin:", origin);
-        // For development, allow all origins temporarily
-        if (process.env.NODE_ENV === "development") {
-          console.log("Allowing origin in development mode:", origin);
-          callback(null, true);
-        } else {
-          callback(new Error("Not allowed by CORS"));
-        }
-      }
-    },
+    origin: true, // Allow any origin
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
     allowedHeaders: [
       "Content-Type",
       "Authorization",
       "X-Requested-With",
       "Accept",
+      "Origin",
+      "Access-Control-Request-Method",
+      "Access-Control-Request-Headers",
     ],
+    exposedHeaders: ["Content-Length", "X-Requested-With"],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   })
 );
 
@@ -83,7 +62,7 @@ app.get("/health", (req, res) => {
     environment: process.env.NODE_ENV || "development",
     cors: {
       origin: req.headers.origin,
-      allowedOrigins: allowedOrigins,
+      message: "CORS allows any origin",
     },
   });
 });
