@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "build": "nx build dv",
-    "build:prod": "REACT_APP_API_URL=https://your-api-domain.com/api nx build dv --prod && node fix-paths.js",
+    "build:prod": "REACT_APP_API_URL=https://loyalty-f30a.onrender.com/api nx build dv --prod && node fix-paths.js",
     "serve": "nx serve dv",
     "test": "nx test dv",
     "test:ci": "nx test dv --coverage --ci",
