@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useNavigate } from "react-router";
 import "./HamburgerMenu.css";
 
 const HamburgerMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { logout, user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const menuRef = useRef(null);
 
   // Close menu when clicking outside
@@ -31,6 +33,11 @@ const HamburgerMenu = () => {
     } catch (error) {
       console.error("Logout failed:", error);
     }
+  };
+
+  const handleAdminClick = () => {
+    navigate("/admin");
+    setIsOpen(false);
   };
 
   const toggleMenu = () => {
@@ -84,6 +91,29 @@ const HamburgerMenu = () => {
               </svg>
               Logout
             </button>
+
+            {/* Admin button - only visible to super admin users */}
+            {user?.role === "super_admin" && (
+              <button
+                className="menu-item admin-button"
+                onClick={handleAdminClick}
+              >
+                <svg
+                  className="menu-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                Admin
+              </button>
+            )}
           </div>
         </div>
       )}
