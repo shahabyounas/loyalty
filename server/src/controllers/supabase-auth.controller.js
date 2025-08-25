@@ -9,13 +9,58 @@ class SupabaseAuthController {
    */
   static async signUp(req, res, next) {
     try {
-      const { email, password, firstName, lastName, role } = req.body;
+      const { email, password, firstName, lastName, role, phone } = req.body;
 
       const result = await SupabaseAuthService.signUp(email, password, {
         firstName,
         lastName,
         role: role || "user",
+        phone: phone || "",
       });
+
+      // Persist a corresponding profile record in our database users table
+      let dbUserRecord = null;
+      try {
+        const insertResult = await db.query(
+          `INSERT INTO users (
+            auth_user_id,
+            email,
+            first_name,
+            last_name,
+            role,
+            phone,
+            email_verified,
+            created_at,
+            updated_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)
+          ON CONFLICT (auth_user_id) DO UPDATE SET
+            email = EXCLUDED.email,
+            first_name = EXCLUDED.first_name,
+            last_name = EXCLUDED.last_name,
+            role = EXCLUDED.role,
+            phone = EXCLUDED.phone,
+            email_verified = EXCLUDED.email_verified,
+            updated_at = EXCLUDED.updated_at
+          RETURNING *`,
+          [
+            result.user.id,
+            email,
+            firstName,
+            lastName,
+            role || "user",
+            phone || "",
+            result.user.email_confirmed_at ? true : false,
+            new Date(),
+          ]
+        );
+        dbUserRecord = insertResult.rows ? insertResult.rows[0] : null;
+      } catch (dbErr) {
+        // Log but do not fail signup if profile insert has an issue
+        logger.error(
+          "User profile creation failed during signup:",
+          dbErr.message
+        );
+      }
 
       logger.info(`User registered successfully: ${email}`);
       return ApiResponse.created(
@@ -27,13 +72,16 @@ class SupabaseAuthController {
             firstName: result.user.user_metadata?.first_name,
             lastName: result.user.user_metadata?.last_name,
             role: result.user.user_metadata?.role,
+            phone: result.user.user_metadata?.phone,
             emailVerified: result.user.email_confirmed_at ? true : false,
+            createdAt: result.user.created_at,
           },
           session: {
             accessToken: result.session.access_token,
             refreshToken: result.session.refresh_token,
             expiresAt: result.session.expires_at,
           },
+          dbUser: dbUserRecord,
         },
         "User registered successfully"
       );

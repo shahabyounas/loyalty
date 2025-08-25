@@ -29,10 +29,31 @@ const Rewards = () => {
   const deleteModalRef = useRef(null);
   const createFormRef = useRef(null);
 
+  // Default expiry (5 years from now)
+  const fiveYearsFromNow = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + 5);
+    return d.toISOString().slice(0, 10);
+  })();
+
+  // Helper function to format date for HTML date input
+  const formatDateForInput = (dateString) => {
+    if (!dateString) {
+      return fiveYearsFromNow;
+    }
+    try {
+      const date = new Date(dateString);
+      const formatted = date.toISOString().slice(0, 10);
+      return formatted;
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return fiveYearsFromNow;
+    }
+  };
+
   const rewardTypes = [
     { value: "discount", label: "Discount" },
     { value: "free_item", label: "Free Item" },
-    { value: "points", label: "Points Bonus" },
     { value: "cashback", label: "Cashback" },
   ];
 
@@ -145,7 +166,7 @@ const Rewards = () => {
       // Set mock data for development
       const mockRewards = [
         {
-          id: 1,
+          id: -1, // Use negative IDs for mock data
           name: "Free Coffee",
           description: "Get a free coffee with any purchase",
           type: "free_item",
@@ -156,7 +177,7 @@ const Rewards = () => {
           created_at: "2024-01-15",
         },
         {
-          id: 2,
+          id: -2, // Use negative IDs for mock data
           name: "20% Off",
           description: "20% discount on all items",
           type: "discount",
@@ -167,7 +188,7 @@ const Rewards = () => {
           created_at: "2024-01-10",
         },
         {
-          id: 3,
+          id: -3, // Use negative IDs for mock data
           name: "Double Points",
           description: "Earn double points on your next purchase",
           type: "points",
@@ -250,7 +271,7 @@ const Rewards = () => {
       return;
     }
     if (!data.points_required) {
-      alert("Points required is required.");
+      alert("Stamps required is required.");
       return;
     }
     if (!data.expiry_date) {
@@ -264,15 +285,36 @@ const Rewards = () => {
     if (submitBtn) submitBtn.textContent = "Creating...";
 
     try {
-      await rewardAPI.createReward({
+      // Convert value to proper discount fields based on reward type
+      const rewardData = {
         name: data.name,
         description: data.description,
         type: data.type,
-        value: data.value,
         points_required: parseInt(data.points_required),
         is_active: data.is_active === "true",
         expiry_date: data.expiry_date,
-      });
+      };
+
+      // Parse the value based on reward type
+      const value = parseFloat(data.value);
+
+      switch (data.type) {
+        case "discount":
+          rewardData.discount_percentage = value;
+          console.log("Discount reward data:", rewardData);
+          break;
+        case "free_item":
+          // No monetary value needed for free items
+          console.log("Free item reward data:", rewardData);
+          break;
+        case "cashback":
+          rewardData.discount_amount = value;
+          console.log("Cashback reward data:", rewardData);
+          break;
+      }
+
+      console.log("Final reward payload:", rewardData);
+      await rewardAPI.createReward(rewardData);
       // Refresh list
       await fetchRewards();
       // Close and reset form
@@ -309,7 +351,7 @@ const Rewards = () => {
       return;
     }
     if (!data.points_required) {
-      alert("Points required is required.");
+      alert("Stamps required is required.");
       return;
     }
     if (!data.expiry_date) {
@@ -323,18 +365,51 @@ const Rewards = () => {
     if (submitBtn) submitBtn.textContent = "Saving...";
 
     try {
-      await rewardAPI.updateReward(editingReward.id, {
+      console.log("Updating reward with ID:", editingReward.id);
+
+      // Check if this is mock data (negative ID)
+      if (editingReward.id < 0) {
+        alert(
+          "Cannot update mock data. Please ensure the server is running and try again."
+        );
+        return;
+      }
+
+      // Convert value to proper discount fields based on reward type
+      const rewardData = {
         name: data.name,
         description: data.description,
         type: data.type,
-        value: data.value,
         points_required: parseInt(data.points_required),
         is_active: data.is_active === "true",
         expiry_date: data.expiry_date,
-      });
+      };
+
+      // Parse the value based on reward type
+      const value = parseFloat(data.value);
+
+      switch (data.type) {
+        case "discount":
+          rewardData.discount_percentage = value;
+          console.log("Discount update data:", rewardData);
+          break;
+        case "free_item":
+          // No monetary value needed for free items
+          console.log("Free item update data:", rewardData);
+          break;
+        case "cashback":
+          rewardData.discount_amount = value;
+          console.log("Cashback update data:", rewardData);
+          break;
+      }
+
+      console.log("Final update payload:", rewardData);
+
+      await rewardAPI.updateReward(editingReward.id, rewardData);
       await fetchRewards();
       closeEditModal();
     } catch (error) {
+      console.error("Update error:", error);
       alert(apiErrorHandler.handleError(error));
     } finally {
       if (submitBtn) submitBtn.disabled = false;
@@ -365,7 +440,6 @@ const Rewards = () => {
     const colors = {
       discount: "bg-blue-100 text-blue-800",
       free_item: "bg-green-100 text-green-800",
-      points: "bg-purple-100 text-purple-800",
       cashback: "bg-orange-100 text-orange-800",
     };
     return colors[type] || colors.discount;
@@ -375,7 +449,6 @@ const Rewards = () => {
     const icons = {
       discount: "💰",
       free_item: "🎁",
-      points: "⭐",
       cashback: "💳",
     };
     return icons[type] || "🎁";
@@ -509,6 +582,21 @@ const Rewards = () => {
                 </select>
               </div>
               <div className="rewards-form-field">
+                <label className="rewards-form-label" htmlFor="rewardStamps">
+                  Stamps Required
+                </label>
+                <input
+                  id="rewardStamps"
+                  name="points_required"
+                  type="number"
+                  className="rewards-form-input"
+                  autoComplete="off"
+                  min="0"
+                  placeholder="e.g., 10"
+                  required
+                />
+              </div>
+              <div className="rewards-form-field">
                 <label className="rewards-form-label" htmlFor="rewardValue">
                   Value
                 </label>
@@ -519,20 +607,6 @@ const Rewards = () => {
                   className="rewards-form-input"
                   autoComplete="off"
                   placeholder="e.g., 20, 1, 2x"
-                  required
-                />
-              </div>
-              <div className="rewards-form-field">
-                <label className="rewards-form-label" htmlFor="rewardPoints">
-                  Points Required
-                </label>
-                <input
-                  id="rewardPoints"
-                  name="points_required"
-                  type="number"
-                  className="rewards-form-input"
-                  autoComplete="off"
-                  min="0"
                   required
                 />
               </div>
@@ -561,6 +635,7 @@ const Rewards = () => {
                   type="date"
                   className="rewards-form-input"
                   autoComplete="off"
+                  defaultValue={fiveYearsFromNow}
                   required
                 />
               </div>
@@ -657,6 +732,23 @@ const Rewards = () => {
               <div className="rewards-form-field">
                 <label
                   className="rewards-form-label"
+                  htmlFor="edit-rewardStamps"
+                >
+                  Stamps Required
+                </label>
+                <input
+                  id="edit-rewardStamps"
+                  name="points_required"
+                  type="number"
+                  className="rewards-form-input"
+                  defaultValue={editingReward?.points_required || ""}
+                  min="0"
+                  required
+                />
+              </div>
+              <div className="rewards-form-field">
+                <label
+                  className="rewards-form-label"
                   htmlFor="edit-rewardValue"
                 >
                   Value
@@ -666,25 +758,18 @@ const Rewards = () => {
                   name="value"
                   type="text"
                   className="rewards-form-input"
-                  defaultValue={editingReward?.value || ""}
+                  defaultValue={
+                    editingReward?.type === "discount" &&
+                    editingReward?.discount_percentage
+                      ? editingReward.discount_percentage.toString()
+                      : editingReward?.type === "cashback" &&
+                        editingReward?.discount_amount
+                      ? editingReward.discount_amount.toString()
+                      : editingReward?.type === "free_item"
+                      ? "Free"
+                      : ""
+                  }
                   placeholder="e.g., 20, 1, 2x"
-                  required
-                />
-              </div>
-              <div className="rewards-form-field">
-                <label
-                  className="rewards-form-label"
-                  htmlFor="edit-rewardPoints"
-                >
-                  Points Required
-                </label>
-                <input
-                  id="edit-rewardPoints"
-                  name="points_required"
-                  type="number"
-                  className="rewards-form-input"
-                  defaultValue={editingReward?.points_required || ""}
-                  min="0"
                   required
                 />
               </div>
@@ -717,7 +802,7 @@ const Rewards = () => {
                   name="expiry_date"
                   type="date"
                   className="rewards-form-input"
-                  defaultValue={editingReward?.expiry_date || ""}
+                  defaultValue={formatDateForInput(editingReward?.expiry_date)}
                   required
                 />
               </div>
@@ -834,11 +919,26 @@ const Rewards = () => {
 
               <div className="rewards-reward-value">
                 <span className="rewards-value-label">Value:</span>
-                <span className="rewards-value-amount">{reward.value}</span>
+                <span className="rewards-value-amount">
+                  {reward.type === "discount" &&
+                  reward.discount_percentage !== null &&
+                  reward.discount_percentage !== undefined
+                    ? `${reward.discount_percentage}%`
+                    : reward.type === "free_item"
+                    ? "Free"
+                    : reward.type === "cashback" &&
+                      reward.discount_amount !== null &&
+                      reward.discount_amount !== undefined
+                    ? `£${reward.discount_amount}`
+                    : reward.type === "discount" &&
+                      reward.discount_percentage === 0
+                    ? "0%"
+                    : "N/A"}
+                </span>
               </div>
 
               <div className="rewards-reward-points">
-                <span className="rewards-points-label">Points Required:</span>
+                <span className="rewards-points-label">Stamps Required:</span>
                 <span className="rewards-points-amount">
                   {reward.points_required}
                 </span>

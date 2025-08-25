@@ -1,0 +1,180 @@
+const { db } = require("../config/database");
+const { logger } = require("../utils/logger");
+
+class UserRewardProgress {
+  constructor(data) {
+    this.id = data.id;
+    this.user_id = data.user_id;
+    this.reward_id = data.reward_id;
+    this.stamps_collected = data.stamps_collected || 0;
+    this.stamps_required = data.stamps_required;
+    this.is_completed = data.is_completed || false;
+    this.completed_at = data.completed_at;
+    this.created_at = data.created_at || new Date();
+    this.updated_at = data.updated_at || new Date();
+  }
+
+  static async create(userId, rewardId, stampsRequired) {
+    try {
+      const query = `
+        INSERT INTO user_reward_progress (
+          user_id, reward_id, stamps_required, stamps_collected, is_completed
+        )
+        VALUES ($1, $2, $3, 0, FALSE)
+        ON CONFLICT (user_id, reward_id) DO UPDATE SET
+          stamps_required = EXCLUDED.stamps_required,
+          updated_at = CURRENT_TIMESTAMP
+        RETURNING *
+      `;
+      const params = [userId, rewardId, stampsRequired];
+
+      const result = await db.getOne(query, params);
+      return result ? new UserRewardProgress(result) : null;
+    } catch (error) {
+      logger.error("Error creating user reward progress:", error);
+      throw error;
+    }
+  }
+
+  static async findByUserAndReward(userId, rewardId) {
+    try {
+      const query = `
+        SELECT * FROM user_reward_progress 
+        WHERE user_id = $1 AND reward_id = $2
+      `;
+      const result = await db.getOne(query, [userId, rewardId]);
+      return result ? new UserRewardProgress(result) : null;
+    } catch (error) {
+      logger.error("Error finding user reward progress:", error);
+      throw error;
+    }
+  }
+
+  static async findByUserId(userId) {
+    try {
+      const query = `
+        SELECT urp.*, r.name as reward_name, r.description as reward_description, 
+               r.type as reward_type, r.value as reward_value, r.points_required as reward_points_required
+        FROM user_reward_progress urp
+        JOIN rewards r ON urp.reward_id = r.id
+        WHERE urp.user_id = $1 AND r.is_active = true
+        ORDER BY urp.updated_at DESC
+      `;
+      const results = await db.getMany(query, [userId]);
+      return results.map((result) => ({
+        ...new UserRewardProgress(result),
+        reward_name: result.reward_name,
+        reward_description: result.reward_description,
+        reward_type: result.reward_type,
+        reward_value: result.reward_value,
+        reward_points_required: result.reward_points_required,
+      }));
+    } catch (error) {
+      logger.error("Error finding user reward progress:", error);
+      throw error;
+    }
+  }
+
+  static async addStamp(userId, rewardId) {
+    try {
+      const query = `
+        UPDATE user_reward_progress 
+        SET stamps_collected = stamps_collected + 1,
+            is_completed = CASE 
+              WHEN stamps_collected + 1 >= stamps_required THEN TRUE 
+              ELSE FALSE 
+            END,
+            completed_at = CASE 
+              WHEN stamps_collected + 1 >= stamps_required THEN CURRENT_TIMESTAMP 
+              ELSE completed_at 
+            END,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = $1 AND reward_id = $2
+        RETURNING *
+      `;
+      const result = await db.getOne(query, [userId, rewardId]);
+      return result ? new UserRewardProgress(result) : null;
+    } catch (error) {
+      logger.error("Error adding stamp:", error);
+      throw error;
+    }
+  }
+
+  static async getProgress(userId, rewardId) {
+    try {
+      const query = `
+        SELECT urp.*, r.name as reward_name, r.description as reward_description,
+               r.type as reward_type, r.value as reward_value, r.points_required as reward_points_required
+        FROM user_reward_progress urp
+        JOIN rewards r ON urp.reward_id = r.id
+        WHERE urp.user_id = $1 AND urp.reward_id = $2
+      `;
+      const result = await db.getOne(query, [userId, rewardId]);
+      return result
+        ? {
+            ...new UserRewardProgress(result),
+            reward_name: result.reward_name,
+            reward_description: result.reward_description,
+            reward_type: result.reward_type,
+            reward_value: result.reward_value,
+            reward_points_required: result.reward_points_required,
+          }
+        : null;
+    } catch (error) {
+      logger.error("Error getting progress:", error);
+      throw error;
+    }
+  }
+
+  static async resetProgress(userId, rewardId) {
+    try {
+      const query = `
+        UPDATE user_reward_progress 
+        SET stamps_collected = 0,
+            is_completed = FALSE,
+            completed_at = NULL,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = $1 AND reward_id = $2
+        RETURNING *
+      `;
+      const result = await db.getOne(query, [userId, rewardId]);
+      return result ? new UserRewardProgress(result) : null;
+    } catch (error) {
+      logger.error("Error resetting progress:", error);
+      throw error;
+    }
+  }
+
+  static async delete(userId, rewardId) {
+    try {
+      const query = `
+        DELETE FROM user_reward_progress 
+        WHERE user_id = $1 AND reward_id = $2
+        RETURNING *
+      `;
+      const result = await db.getOne(query, [userId, rewardId]);
+      return result ? new UserRewardProgress(result) : null;
+    } catch (error) {
+      logger.error("Error deleting user reward progress:", error);
+      throw error;
+    }
+  }
+
+  // Get completion percentage
+  getCompletionPercentage() {
+    if (this.stamps_required === 0) return 0;
+    return Math.min((this.stamps_collected / this.stamps_required) * 100, 100);
+  }
+
+  // Check if reward is ready for redemption
+  isReadyForRedemption() {
+    return this.is_completed && this.stamps_collected >= this.stamps_required;
+  }
+
+  // Get remaining stamps needed
+  getRemainingStamps() {
+    return Math.max(0, this.stamps_required - this.stamps_collected);
+  }
+}
+
+module.exports = { UserRewardProgress };

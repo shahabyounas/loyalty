@@ -474,7 +474,8 @@ export const rewardAPI = {
         name: rewardData.name,
         description: rewardData.description,
         type: rewardData.type,
-        value: rewardData.value,
+        discount_percentage: rewardData.discount_percentage,
+        discount_amount: rewardData.discount_amount,
         points_required: rewardData.points_required,
         is_active: rewardData.is_active,
         expiry_date: rewardData.expiry_date,
@@ -490,7 +491,8 @@ export const rewardAPI = {
         name: rewardData.name,
         description: rewardData.description,
         type: rewardData.type,
-        value: rewardData.value,
+        discount_percentage: rewardData.discount_percentage,
+        discount_amount: rewardData.discount_amount,
         points_required: rewardData.points_required,
         is_active: rewardData.is_active,
         expiry_date: rewardData.expiry_date,
@@ -508,6 +510,113 @@ export const rewardAPI = {
   // Get reward by ID
   getRewardById: async (rewardId) => {
     return await makeRequest(`/rewards/${rewardId}`);
+  },
+};
+
+/**
+ * API methods for user reward progress
+ */
+export const userRewardProgressAPI = {
+  // Get all user reward progress
+  getUserProgress: async () => {
+    return await makeRequest("/user-reward-progress");
+  },
+
+  // Get specific reward progress
+  getRewardProgress: async (rewardId) => {
+    return await makeRequest(`/user-reward-progress/${rewardId}`);
+  },
+
+  // Create or update reward progress
+  createProgress: async (rewardId, stampsRequired) => {
+    return await makeRequest("/user-reward-progress", {
+      method: "POST",
+      body: JSON.stringify({
+        rewardId,
+        stampsRequired,
+      }),
+    });
+  },
+
+  // Add stamp to reward progress
+  addStamp: async (rewardId) => {
+    return await makeRequest(`/user-reward-progress/${rewardId}/add-stamp`, {
+      method: "POST",
+    });
+  },
+
+  // Reset reward progress
+  resetProgress: async (rewardId) => {
+    return await makeRequest(`/user-reward-progress/${rewardId}/reset`, {
+      method: "PUT",
+    });
+  },
+
+  // Delete reward progress
+  deleteProgress: async (rewardId) => {
+    return await makeRequest(`/user-reward-progress/${rewardId}`, {
+      method: "DELETE",
+    });
+  },
+};
+
+/**
+ * API methods for stamp transactions
+ */
+export const stampTransactionAPI = {
+  // Create new stamp transaction (generate QR code)
+  createTransaction: async (rewardId, storeId = null, stampsAdded = 1) => {
+    return await makeRequest("/stamp-transactions", {
+      method: "POST",
+      body: JSON.stringify({
+        rewardId,
+        storeId,
+        stampsAdded,
+      }),
+    });
+  },
+
+  // Scan QR code (staff only)
+  scanTransaction: async (transactionCode, storeId, qrData = null) => {
+    return await makeRequest("/stamp-transactions/scan", {
+      method: "POST",
+      body: JSON.stringify({
+        transactionCode,
+        storeId,
+        qrData,
+      }),
+    });
+  },
+
+  // Get all transactions (admin only)
+  getAllTransactions: async (params = {}) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return await makeRequest(`/stamp-transactions?${queryParams}`);
+  },
+
+  // Get user's transaction history
+  getUserTransactions: async (params = {}) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return await makeRequest(`/stamp-transactions/user?${queryParams}`);
+  },
+
+  // Get specific transaction details
+  getTransactionDetails: async (transactionCode) => {
+    return await makeRequest(`/stamp-transactions/${transactionCode}`);
+  },
+
+  // Cancel pending transaction
+  cancelTransaction: async (transactionCode) => {
+    return await makeRequest(`/stamp-transactions/${transactionCode}/cancel`, {
+      method: "PUT",
+    });
+  },
+
+  // Clean up expired transactions (admin only)
+  cleanupExpired: async () => {
+    return await makeRequest("/stamp-transactions/cleanup", {
+      method: "POST",
+    });
   },
 };
 

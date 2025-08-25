@@ -5,6 +5,7 @@ import Dashboard from "../components/Dashboard";
 import Users from "../components/Users";
 import Stores from "../components/Stores";
 import Rewards from "../components/Rewards";
+import StaffScanner from "../components/StaffScanner";
 import Settings from "../components/Settings";
 
 // Component mapping object
@@ -13,6 +14,7 @@ export const COMPONENT_MAP = {
   Users,
   Stores,
   Rewards,
+  StaffScanner,
   Settings,
 };
 

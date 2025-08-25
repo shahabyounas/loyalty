@@ -9,6 +9,8 @@ const userRoutes = require("./routes/user.routes");
 const loyaltyRoutes = require("./routes/loyalty.routes");
 const storesRoutes = require("./routes/stores.routes");
 const rewardsRoutes = require("./routes/rewards.routes");
+const userRewardProgressRoutes = require("./routes/user-reward-progress.routes");
+const stampTransactionRoutes = require("./routes/stamp-transactions.routes");
 const { errorHandler } = require("./middleware/error.middleware");
 const { notFoundHandler } = require("./middleware/notFound.middleware");
 
@@ -82,6 +84,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/loyalty", loyaltyRoutes);
 app.use("/api/stores", storesRoutes);
 app.use("/api/rewards", rewardsRoutes);
+app.use("/api/user-reward-progress", userRewardProgressRoutes);
+app.use("/api/stamp-transactions", stampTransactionRoutes);
 
 // Error handling middleware
 app.use(notFoundHandler);

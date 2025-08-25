@@ -3,17 +3,25 @@ const { logger } = require("../utils/logger");
 
 class Reward {
   constructor(data) {
+    // Helper function to parse numeric values from PostgreSQL
+    const parseNumeric = (value) => {
+      if (value === null || value === undefined) return null;
+      const parsed = parseFloat(value);
+      return isNaN(parsed) ? null : parsed;
+    };
+
     this.id = data.id;
     this.tenant_id = data.tenant_id;
     this.name = data.name;
     this.description = data.description;
     this.points_cost = data.points_cost;
-    this.discount_amount = data.discount_amount;
-    this.discount_percentage = data.discount_percentage;
+    this.discount_amount = parseNumeric(data.discount_amount);
+    this.discount_percentage = parseNumeric(data.discount_percentage);
     this.reward_type = data.reward_type || "discount";
     this.is_active = data.is_active !== false;
     this.start_date = data.start_date;
     this.end_date = data.end_date;
+    this.valid_until = data.valid_until;
     this.max_redemptions = data.max_redemptions;
     this.current_redemptions = data.current_redemptions || 0;
     this.created_at = data.created_at || new Date();
@@ -44,6 +52,7 @@ class Reward {
       ];
 
       const result = await db.getOne(query, params);
+
       return new Reward(result);
     } catch (error) {
       logger.error("Error creating reward:", error);
@@ -55,7 +64,7 @@ class Reward {
     try {
       let query = `
         SELECT * FROM rewards 
-        WHERE id = $1 AND is_active = true
+        WHERE id = $1
       `;
       const params = [id];
 
@@ -65,6 +74,7 @@ class Reward {
       }
 
       const result = await db.getOne(query, params);
+
       return result ? new Reward(result) : null;
     } catch (error) {
       logger.error("Error finding reward by ID:", error);
@@ -90,6 +100,7 @@ class Reward {
         throw new Error("No valid fields to update");
       }
 
+      // Add the ID parameter
       values.push(id);
       let query = `
         UPDATE rewards 
@@ -97,15 +108,23 @@ class Reward {
         WHERE id = $${paramCount}
       `;
 
+      // Add tenant_id condition if provided
       if (tenantId) {
-        query += ` AND tenant_id = $${paramCount + 1}`;
+        paramCount++;
+        query += ` AND tenant_id = $${paramCount}`;
         values.push(tenantId);
       }
 
       query += ` RETURNING *`;
 
-      const result = await db.getOne(query, values);
-      return result ? new Reward(result) : null;
+      // Use query method directly for UPDATE with RETURNING
+      const result = await db.query(query, values);
+
+      if (result.rowCount === 0) {
+        return null;
+      }
+
+      return result.rows[0] ? new Reward(result.rows[0]) : null;
     } catch (error) {
       logger.error("Error updating reward:", error);
       throw error;
