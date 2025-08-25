@@ -576,6 +576,14 @@ export const stampTransactionAPI = {
     });
   },
 
+  // Process QR code scan (admin/staff)
+  processScan: async (scanData) => {
+    return await makeRequest("/stamp-transactions/process-scan", {
+      method: "POST",
+      body: JSON.stringify(scanData),
+    });
+  },
+
   // Scan QR code (staff only)
   scanTransaction: async (transactionCode, storeId, qrData = null) => {
     return await makeRequest("/stamp-transactions/scan", {

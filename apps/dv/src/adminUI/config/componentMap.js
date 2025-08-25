@@ -6,6 +6,7 @@ import Users from "../components/Users";
 import Stores from "../components/Stores";
 import Rewards from "../components/Rewards";
 import StaffScanner from "../components/StaffScanner";
+import QRCodeScanner from "../components/QRCodeScanner";
 import Settings from "../components/Settings";
 
 // Component mapping object
@@ -15,6 +16,7 @@ export const COMPONENT_MAP = {
   Stores,
   Rewards,
   StaffScanner,
+  QR_SCANNER: QRCodeScanner,
   Settings,
 };
 

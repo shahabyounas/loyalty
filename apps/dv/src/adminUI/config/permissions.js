@@ -34,6 +34,7 @@ export const MENU_PERMISSIONS = {
 
   // Staff scanner
   STAFF_SCANNER: "staff_scanner",
+  QR_SCANNER: "qr_scanner",
 };
 
 // Menu configuration with permission requirements
@@ -93,6 +94,15 @@ export const MENU_CONFIG = [
     component: "StaffScanner",
     permissions: [MENU_PERMISSIONS.STAFF_SCANNER, MENU_PERMISSIONS.SUPER_ADMIN],
     description: "Scan QR codes to add stamps",
+    category: "operations",
+  },
+  {
+    id: "qr-scanner",
+    label: "QR Code Scanner",
+    icon: "📱",
+    component: "QR_SCANNER",
+    permissions: [MENU_PERMISSIONS.QR_SCANNER, MENU_PERMISSIONS.SUPER_ADMIN],
+    description: "Scan customer QR codes to add stamps",
     category: "operations",
   },
   {
