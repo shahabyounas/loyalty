@@ -66,10 +66,41 @@ export const AuthProvider = ({ children }) => {
         // Extract user data from token
         const tokenUser = getUserFromToken(token);
         if (tokenUser) {
-          setUser(tokenUser);
-          setIsAuthenticated(true);
-          // Update stored user data to match token
-          tokenStorage.setUser(tokenUser);
+          try {
+            // Fetch complete user profile from API
+            const profileResponse = await authAPI.getProfile();
+            const completeUser = {
+              ...tokenUser,
+              // Merge with profile data
+              internalUserId: profileResponse.data?.id,
+              tenantId: profileResponse.data?.tenant_id ?? null,
+              phone: profileResponse.data?.phone ?? tokenUser.phone,
+              avatarUrl: profileResponse.data?.avatar_url ?? null,
+              isActive: profileResponse.data?.is_active ?? true,
+              emailVerified:
+                tokenUser?.emailVerified ??
+                profileResponse.data?.email_verified ??
+                false,
+              createdAt:
+                tokenUser?.createdAt || profileResponse.data?.created_at,
+              updatedAt: profileResponse.data?.updated_at || null,
+              permissions: profileResponse.data?.permissions || {},
+            };
+
+            setUser(completeUser);
+            setIsAuthenticated(true);
+            // Update stored user data with complete profile
+            tokenStorage.setUser(completeUser);
+          } catch (profileError) {
+            console.warn(
+              "Failed to fetch user profile, using token data only:",
+              profileError
+            );
+            // Fallback to token data if profile fetch fails
+            setUser(tokenUser);
+            setIsAuthenticated(true);
+            tokenStorage.setUser(tokenUser);
+          }
         } else {
           // Token is valid but no user data, clear storage
           clearAuthData();
@@ -152,11 +183,29 @@ export const AuthProvider = ({ children }) => {
       // Call API for user registration
       const response = await authAPI.register(userData);
 
+      // Merge auth user and db profile if available
+      const mergedUser = {
+        ...response.user,
+        // Flatten important DB profile fields onto the user object
+        internalUserId: response.dbUser?.id,
+        tenantId: response.dbUser?.tenant_id ?? null,
+        phone: response.dbUser?.phone ?? response.user.phone,
+        avatarUrl: response.dbUser?.avatar_url ?? null,
+        isActive: response.dbUser?.is_active ?? true,
+        emailVerified:
+          response.user?.emailVerified ??
+          response.dbUser?.email_verified ??
+          false,
+        createdAt: response.user?.createdAt || response.dbUser?.created_at,
+        updatedAt: response.dbUser?.updated_at || null,
+        permissions: response.dbUser?.permissions || {},
+      };
+
       // Update state
-      setUser(response.user);
+      setUser(mergedUser);
       setIsAuthenticated(true);
 
-      return { success: true, user: response.user };
+      return { success: true, user: mergedUser };
     } catch (error) {
       throw new Error(
         apiErrorHandler.handleError(error) ||

@@ -68,9 +68,6 @@ const createPool = () => {
   try {
     if (connectionString) {
       // Use connection string with pool configuration
-      console.log("connectionStrinsss---g=---", connectionString);
-      console.log("config=---", config);
-      console.log("config=---env", env);
       pool = new Pool({
         connectionString,
         ssl: { rejectUnauthorized: false },

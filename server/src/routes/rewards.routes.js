@@ -12,10 +12,9 @@ const Joi = require("joi");
 const createRewardValidation = Joi.object({
   name: Joi.string().required().min(1).max(255),
   description: Joi.string().required().min(1).max(1000),
-  type: Joi.string()
-    .valid("discount", "free_item", "points", "cashback")
-    .required(),
-  value: Joi.string().required().min(1).max(50),
+  type: Joi.string().valid("discount", "free_item", "cashback").required(),
+  discount_amount: Joi.number().precision(2).optional(),
+  discount_percentage: Joi.number().precision(2).optional(),
   points_required: Joi.number().integer().min(0).required(),
   is_active: Joi.boolean().default(true),
   expiry_date: Joi.date().iso().required(),
@@ -24,10 +23,9 @@ const createRewardValidation = Joi.object({
 const updateRewardValidation = Joi.object({
   name: Joi.string().optional().min(1).max(255),
   description: Joi.string().optional().min(1).max(1000),
-  type: Joi.string()
-    .valid("discount", "free_item", "points", "cashback")
-    .optional(),
-  value: Joi.string().optional().min(1).max(50),
+  type: Joi.string().valid("discount", "free_item", "cashback").optional(),
+  discount_amount: Joi.number().precision(2).optional(),
+  discount_percentage: Joi.number().precision(2).optional(),
   points_required: Joi.number().integer().min(0).optional(),
   is_active: Joi.boolean().optional(),
   expiry_date: Joi.date().iso().optional(),
@@ -35,6 +33,7 @@ const updateRewardValidation = Joi.object({
 
 // Helper function to convert frontend data to model format
 const convertToModelFormat = (frontendData) => {
+  console.log("frontendData=---", frontendData);
   const modelData = {
     name: frontendData.name,
     description: frontendData.description,
@@ -46,46 +45,58 @@ const convertToModelFormat = (frontendData) => {
     max_redemptions: null, // Default to unlimited
   };
 
-  // Handle different reward types
-  switch (frontendData.type) {
-    case "discount":
-      modelData.discount_percentage = parseFloat(frontendData.value);
-      modelData.discount_amount = null;
-      break;
-    case "free_item":
-      modelData.discount_amount = 0; // Free item
-      modelData.discount_percentage = null;
-      break;
-    case "points":
-      modelData.discount_amount = null;
-      modelData.discount_percentage = null;
-      // Store multiplier in description or create a separate field
-      break;
-    case "cashback":
-      modelData.discount_amount = parseFloat(frontendData.value);
-      modelData.discount_percentage = null;
-      break;
+  // Add tenant_id if provided
+  if (frontendData.tenant_id) {
+    modelData.tenant_id = frontendData.tenant_id;
   }
 
+  // Map discount fields based on reward type
+  switch (frontendData.type) {
+    case "discount":
+      // For discount, use discount_percentage
+      modelData.discount_percentage = frontendData.discount_percentage || 0;
+      modelData.discount_amount = null;
+      console.log(
+        "Discount: discount_percentage =",
+        modelData.discount_percentage
+      );
+      break;
+    case "free_item":
+      // For free item, no monetary value needed
+      modelData.discount_amount = null;
+      modelData.discount_percentage = null;
+      console.log("Free item: no monetary value");
+      break;
+    case "cashback":
+      // For cashback, use discount_amount
+      modelData.discount_amount = frontendData.discount_amount || 0;
+      modelData.discount_percentage = null;
+      console.log("Cashback: discount_amount =", modelData.discount_amount);
+      break;
+    default:
+      console.log("Unknown reward type:", frontendData.type);
+  }
+
+  console.log("Final modelData:", modelData);
   return modelData;
 };
 
 // Helper function to convert model data to frontend format
 const convertToFrontendFormat = (modelData) => {
+  // Convert PostgreSQL numeric fields to numbers
+  const parseNumeric = (value) => {
+    if (value === null || value === undefined) return null;
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? null : parsed;
+  };
+
   return {
     id: modelData.id,
     name: modelData.name,
     description: modelData.description,
     type: modelData.reward_type,
-    value: modelData.discount_percentage
-      ? `${modelData.discount_percentage}%`
-      : modelData.discount_amount
-      ? `${modelData.discount_amount}`
-      : modelData.reward_type === "free_item"
-      ? "1"
-      : modelData.reward_type === "points"
-      ? "2x"
-      : "0",
+    discount_amount: parseNumeric(modelData.discount_amount),
+    discount_percentage: parseNumeric(modelData.discount_percentage),
     points_required: modelData.points_cost,
     is_active: modelData.is_active,
     expiry_date: modelData.valid_until,
@@ -137,6 +148,7 @@ router.get("/", authenticateUser, requireAdmin, async (req, res) => {
 router.get("/:id", authenticateUser, requireAdmin, async (req, res) => {
   try {
     const tenantId = req.user.tenant_id || req.user.id;
+
     const reward = await Reward.findById(req.params.id, tenantId);
 
     if (!reward) {
@@ -160,12 +172,14 @@ router.post(
   async (req, res) => {
     try {
       const tenantId = req.user.tenant_id || req.user.id;
+
       const modelData = convertToModelFormat({
         ...req.body,
         tenant_id: tenantId,
       });
 
       const reward = await Reward.create(modelData);
+
       const formattedReward = convertToFrontendFormat(reward);
 
       res.status(201).json(formattedReward);
@@ -185,6 +199,7 @@ router.put(
   async (req, res) => {
     try {
       const tenantId = req.user.tenant_id || req.user.id;
+
       const modelData = convertToModelFormat(req.body);
 
       const reward = await Reward.update(req.params.id, modelData, tenantId);
