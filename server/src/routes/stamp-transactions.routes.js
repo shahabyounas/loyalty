@@ -8,6 +8,8 @@ const {
 } = require("../middleware/supabase-auth.middleware");
 const { validate } = require("../middleware/validation.middleware");
 const { logger } = require("../utils/logger");
+const { User } = require("../models/user.model");
+const { Reward } = require("../models/reward.model");
 
 const router = express.Router();
 
@@ -435,5 +437,104 @@ router.post("/cleanup", requireAdmin, async (req, res) => {
     });
   }
 });
+
+// Process QR code scan (admin/staff)
+router.post(
+  "/process-scan",
+  authenticateUser,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { user_id, reward_id, scanned_by, store_id } = req.body;
+
+      // Validate required fields
+      if (!user_id || !reward_id || !scanned_by) {
+        return res.status(400).json({
+          success: false,
+          message: "user_id, reward_id, and scanned_by are required",
+        });
+      }
+
+      // Get user and reward details
+      const user = await User.findById(user_id);
+      const reward = await Reward.findById(reward_id);
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+        });
+      }
+
+      if (!reward) {
+        return res.status(404).json({
+          success: false,
+          message: "Reward not found",
+        });
+      }
+
+      // Get or create user reward progress
+      let progress = await UserRewardProgress.findByUserAndReward(
+        user_id,
+        reward_id
+      );
+
+      if (!progress) {
+        // Create new progress record
+        progress = await UserRewardProgress.create({
+          user_id,
+          reward_id,
+          stamps_collected: 1,
+          stamps_required: reward.points_cost,
+          is_completed: false,
+          status: "in_progress",
+        });
+      } else {
+        // Add stamp to existing progress
+        progress.stamps_collected += 1;
+
+        // Check if reward is completed
+        if (progress.stamps_collected >= progress.stamps_required) {
+          progress.is_completed = true;
+          progress.status = "ready_to_redeem";
+        }
+
+        await progress.save();
+      }
+
+      // Create stamp transaction record
+      const transaction = await StampTransaction.create({
+        user_id,
+        reward_id,
+        scanned_by,
+        store_id,
+        stamps_added: 1,
+        transaction_type: "stamp_added",
+      });
+
+      // Return success response with updated progress
+      res.json({
+        success: true,
+        message: "Stamp added successfully",
+        data: {
+          customer_name: `${user.first_name} ${user.last_name}`,
+          reward_name: reward.name,
+          stamps_collected: progress.stamps_collected,
+          stamps_required: progress.stamps_required,
+          is_completed: progress.is_completed,
+          status: progress.status,
+          transaction_id: transaction.id,
+        },
+      });
+    } catch (error) {
+      console.error("Error processing QR scan:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to process scan",
+        error: error.message,
+      });
+    }
+  }
+);
 
 module.exports = router;

@@ -779,7 +779,7 @@ export default function Home() {
   }
 
   function handleAddStamp(rewardId, rewardName) {
-    // Generate QR code data locally without API call
+    // Generate QR code data for admin scanning
     const qrData = {
       user_id: user?.id,
       reward_id: rewardId,

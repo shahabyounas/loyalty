@@ -9,6 +9,7 @@ class UserRewardProgress {
     this.stamps_collected = data.stamps_collected || 0;
     this.stamps_required = data.stamps_required;
     this.is_completed = data.is_completed || false;
+    this.status = data.status || "in_progress";
     this.completed_at = data.completed_at;
     this.created_at = data.created_at || new Date();
     this.updated_at = data.updated_at || new Date();
@@ -174,6 +175,40 @@ class UserRewardProgress {
   // Get remaining stamps needed
   getRemainingStamps() {
     return Math.max(0, this.stamps_required - this.stamps_collected);
+  }
+
+  // Save instance changes
+  async save() {
+    try {
+      const query = `
+        UPDATE user_reward_progress 
+        SET stamps_collected = $1,
+            is_completed = $2,
+            status = $3,
+            completed_at = $4,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = $5 AND reward_id = $6
+        RETURNING *
+      `;
+      const params = [
+        this.stamps_collected,
+        this.is_completed,
+        this.status,
+        this.completed_at,
+        this.user_id,
+        this.reward_id,
+      ];
+
+      const result = await db.getOne(query, params);
+      if (result) {
+        Object.assign(this, result);
+        return this;
+      }
+      return null;
+    } catch (error) {
+      logger.error("Error saving user reward progress:", error);
+      throw error;
+    }
   }
 }
 
