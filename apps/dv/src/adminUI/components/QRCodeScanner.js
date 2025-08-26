@@ -1,56 +1,16 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { stampTransactionAPI } from "../../utils/api";
+import { Scanner } from "@yudiel/react-qr-scanner";
 import "./QRCodeScanner.css";
 
 const QRCodeScanner = () => {
-  const { user, token } = useAuth();
+  const { user } = useAuth();
   const [isScanning, setIsScanning] = useState(false);
   const [scannedData, setScannedData] = useState(null);
   const [scanResult, setScanResult] = useState(null);
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const videoRef = useRef(null);
-  const streamRef = useRef(null);
-
-  // Initialize camera when component mounts
-  useEffect(() => {
-    if (isScanning) {
-      startCamera();
-    } else {
-      stopCamera();
-    }
-
-    return () => {
-      stopCamera();
-    };
-  }, [isScanning]);
-
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-      });
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-      }
-    } catch (err) {
-      console.error("Error accessing camera:", err);
-      setError("Unable to access camera. Please check permissions.");
-    }
-  };
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-  };
 
   const startScanning = () => {
     setIsScanning(true);
@@ -61,10 +21,10 @@ const QRCodeScanner = () => {
 
   const stopScanning = () => {
     setIsScanning(false);
-    stopCamera();
   };
 
   const handleScan = async (data) => {
+    console.log("QR Code detected:", data);
     if (!data || isProcessing) return;
 
     try {
@@ -188,15 +148,29 @@ const QRCodeScanner = () => {
       {isScanning && (
         <div className="qr-scanner-camera">
           <div className="qr-scanner-video-container">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              className="qr-scanner-video"
+            <Scanner
+              onResult={(result) => {
+                console.log("Scanner result:", result);
+                handleScan(result[0].rawValue);
+                setIsScanning(false);
+              }}
+              onError={(error) => {
+                console.log("Scanner error:", error);
+                setError("Camera access error. Please check permissions.");
+              }}
+              styles={{
+                container: {
+                  width: "100%",
+                  maxWidth: "500px",
+                  margin: "0 auto",
+                  borderRadius: "1em",
+                  overflow: "hidden",
+                },
+                video: {
+                  borderRadius: "1em",
+                },
+              }}
             />
-            <div className="qr-scanner-overlay">
-              <div className="qr-scanner-frame"></div>
-            </div>
           </div>
 
           <div className="qr-scanner-camera-controls">
@@ -250,6 +224,21 @@ const QRCodeScanner = () => {
                           100
                       )}
                       %
+                    </p>
+                    <p>
+                      <strong>Scanned by:</strong> {user?.firstName}{" "}
+                      {user?.lastName}
+                    </p>
+                    <p>
+                      <strong>Store:</strong>{" "}
+                      {user?.store_name || user?.store_id || "Not assigned"}
+                    </p>
+                    <p>
+                      <strong>Time:</strong> {new Date().toLocaleString()}
+                    </p>
+                    <p>
+                      <strong>Transaction ID:</strong>{" "}
+                      {scanResult.data.transaction_id}
                     </p>
                   </div>
                 )}
