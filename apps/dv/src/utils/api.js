@@ -584,6 +584,13 @@ export const stampTransactionAPI = {
     });
   },
 
+  // Get all stamp transactions (admin audit)
+  getAllTransactions: async () => {
+    return await makeRequest("/stamp-transactions", {
+      method: "GET",
+    });
+  },
+
   // Scan QR code (staff only)
   scanTransaction: async (transactionCode, storeId, qrData = null) => {
     return await makeRequest("/stamp-transactions/scan", {

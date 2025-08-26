@@ -19,9 +19,9 @@ class UserRewardProgress {
     try {
       const query = `
         INSERT INTO user_reward_progress (
-          user_id, reward_id, stamps_required, stamps_collected, is_completed
+          user_id, reward_id, stamps_required, stamps_collected, is_completed, status
         )
-        VALUES ($1, $2, $3, 0, FALSE)
+        VALUES ($1, $2, $3, 0, FALSE, 'in_progress')
         ON CONFLICT (user_id, reward_id) DO UPDATE SET
           stamps_required = EXCLUDED.stamps_required,
           updated_at = CURRENT_TIMESTAMP

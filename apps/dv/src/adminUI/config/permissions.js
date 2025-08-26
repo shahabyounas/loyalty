@@ -35,6 +35,7 @@ export const MENU_PERMISSIONS = {
   // Staff scanner
   STAFF_SCANNER: "staff_scanner",
   QR_SCANNER: "qr_scanner",
+  STAMP_TRANSACTIONS: "stamp_transactions",
 };
 
 // Menu configuration with permission requirements
@@ -103,6 +104,18 @@ export const MENU_CONFIG = [
     component: "QR_SCANNER",
     permissions: [MENU_PERMISSIONS.QR_SCANNER, MENU_PERMISSIONS.SUPER_ADMIN],
     description: "Scan customer QR codes to add stamps",
+    category: "operations",
+  },
+  {
+    id: "stamp-transactions",
+    label: "Transaction History",
+    icon: "📊",
+    component: "STAMP_TRANSACTIONS",
+    permissions: [
+      MENU_PERMISSIONS.STAMP_TRANSACTIONS,
+      MENU_PERMISSIONS.SUPER_ADMIN,
+    ],
+    description: "View complete audit trail of all stamp transactions",
     category: "operations",
   },
   {

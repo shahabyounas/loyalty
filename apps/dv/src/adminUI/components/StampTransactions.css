@@ -1,0 +1,412 @@
+/* StampTransactions.css */
+
+.stamp-transactions-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5em;
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.95), rgba(39, 39, 69, 0.95));
+    border-radius: 1.5em;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(20px);
+}
+
+.stamp-transactions-header {
+    text-align: center;
+    margin-bottom: 2em;
+    padding-bottom: 1.5em;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.stamp-transactions-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    margin: 0 0 0.5em 0;
+    font-size: 1.8em;
+    color: white;
+    font-weight: 600;
+}
+
+.stamp-transactions-icon {
+    font-size: 1.2em;
+}
+
+.stamp-transactions-subtitle {
+    margin: 0;
+    color: #a1a1aa;
+    font-size: 1em;
+    line-height: 1.5;
+}
+
+/* Filters */
+.stamp-transactions-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1em;
+    margin-bottom: 2em;
+    padding: 1.5em;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 1em;
+}
+
+.stamp-transactions-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+}
+
+.stamp-transactions-filter-label {
+    color: white;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.stamp-transactions-filter-select,
+.stamp-transactions-filter-input {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 0.5em;
+    padding: 0.75em;
+    color: white;
+    font-size: 0.9em;
+    transition: all 0.3s ease;
+}
+
+.stamp-transactions-filter-select:focus,
+.stamp-transactions-filter-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.stamp-transactions-filter-select option {
+    background: #1a1a2e;
+    color: white;
+}
+
+.stamp-transactions-clear-filters {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    color: white;
+    border: none;
+    border-radius: 0.5em;
+    padding: 0.75em 1.5em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    align-self: end;
+}
+
+.stamp-transactions-clear-filters:hover {
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    transform: translateY(-1px);
+}
+
+/* Summary Stats */
+.stamp-transactions-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1.5em;
+    margin-bottom: 2em;
+}
+
+.stamp-transactions-stat {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 1em;
+    padding: 1.5em;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stamp-transactions-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.2);
+}
+
+.stamp-transactions-stat-value {
+    font-size: 2em;
+    font-weight: 700;
+    color: #3b82f6;
+    margin-bottom: 0.5em;
+}
+
+.stamp-transactions-stat-label {
+    color: #a1a1aa;
+    font-size: 0.9em;
+    font-weight: 600;
+}
+
+/* Table */
+.stamp-transactions-table-container {
+    margin-bottom: 2em;
+}
+
+.stamp-transactions-error {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 0.5em;
+    padding: 1em;
+    color: #fca5a5;
+    margin-bottom: 1em;
+}
+
+.stamp-transactions-error-icon {
+    font-size: 1.2em;
+}
+
+.stamp-transactions-empty {
+    text-align: center;
+    padding: 3em;
+    color: #a1a1aa;
+}
+
+.stamp-transactions-empty-icon {
+    font-size: 4em;
+    margin-bottom: 1em;
+}
+
+.stamp-transactions-empty h3 {
+    margin: 0 0 0.5em 0;
+    color: white;
+    font-size: 1.5em;
+}
+
+.stamp-transactions-table {
+    background: rgba(59, 130, 246, 0.05);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 1em;
+    overflow: hidden;
+}
+
+.stamp-transactions-table-header {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1.5fr 1fr 1fr 0.8fr 1.5fr 1fr;
+    background: rgba(59, 130, 246, 0.1);
+    border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.stamp-transactions-table-header .stamp-transactions-table-cell {
+    padding: 1em;
+    font-weight: 600;
+    color: white;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stamp-transactions-table-body {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.stamp-transactions-table-row {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1.5fr 1fr 1fr 0.8fr 1.5fr 1fr;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+    transition: all 0.3s ease;
+}
+
+.stamp-transactions-table-row:hover {
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.stamp-transactions-table-row:last-child {
+    border-bottom: none;
+}
+
+.stamp-transactions-table-cell {
+    padding: 1em;
+    color: #a1a1aa;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+}
+
+/* Transaction Type */
+.stamp-transactions-type {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+}
+
+.stamp-transactions-type-icon {
+    font-size: 1.2em;
+}
+
+.stamp-transactions-type-label {
+    font-weight: 600;
+    color: white;
+}
+
+/* Customer Info */
+.stamp-transactions-customer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25em;
+}
+
+.stamp-transactions-customer-name {
+    color: white;
+    font-weight: 600;
+}
+
+.stamp-transactions-customer-id {
+    font-size: 0.8em;
+    color: #6b7280;
+}
+
+/* Reward Info */
+.stamp-transactions-reward {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25em;
+}
+
+.stamp-transactions-reward-name {
+    color: white;
+    font-weight: 600;
+}
+
+.stamp-transactions-reward-id {
+    font-size: 0.8em;
+    color: #6b7280;
+}
+
+/* Staff Member */
+.stamp-transactions-staff {
+    color: white;
+    font-weight: 600;
+}
+
+/* Store */
+.stamp-transactions-store {
+    color: white;
+    font-weight: 600;
+}
+
+/* Stamps */
+.stamp-transactions-stamps {
+    font-weight: 600;
+    font-size: 1.1em;
+}
+
+.stamp-transactions-stamps:has(+ .stamp-transactions-stamps[data-positive="true"]) {
+    color: #22c55e;
+}
+
+/* Date */
+.stamp-transactions-date {
+    color: #a1a1aa;
+    font-size: 0.85em;
+}
+
+/* Transaction ID */
+.stamp-transactions-id {
+    color: #6b7280;
+    font-family: monospace;
+    font-size: 0.8em;
+}
+
+/* Loading */
+.stamp-transactions-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3em;
+    gap: 1em;
+}
+
+.stamp-transactions-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(59, 130, 246, 0.3);
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: stamp-transactions-spin 1s linear infinite;
+}
+
+@keyframes stamp-transactions-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Export */
+.stamp-transactions-export {
+    display: flex;
+    gap: 1em;
+    justify-content: center;
+}
+
+.stamp-transactions-export-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    border-radius: 0.75em;
+    padding: 0.75em 1.5em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.stamp-transactions-export-btn:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+}
+
+/* Responsive Design */
+@media (width < 24em) {
+    .stamp-transactions-container {
+        margin: 0.5em;
+        padding: 1em;
+    }
+
+    .stamp-transactions-filters {
+        grid-template-columns: 1fr;
+    }
+
+    .stamp-transactions-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .stamp-transactions-table-header,
+    .stamp-transactions-table-row {
+        grid-template-columns: 1fr;
+        gap: 0.5em;
+    }
+
+    .stamp-transactions-table-header .stamp-transactions-table-cell {
+        display: none;
+    }
+
+    .stamp-transactions-table-header .stamp-transactions-table-cell:first-child {
+        display: block;
+    }
+
+    .stamp-transactions-table-cell {
+        padding: 0.5em;
+        border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+    }
+
+    .stamp-transactions-table-cell::before {
+        content: attr(data-label) ": ";
+        font-weight: 600;
+        color: #3b82f6;
+        margin-right: 0.5em;
+    }
+
+    .stamp-transactions-export {
+        flex-direction: column;
+    }
+}
