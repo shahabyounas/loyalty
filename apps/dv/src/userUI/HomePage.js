@@ -11,7 +11,6 @@ import AvatarSelector from "../shared/components/AvatarSelector";
 import {
   rewardAPI,
   userRewardProgressAPI,
-  stampTransactionAPI,
 } from "../utils/api";
 import QRCodeModal from "../shared/components/QRCodeModal";
 import InProgressRewardsModal from "./components/InProgressRewardsModal";
@@ -107,12 +106,14 @@ export default function Home() {
   // Generate QR code data
   useEffect(() => {
     if (user && isQrGenerated) {
+      console.log("Generating QR code...", user);
       const qrData = JSON.stringify({
-        userId: user.id,
+        userId: user.id, // This is the Supabase auth user ID
         email: user.email,
         name: `${user.firstName} ${user.lastName}`,
         timestamp: Date.now(),
       });
+      
       setQrCode(qrData);
     }
   }, [user, isQrGenerated]);
@@ -282,7 +283,7 @@ export default function Home() {
         <div className="home-available-rewards-section">
           <div className="home-section-header">
             <span className="home-section-icon">🎁</span>
-            <h3 className="home-section-title">Available Rewards</h3>
+            <h3 className="home-section-title">Your Rewards</h3>
           </div>
           <div className="home-rewards-loading">
             <div className="home-loading-spinner"></div>
@@ -297,7 +298,7 @@ export default function Home() {
         <div className="home-available-rewards-section">
           <div className="home-section-header">
             <span className="home-section-icon">🎁</span>
-            <h3 className="home-section-title">Available Rewards</h3>
+            <h3 className="home-section-title">Your Rewards</h3>
           </div>
           <div className="home-no-rewards">
             <p>No rewards available at the moment</p>
@@ -310,7 +311,7 @@ export default function Home() {
       <div className="home-available-rewards-section">
         <div className="home-section-header">
           <span className="home-section-icon">🎁</span>
-          <h3 className="home-section-title">Available Rewards</h3>
+          <h3 className="home-section-title">Your Rewards</h3>
         </div>
 
         <div className="home-rewards-grid">
@@ -350,7 +351,7 @@ export default function Home() {
                       : "🏆"}
                   </div>
                   <div className="home-reward-type">
-                    {rewardState === "ready" ? "Ready!" : reward.type}
+                    {rewardState === "ready" ? "Ready to Redeem!" : rewardState === "in-progress" ? "In Progress" : "Available"}
                   </div>
                 </div>
 
@@ -365,7 +366,7 @@ export default function Home() {
                     <div className="home-stamp-progress-section">
                       <div className="home-stamp-progress-header">
                         <span className="home-stamp-progress-label">
-                          Stamp Progress
+                          Progress
                         </span>
                         <span className="home-stamp-progress-count">
                           {stampsCollected}/{stampsRequired}
@@ -391,7 +392,7 @@ export default function Home() {
                       <div className="home-completion-badge">
                         <span className="home-completion-icon">✅</span>
                         <span className="home-completion-text">
-                          {stampsCollected}/{stampsRequired} stamps collected
+                          All stamps collected!
                         </span>
                       </div>
                     </div>
@@ -400,7 +401,7 @@ export default function Home() {
                   <div className="home-reward-details">
                     <div className="home-reward-points">
                       <span className="home-points-label">
-                        Stamps Required:
+                        Stamps Needed:
                       </span>
                       <span className="home-points-value">
                         {reward.points_required || reward.stamps_required || 10}
@@ -408,7 +409,7 @@ export default function Home() {
                     </div>
 
                     <div className="home-reward-value">
-                      <span className="home-value-label">Value:</span>
+                      <span className="home-value-label">Reward:</span>
                       <span className="home-value-amount">
                         {reward.type === "discount" &&
                         reward.discount_percentage !== null &&
@@ -420,7 +421,7 @@ export default function Home() {
                             reward.discount_amount !== null &&
                             reward.discount_amount !== undefined
                           ? `£${reward.discount_amount} cashback`
-                          : "N/A"}
+                          : "Special Reward"}
                       </span>
                     </div>
                   </div>
@@ -449,326 +450,10 @@ export default function Home() {
                       onClick={() => handleAddStamp(reward.id, reward.name)}
                     >
                       {rewardState === "new"
-                        ? "+ Start Collecting"
-                        : "+ Add Stamp"}
+                        ? "📱 Get QR Code"
+                        : "📱 Add Stamp"}
                     </button>
                   )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  function renderRewardsInProgress() {
-    const inProgressRewards = availableRewards.filter((reward) => {
-      const progress = userProgress[reward.id];
-      return (
-        progress && progress.stamps_collected > 0 && !progress.is_completed
-      );
-    });
-
-    if (inProgressRewards.length === 0) {
-      return null;
-    }
-
-    return (
-      <div className="home-rewards-in-progress-section">
-        <div className="home-section-header">
-          <span className="home-section-icon">⏳</span>
-          <h3 className="home-section-title">Rewards In Progress</h3>
-        </div>
-
-        <div className="home-rewards-grid">
-          {inProgressRewards.map((reward) => {
-            const progress = userProgress[reward.id];
-            const stampsCollected = progress?.stamps_collected || 0;
-            const stampsRequired = reward.stamps_required || 10;
-            const completionPercentage =
-              (stampsCollected / stampsRequired) * 100;
-
-            return (
-              <div
-                key={reward.id}
-                className="home-reward-card home-reward-in-progress"
-              >
-                <div className="home-reward-header">
-                  <div className="home-reward-icon">
-                    {reward.type === "discount"
-                      ? "💰"
-                      : reward.type === "free_item"
-                      ? "🎁"
-                      : reward.type === "points"
-                      ? "⭐"
-                      : "🏆"}
-                  </div>
-                  <div className="home-reward-type">{reward.type}</div>
-                </div>
-
-                <div className="home-reward-content">
-                  <h4 className="home-reward-name">{reward.name}</h4>
-                  <p className="home-reward-description">
-                    {reward.description}
-                  </p>
-
-                  {/* Stamp Progress */}
-                  <div className="home-stamp-progress-section">
-                    <div className="home-stamp-progress-header">
-                      <span className="home-stamp-progress-label">
-                        Stamp Progress
-                      </span>
-                      <span className="home-stamp-progress-count">
-                        {stampsCollected}/{stampsRequired}
-                      </span>
-                    </div>
-
-                    <div className="home-stamp-progress-bar">
-                      <div
-                        className="home-stamp-progress-fill"
-                        style={{ width: `${completionPercentage}%` }}
-                      ></div>
-                    </div>
-
-                    <div className="home-stamp-progress-percentage">
-                      {Math.round(completionPercentage)}% Complete
-                    </div>
-                  </div>
-                </div>
-
-                <div className="home-reward-actions">
-                  <button
-                    className="home-add-stamp-button"
-                    onClick={() => handleAddStamp(reward.id, reward.name)}
-                  >
-                    + Add Stamp
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  function renderRewardsReadyToRedeem() {
-    const readyToRedeemRewards = availableRewards.filter((reward) => {
-      const progress = userProgress[reward.id];
-      return (
-        progress &&
-        progress.is_completed &&
-        progress.status === "ready_to_redeem"
-      );
-    });
-
-    if (readyToRedeemRewards.length === 0) {
-      return null;
-    }
-
-    return (
-      <div className="home-rewards-ready-section">
-        <div className="home-section-header">
-          <span className="home-section-icon">✅</span>
-          <h3 className="home-section-title">Ready to Redeem</h3>
-        </div>
-
-        <div className="home-rewards-grid">
-          {readyToRedeemRewards.map((reward) => {
-            const progress = userProgress[reward.id];
-            const stampsCollected = progress?.stamps_collected || 0;
-            const stampsRequired = reward.stamps_required || 10;
-
-            return (
-              <div
-                key={reward.id}
-                className="home-reward-card home-reward-ready"
-              >
-                <div className="home-reward-header">
-                  <div className="home-reward-icon">🎉</div>
-                  <div className="home-reward-type">Ready!</div>
-                </div>
-
-                <div className="home-reward-content">
-                  <h4 className="home-reward-name">{reward.name}</h4>
-                  <p className="home-reward-description">
-                    {reward.description}
-                  </p>
-
-                  <div className="home-reward-completion">
-                    <div className="home-completion-badge">
-                      <span className="home-completion-icon">✅</span>
-                      <span className="home-completion-text">
-                        {stampsCollected}/{stampsRequired} stamps collected
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="home-reward-details">
-                    <div className="home-reward-points">
-                      <span className="home-points-label">
-                        Stamps Required:
-                      </span>
-                      <span className="home-points-value">
-                        {reward.points_required || reward.stamps_required || 10}
-                      </span>
-                    </div>
-
-                    <div className="home-reward-value">
-                      <span className="home-value-label">Value:</span>
-                      <span className="home-value-amount">
-                        {reward.type === "discount" &&
-                        reward.discount_percentage !== null &&
-                        reward.discount_percentage !== undefined
-                          ? `${reward.discount_percentage}% off`
-                          : reward.type === "free_item"
-                          ? "Free Item"
-                          : reward.type === "cashback" &&
-                            reward.discount_amount !== null &&
-                            reward.discount_amount !== undefined
-                          ? `£${reward.discount_amount} cashback`
-                          : "N/A"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="home-reward-actions">
-                  <button
-                    className="home-redeem-button home-redeem-ready"
-                    onClick={() => handleRedeemReward(reward.id)}
-                  >
-                    🎉 Redeem Now
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  function renderAvailableRewards() {
-    const newRewards = availableRewards.filter((reward) => {
-      const progress = userProgress[reward.id];
-      return !progress || progress.stamps_collected === 0;
-    });
-
-    if (rewardsLoading) {
-      return (
-        <div className="home-available-rewards-section">
-          <div className="home-section-header">
-            <span className="home-section-icon">🎁</span>
-            <h3 className="home-section-title">Available Rewards</h3>
-          </div>
-          <div className="home-rewards-loading">
-            <div className="home-loading-spinner"></div>
-            <p>Loading rewards...</p>
-          </div>
-        </div>
-      );
-    }
-
-    if (newRewards.length === 0) {
-      return (
-        <div className="home-available-rewards-section">
-          <div className="home-section-header">
-            <span className="home-section-icon">🎁</span>
-            <h3 className="home-section-title">Available Rewards</h3>
-          </div>
-          <div className="home-no-rewards">
-            <p>No new rewards available at the moment</p>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="home-available-rewards-section">
-        <div className="home-section-header">
-          <span className="home-section-icon">🎁</span>
-          <h3 className="home-section-title">Available Rewards</h3>
-        </div>
-
-        <div className="home-rewards-grid">
-          {newRewards.map((reward) => {
-            return (
-              <div key={reward.id} className="home-reward-card home-reward-new">
-                <div className="home-reward-header">
-                  <div className="home-reward-icon">
-                    {reward.type === "discount"
-                      ? "💰"
-                      : reward.type === "free_item"
-                      ? "🎁"
-                      : reward.type === "points"
-                      ? "⭐"
-                      : "🏆"}
-                  </div>
-                  <div className="home-reward-type">{reward.type}</div>
-                </div>
-
-                <div className="home-reward-content">
-                  <h4 className="home-reward-name">{reward.name}</h4>
-                  <p className="home-reward-description">
-                    {reward.description}
-                  </p>
-
-                  <div className="home-reward-requirements">
-                    <div className="home-requirements-badge">
-                      <span className="home-requirements-icon">📋</span>
-                      <span className="home-requirements-text">
-                        {reward.stamps_required || 10} stamps required
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="home-reward-details">
-                    <div className="home-reward-points">
-                      <span className="home-points-label">
-                        Stamps Required:
-                      </span>
-                      <span className="home-points-value">
-                        {reward.points_required || reward.stamps_required || 10}
-                      </span>
-                    </div>
-
-                    <div className="home-reward-value">
-                      <span className="home-value-label">Value:</span>
-                      <span className="home-value-amount">
-                        {reward.type === "discount" &&
-                        reward.discount_percentage !== null &&
-                        reward.discount_percentage !== undefined
-                          ? `${reward.discount_percentage}% off`
-                          : reward.type === "free_item"
-                          ? "Free Item"
-                          : reward.type === "cashback" &&
-                            reward.discount_amount !== null &&
-                            reward.discount_amount !== undefined
-                          ? `£${reward.discount_amount} cashback`
-                          : "N/A"}
-                      </span>
-                    </div>
-                  </div>
-
-                  {reward.expiry_date && (
-                    <div className="home-reward-expiry">
-                      <span className="home-expiry-label">Expires:</span>
-                      <span className="home-expiry-date">
-                        {new Date(reward.expiry_date).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="home-reward-actions">
-                  <button
-                    className="home-add-stamp-button"
-                    onClick={() => handleAddStamp(reward.id, reward.name)}
-                  >
-                    + Start Collecting
-                  </button>
                 </div>
               </div>
             );
@@ -781,7 +466,7 @@ export default function Home() {
   function handleAddStamp(rewardId, rewardName) {
     // Generate QR code data for admin scanning
     const qrData = {
-      user_id: user?.id,
+      user_id: user?.id, // This is the Supabase auth user ID
       reward_id: rewardId,
       timestamp: Date.now(),
       expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(), // 15 minutes from now

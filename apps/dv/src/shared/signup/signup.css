@@ -1,81 +1,264 @@
 /* Import colors from the design system */
 @import url('../../styles/colors.css');
 
+/* Signup Container */
+.signup-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 1rem;
+    background: transparent;
+}
 
 .signup-form {
-    border: 0.0625em solid var(--ai-border-medium);
-    border-radius: 0.75em;
-    padding: 1em;
-    box-shadow: var(--component-box-shadow);
-    animation: fadeInUp 0.8s ease-out;
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    border: 2px solid #e5e7eb;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     width: 100%;
+    max-width: 480px;
+    position: relative;
+    animation: fadeInUp 0.8s ease-out;
 }
 
 
-.form-header h2 {
-    font-size: 1.5em;
-    background: var(--ai-gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+.signup-form h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #1f2937;
+    font-size: 1.75rem;
+    font-weight: 700;
 }
 
-.form-header p {
-    color: var(--text-secondary);
-    font-size: 0.875em;
+/* Error Display Styles */
+.error-container {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    border-left: 4px solid #ef4444;
+    animation: slideInError 0.3s ease-out;
 }
 
 .error-message {
-    background: rgba(239, 68, 68, 0.1);
-    border: 0.0625em solid rgba(239, 68, 68, 0.3);
-    color: var(--error-400);
-    padding: 0.75em;
-    border-radius: 0.5em;
-    margin-bottom: 1em;
-    font-size: 0.875em;
+    color: #dc2626;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-.form-row {
+.error-message:last-child {
+    margin-bottom: 0;
+}
+
+.error-message::before {
+    content: "⚠️";
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+
+/* Form Content */
+.signup-form-content {
     display: flex;
     flex-direction: column;
-    gap: 1em;
-    justify-content: center;
+    gap: 1.5rem;
+}
+
+/* Name Row for First and Last Name */
+.name-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: relative;
 }
 
 .form-group label {
-    display: block;
-    margin-bottom: 0.5em;
-    color: var(--text-color);
-    font-weight: 500;
-    font-size: 0.875em;
+    font-weight: 600;
+    color: #374151;
+    font-size: 0.875rem;
 }
 
-.form-group input {
-    background: var(--console-surface);
+.form-input {
+    padding: 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    background: white;
+    color: #374151;
+    box-sizing: border-box;
 }
 
-.form-group input:focus {
+.form-input:focus {
     outline: none;
-    border-color: var(--focus-border-color);
-    box-shadow: 0 0 0 0.1875em rgba(32, 146, 234, 0.1);
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.form-group input:disabled {
-    opacity: 0.6;
+.form-input:disabled {
+    background-color: #f9fafb;
+    color: #6b7280;
     cursor: not-allowed;
-    background: var(--interactive-disabled);
+    opacity: 0.6;
 }
 
-.form-group input::placeholder {
-    color: var(--text-muted);
+.form-input::placeholder {
+    color: #9ca3af;
 }
 
-form button {
+/* Enhanced Password Input with Integrated Toggle */
+.password-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.password-input {
+    padding-right: 3rem !important;
+    flex: 1;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.125rem;
+    color: #6b7280;
+    transition: all 0.2s ease;
+    padding: 0.5rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.password-toggle:hover:not(:disabled) {
+    color: #374151;
+    background-color: #f3f4f6;
+}
+
+.password-toggle:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.password-toggle:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.password-toggle[aria-pressed="true"] {
+    background-color: #e5e7eb;
+    color: #374151;
+}
+
+/* Password Strength Indicator */
+.password-strength {
+    margin-top: 0.5rem;
+}
+
+.password-strength-bar {
     width: 100%;
+    height: 4px;
+    background-color: #e5e7eb;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
 }
 
-.btn-submit-signup {
-    margin-top: 1.5em;
+.password-strength-fill {
+    height: 100%;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.password-strength-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    display: block;
+}
+
+.password-feedback {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+/* Password Mismatch Warning */
+.password-mismatch {
+    color: #dc2626;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.password-mismatch::before {
+    content: "⚠️";
+    font-size: 0.875rem;
+}
+
+/* Submit Button */
+.submit-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.875rem 1rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 1rem;
+}
+
+.submit-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.submit-button:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+.submit-button:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Auth Toggle */
+.auth-toggle {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.auth-toggle p {
+    color: #6b7280;
+    margin: 0;
+    font-size: 0.875rem;
 }
 
 
@@ -84,28 +267,37 @@ form button {
 .link-button {
     background: none;
     border: none;
-    color: var(--text-link);
-    font-weight: 600;
+    color: #3b82f6;
     cursor: pointer;
-    padding: 0;
-    margin-left: 0.5em;
+    font-weight: 600;
     text-decoration: underline;
-    transition: color 0.2s ease;
+    font-size: 0.875rem;
+    padding: 0.25rem;
+    margin-left: 0.25rem;
+    transition: all 0.2s ease;
+    border-radius: 4px;
 }
 
-.link-button:hover {
-    color: var(--text-link-hover);
+.link-button:hover:not(:disabled) {
+    color: #2563eb;
+    background-color: #f3f4f6;
+}
+
+.link-button:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
 }
 
 .link-button:disabled {
-    opacity: 0.6;
+    color: #9ca3af;
     cursor: not-allowed;
 }
 
+/* Animations */
 @keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translateY(1.875em);
+        transform: translateY(1.875rem);
     }
 
     to {
@@ -114,19 +306,77 @@ form button {
     }
 }
 
-@keyframes spin {
+@keyframes slideInError {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
     to {
-        transform: rotate(360deg);
+        opacity: 1;
+        transform: translateY(0);
     }
 }
 
 /* Responsive Design */
-@media (max-width: 30em) {
-    .signup-form {
-        padding: 1em;
+@media (max-width: 30rem) {
+    .signup-container {
+        padding: 0.5rem;
     }
 
-    .form-header h2 {
-        font-size: 1.25em;
+    .signup-form {
+        padding: 1.5rem;
+        border-radius: 8px;
+    }
+
+    .signup-form h2 {
+        font-size: 1.5rem;
+    }
+
+    .name-row {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .form-input {
+        font-size: 16px;
+        /* Prevents zoom on iOS */
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .signup-form {
+        border-color: #000;
+        border-width: 3px;
+    }
+
+    .form-input {
+        border-color: #000;
+        border-width: 2px;
+    }
+
+    .form-input:focus {
+        border-color: #0066cc;
+        box-shadow: 0 0 0 3px #0066cc;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .signup-form {
+        animation: none;
+    }
+
+    .error-container {
+        animation: none;
+    }
+
+    .submit-button:hover:not(:disabled) {
+        transform: none;
+    }
+
+    .password-strength-fill {
+        transition: none;
     }
 }

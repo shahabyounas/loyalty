@@ -26,18 +26,7 @@ const AdminDashboard = () => {
     try {
       if (!user || !token) return;
 
-      // const response = await fetch("/api/access-control/user-permissions", {
-      //   headers: {
-      //     Authorization: `Bearer ${token}`,
-      //     "Content-Type": "application/json",
-      //   },
-      // });
-
-      // if (response.ok) {
-      //   const permissions = await response.json();
-      //   setUserPermissions(permissions);
-      // } else {
-      // If API fails, check if user is super admin based on role
+      // Check if user is super admin based on role
       if (user.role === "super_admin") {
         console.log("user.role", user.role);
         user.role = "super_admin";

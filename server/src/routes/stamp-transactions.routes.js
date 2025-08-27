@@ -8,8 +8,8 @@ const {
 } = require("../middleware/supabase-auth.middleware");
 const { validate } = require("../middleware/validation.middleware");
 const { logger } = require("../utils/logger");
-const { User } = require("../models/user.model");
-const { Reward } = require("../models/reward.model");
+const User = require("../models/user.model");
+const Reward = require("../models/reward.model");
 
 const router = express.Router();
 
@@ -47,12 +47,21 @@ router.post(
   authenticateUser,
   async (req, res) => {
     try {
-      const userId = req.user.id;
+      const authUserId = req.user.id; // Supabase auth user ID
       const { rewardId, storeId, stampsAdded = 1 } = req.body;
 
-      // Create stamp transaction
+      // Get the database user by auth user ID
+      const dbUser = await User.findByAuthUserId(authUserId);
+      if (!dbUser) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found in database",
+        });
+      }
+
+      // Create stamp transaction using database user ID
       const transaction = await StampTransaction.create(
-        userId,
+        dbUser.id, // Use internal database user ID
         rewardId,
         storeId,
         stampsAdded
@@ -66,7 +75,7 @@ router.post(
       }
 
       logger.info(
-        `Created stamp transaction: ${transaction.transaction_code} for user ${userId}, reward ${rewardId}`
+        `Created stamp transaction: ${transaction.transaction_code} for auth user ${authUserId} (db user ${dbUser.id}), reward ${rewardId}`
       );
 
       res.status(201).json({
@@ -76,7 +85,7 @@ router.post(
           expires_at: transaction.expires_at,
           qr_data: JSON.stringify({
             code: transaction.transaction_code,
-            user_id: userId,
+            user_id: authUserId, // Send auth user ID in QR data
             reward_id: rewardId,
             expires_at: transaction.expires_at,
           }),
@@ -452,7 +461,7 @@ router.post("/process-scan", authenticateUser, async (req, res) => {
     }
 
     // Get user and reward details
-    const user = await User.findById(user_id);
+    const user = await User.findByAuthUserId(user_id);
     const reward = await Reward.findById(reward_id);
 
     if (!user) {
