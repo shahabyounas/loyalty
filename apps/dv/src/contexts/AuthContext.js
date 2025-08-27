@@ -1,11 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import {
   tokenStorage,
   isTokenValid,
   getUserFromToken,
-  isTokenExpiringSoon,
-  refreshToken as refreshJWTToken,
 } from "../utils/jwt.js";
 import { authAPI, apiErrorHandler } from "../utils/api.js";
 
@@ -28,17 +26,13 @@ export const AuthProvider = ({ children }) => {
   const [lockoutTime, setLockoutTime] = useState(null);
   const [authErrors, setAuthErrors] = useState([]);
   const navigate = useNavigate();
-  const refreshTimerRef = useRef(null);
-  const lockoutTimerRef = useRef(null);
 
   // Security constants
   const MAX_LOGIN_ATTEMPTS = 5;
   const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
-  const TOKEN_REFRESH_INTERVAL = 4 * 60 * 1000; // 4 minutes (refresh before 5-min expiry)
-  const SESSION_CHECK_INTERVAL = 30 * 1000; // Check session every 30 seconds
 
   // Load lockout state from localStorage on startup
-  const loadLockoutState = () => {
+  function loadLockoutState() {
     try {
       const lockoutData = localStorage.getItem('authLockout');
       if (lockoutData) {
@@ -49,12 +43,6 @@ export const AuthProvider = ({ children }) => {
           setLoginAttempts(attempts || 0);
           setIsLocked(true);
           setLockoutTime(savedLockoutTime);
-          
-          // Set timer for remaining lockout time
-          const remainingTime = LOCKOUT_DURATION - (now - savedLockoutTime);
-          lockoutTimerRef.current = setTimeout(() => {
-            clearLockout();
-          }, remainingTime);
         } else {
           // Lockout expired, clear state
           clearLockout();
@@ -64,10 +52,10 @@ export const AuthProvider = ({ children }) => {
       console.error('Failed to load lockout state:', error);
       clearLockout();
     }
-  };
+  }
 
   // Save lockout state to localStorage
-  const saveLockoutState = (attempts, locked, time) => {
+  function saveLockoutState(attempts, locked, time) {
     try {
       localStorage.setItem('authLockout', JSON.stringify({
         attempts,
@@ -77,113 +65,53 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Failed to save lockout state:', error);
     }
-  };
+  }
 
   // Clear lockout state
-  const clearLockout = () => {
+  function clearLockout() {
     setIsLocked(false);
     setLoginAttempts(0);
     setLockoutTime(null);
     localStorage.removeItem('authLockout');
-    if (lockoutTimerRef.current) {
-      clearTimeout(lockoutTimerRef.current);
-      lockoutTimerRef.current = null;
-    }
-  };
+  }
 
   // Clear auth errors
-  const clearAuthErrors = () => {
+  function clearAuthErrors() {
     setAuthErrors([]);
-  };
+  }
 
   // Add auth error
-  const addAuthError = (error) => {
+  function addAuthError(error) {
     setAuthErrors(prev => [...prev, {
       id: Date.now(),
       message: error,
       timestamp: new Date()
     }]);
-  };
+  }
 
-  // Initialize auth state
+  // Simple logout function without timers
+  function logout() {
+    try {
+      // Call API logout endpoint (don't await to avoid blocking)
+      authAPI.logout().catch(error => console.warn("Logout API call failed:", error));
+    } catch (error) {
+      console.warn("Logout API call failed:", error);
+    } finally {
+      // Always clear local data immediately
+      clearAuthData();
+      clearAuthErrors();
+      clearLockout();
+      navigate("/");
+    }
+  }
+
+  // Simple initialization - only run once on mount
   useEffect(() => {
     loadLockoutState();
     checkAuthStatus();
   }, []);
 
-  // Cleanup timers on unmount
-  useEffect(() => {
-    return () => {
-      if (refreshTimerRef.current) {
-        clearInterval(refreshTimerRef.current);
-      }
-      if (lockoutTimerRef.current) {
-        clearTimeout(lockoutTimerRef.current);
-      }
-    };
-  }, []);
-
-  // Handle lockout timer
-  useEffect(() => {
-    if (isLocked && lockoutTime) {
-      const remainingTime = LOCKOUT_DURATION - (Date.now() - lockoutTime);
-      
-      if (remainingTime > 0) {
-        lockoutTimerRef.current = setTimeout(() => {
-          clearLockout();
-        }, remainingTime);
-      } else {
-        clearLockout();
-      }
-    }
-  }, [isLocked, lockoutTime]);
-
-  // Set up periodic token refresh and session check
-  useEffect(() => {
-    if (isAuthenticated) {
-      // Clear any existing timer
-      if (refreshTimerRef.current) {
-        clearInterval(refreshTimerRef.current);
-      }
-
-      // Set up new refresh timer
-      refreshTimerRef.current = setInterval(() => {
-        checkAndRefreshToken();
-      }, SESSION_CHECK_INTERVAL);
-
-      return () => {
-        if (refreshTimerRef.current) {
-          clearInterval(refreshTimerRef.current);
-        }
-      };
-    }
-  }, [isAuthenticated]);
-
-  const checkAndRefreshToken = async () => {
-    try {
-      const token = tokenStorage.getToken();
-      if (!token) {
-        logout();
-        return;
-      }
-
-      if (!isTokenValid(token)) {
-        console.log('Token is invalid, attempting refresh...');
-        await handleTokenRefresh();
-        return;
-      }
-
-      if (isTokenExpiringSoon(token)) {
-        console.log('Token expiring soon, refreshing...');
-        await handleTokenRefresh();
-      }
-    } catch (error) {
-      console.error('Token check failed:', error);
-      // Don't logout immediately, just log the error
-    }
-  };
-
-  const login = async (email, password) => {
+  async function login(email, password) {
     if (isLocked) {
       const remainingTime = Math.ceil((LOCKOUT_DURATION - (Date.now() - lockoutTime)) / 60000);
       throw new Error(`Account temporarily locked. Please try again in ${remainingTime} minutes.`);
@@ -227,9 +155,9 @@ export const AuthProvider = ({ children }) => {
       addAuthError(errorMessage);
       throw new Error(errorMessage);
     }
-  };
+  }
 
-  const checkAuthStatus = async () => {
+  async function checkAuthStatus() {
     try {
       const token = tokenStorage.getToken();
 
@@ -237,64 +165,27 @@ export const AuthProvider = ({ children }) => {
         // Extract user data from token
         const tokenUser = getUserFromToken(token);
         if (tokenUser) {
-          // Use token data directly - no need to fetch profile every time
           setUser(tokenUser);
           setIsAuthenticated(true);
-          console.log("User authentication verified from token:", tokenUser.email);
+          console.log("User authenticated:", tokenUser.email);
         } else {
-          console.error("Token is valid but no user data found");
+          console.warn("Token valid but no user data found");
           clearAuthData();
         }
       } else {
-        console.log("No valid token found, user needs to login");
+        // Token is missing or invalid - just clear data, don't show errors on startup
+        console.log("No valid token found");
         clearAuthData();
       }
     } catch (error) {
       console.error("Auth check failed:", error);
-      addAuthError("Authentication check failed");
       clearAuthData();
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
-  const handleTokenRefresh = async () => {
-    try {
-      const token = tokenStorage.getToken();
-      if (!token) {
-        logout();
-        return;
-      }
-
-      console.log("Attempting token refresh...");
-      
-      try {
-        const refreshResponse = await authAPI.refreshToken();
-        if (refreshResponse && refreshResponse.user) {
-          // Update user data with refreshed token
-          setUser(refreshResponse.user);
-          setIsAuthenticated(true);
-          tokenStorage.setUser(refreshResponse.user);
-          console.log("Token refreshed successfully via API");
-          return true;
-        }
-      } catch (refreshError) {
-        console.error("API token refresh failed:", refreshError);
-        
-        // If refresh fails, logout user
-        addAuthError("Session expired. Please log in again.");
-        logout();
-        return false;
-      }
-    } catch (error) {
-      console.error("Token refresh failed:", error);
-      addAuthError("Failed to refresh session");
-      logout();
-      return false;
-    }
-  };
-
-  const signup = async (userData) => {
+  async function signup(userData) {
     try {
       clearAuthErrors();
       
@@ -330,36 +221,17 @@ export const AuthProvider = ({ children }) => {
       addAuthError(errorMessage);
       throw new Error(errorMessage);
     }
-  };
+  }
 
-  const logout = async () => {
-    try {
-      // Call API logout endpoint
-      await authAPI.logout();
-    } catch (error) {
-      console.warn("Logout API call failed:", error);
-    } finally {
-      // Always clear local data
-      clearAuthData();
-      clearAuthErrors();
-      clearLockout();
-      navigate("/");
-    }
-  };
 
-  const clearAuthData = () => {
+
+  function clearAuthData() {
     tokenStorage.clearAll();
     setUser(null);
     setIsAuthenticated(false);
-    
-    // Clear timers
-    if (refreshTimerRef.current) {
-      clearInterval(refreshTimerRef.current);
-      refreshTimerRef.current = null;
-    }
-  };
+  }
 
-  const changePassword = async (currentPassword, newPassword) => {
+  async function changePassword(currentPassword, newPassword) {
     try {
       const response = await authAPI.changePassword(
         currentPassword,
@@ -434,7 +306,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const getSecurityStatus = () => {
+  function getSecurityStatus() {
     return {
       isLocked,
       loginAttempts,
@@ -442,20 +314,34 @@ export const AuthProvider = ({ children }) => {
       lockoutTime,
       isAuthenticated,
       tokenValid: isTokenValid(tokenStorage.getToken()),
-      tokenExpiringSoon: isTokenExpiringSoon(tokenStorage.getToken()),
     };
-  };
+  }
 
-  const refreshUserSession = async () => {
+  async function refreshUserSession() {
     try {
-      console.log("Manually refreshing user session...");
+      console.log("Refreshing user session...");
       await checkAuthStatus();
       return { success: true, message: "User session refreshed" };
     } catch (error) {
       console.error("Failed to refresh user session:", error);
       return { success: false, message: "Failed to refresh session" };
     }
-  };
+  }
+
+  // Simple session validation - just check if user is authenticated and token is valid
+  function validateSession() {
+    try {
+      const token = tokenStorage.getToken();
+      const isValid = token && isTokenValid(token) && isAuthenticated;
+      return { 
+        success: isValid, 
+        message: isValid ? "Session is valid" : "Session is invalid" 
+      };
+    } catch (error) {
+      console.error("Session validation failed:", error);
+      return { success: false, message: "Session validation failed" };
+    }
+  }
 
   const value = {
     // Core state
@@ -489,6 +375,7 @@ export const AuthProvider = ({ children }) => {
     getSecurityStatus,
     checkAuthStatus,
     refreshUserSession,
+    validateSession,
     clearAuthErrors,
     
     // Helper methods

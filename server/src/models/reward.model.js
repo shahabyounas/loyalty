@@ -184,48 +184,7 @@ class Reward {
       //   paramCount++;
       // }
 
-      // if (options.reward_type) {
-      //   query += ` AND reward_type = $${paramCount}`;
-      //   values.push(options.reward_type);
-      //   paramCount++;
-      // }
-
-      // if (options.search) {
-      //   query += ` AND (name ILIKE $${paramCount} OR description ILIKE $${paramCount})`;
-      //   values.push(`%${options.search}%`);
-      //   paramCount++;
-      // }
-
-      // if (options.max_points) {
-      //   query += ` AND points_cost <= $${paramCount}`;
-      //   values.push(options.max_points);
-      //   paramCount++;
-      // }
-
-      // if (options.available === true) {
-      //   query += ` AND (start_date IS NULL OR start_date <= CURRENT_TIMESTAMP)`;
-      //   query += ` AND (end_date IS NULL OR end_date >= CURRENT_TIMESTAMP)`;
-      //   query += ` AND (max_redemptions IS NULL OR current_redemptions < max_redemptions)`;
-      // }
-
-      // query += " ORDER BY points_cost ASC";
-
-      // if (options.limit) {
-      //   query += ` LIMIT $${paramCount}`;
-      //   values.push(options.limit);
-      //   paramCount++;
-      // }
-
-      // if (options.offset) {
-      //   query += ` OFFSET $${paramCount}`;
-      //   values.push(options.offset);
-      // }
-
       const results = await db.getMany(query, values);
-      console.log(
-        "results",
-        results.map((row) => new Reward(row))
-      );
       return results.map((row) => new Reward(row));
     } catch (error) {
       logger.error("Error finding all rewards:", error);

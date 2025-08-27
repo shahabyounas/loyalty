@@ -23,23 +23,23 @@ export function Login({ onToggleToSignup, isEmbedded = false }) {
   const [remainingTime, setRemainingTime] = useState(0);
 
   // Update remaining lockout time
-  useEffect(() => {
-    if (isLocked) {
-      const updateTimer = () => {
-        const remaining = getRemainingLockoutTime();
-        setRemainingTime(remaining);
+  // useEffect(() => {
+  //   if (isLocked) {
+  //     const updateTimer = () => {
+  //       const remaining = getRemainingLockoutTime();
+  //       setRemainingTime(remaining);
         
-        if (remaining <= 0) {
-          clearInterval(timer);
-        }
-      };
+  //       if (remaining <= 0) {
+  //         clearInterval(timer);
+  //       }
+  //     };
       
-      updateTimer();
-      const timer = setInterval(updateTimer, 1000);
+  //     updateTimer();
+  //     const timer = setInterval(updateTimer, 1000);
       
-      return () => clearInterval(timer);
-    }
-  }, [isLocked, getRemainingLockoutTime]);
+  //     return () => clearInterval(timer);
+  //   }
+  // }, [isLocked, getRemainingLockoutTime]);
 
   // Clear errors when component mounts or user starts typing
   useEffect(() => {

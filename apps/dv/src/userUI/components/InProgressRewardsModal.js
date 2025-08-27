@@ -4,8 +4,10 @@ import "./InProgressRewardsModal.css";
 const InProgressRewardsModal = ({
   isOpen,
   onClose,
-  inProgressRewards,
-  userProgress,
+  modalType = "in-progress", // "in-progress", "ready-to-redeem", "availed"
+  modalTitle = "Rewards",
+  inProgressRewards = [],
+  userProgress = {},
   onAddStamp,
   onRedeemReward,
 }) => {
@@ -23,19 +25,51 @@ const InProgressRewardsModal = ({
     }
   };
 
+  // Get the appropriate icon and title based on modal type
+  const getModalConfig = () => {
+    switch (modalType) {
+      case "ready-to-redeem":
+        return {
+          icon: "✅",
+          title: modalTitle || "Ready to Redeem",
+          emptyIcon: "🎯",
+          emptyTitle: "No Rewards Ready",
+          emptyMessage: "Complete collecting stamps to see rewards ready for redemption!"
+        };
+      case "availed":
+        return {
+          icon: "🎁",
+          title: modalTitle || "Availed Rewards",
+          emptyIcon: "🏆",
+          emptyTitle: "No Rewards Availed Yet",
+          emptyMessage: "Redeem your completed rewards to see them here!"
+        };
+      default: // in-progress
+        return {
+          icon: "⏳",
+          title: modalTitle || "Rewards In Progress",
+          emptyIcon: "🎯",
+          emptyTitle: "No Rewards In Progress",
+          emptyMessage: "Start collecting stamps for any available reward to see your progress here!"
+        };
+    }
+  };
+
   const handleRedeemReward = (rewardId) => {
     if (onRedeemReward) {
       onRedeemReward(rewardId);
     }
   };
 
+  const modalConfig = getModalConfig();
+
   return (
     <div className="in-progress-modal-overlay" onClick={handleBackdropClick}>
       <div className="in-progress-modal">
         <div className="in-progress-modal-header">
           <h2 className="in-progress-modal-title">
-            <span className="in-progress-modal-icon">⏳</span>
-            Rewards In Progress
+            <span className="in-progress-modal-icon">{modalConfig.icon}</span>
+            {modalConfig.title}
           </h2>
           <button className="in-progress-modal-close" onClick={onClose}>
             ✕
@@ -45,16 +79,17 @@ const InProgressRewardsModal = ({
         <div className="in-progress-modal-content">
           {inProgressRewards.length === 0 ? (
             <div className="in-progress-empty-state">
-              <div className="in-progress-empty-icon">🎯</div>
-              <h3>No Rewards In Progress</h3>
-              <p>
-                Start collecting stamps for any available reward to see your
-                progress here!
-              </p>
+              <div className="in-progress-empty-icon">{modalConfig.emptyIcon}</div>
+              <h3>{modalConfig.emptyTitle}</h3>
+              <p>{modalConfig.emptyMessage}</p>
             </div>
           ) : (
             <div className="in-progress-rewards-list">
               {inProgressRewards.map((reward) => {
+                if (!reward || !reward.id) {
+                  return null; // Skip invalid reward objects
+                }
+                
                 const progress = userProgress[reward.id];
                 const stampsCollected = progress?.stamps_collected || 0;
                 const stampsRequired =
@@ -174,7 +209,14 @@ const InProgressRewardsModal = ({
 
                       {/* Action Buttons */}
                       <div className="in-progress-reward-actions">
-                        {rewardState === "ready" ? (
+                        {modalType === "availed" ? (
+                          <div className="in-progress-redeemed-badge">
+                            <span className="in-progress-redeemed-icon">✅</span>
+                            <span className="in-progress-redeemed-text">
+                              Reward Redeemed
+                            </span>
+                          </div>
+                        ) : rewardState === "ready" ? (
                           <button
                             className="in-progress-redeem-button"
                             onClick={() => handleRedeemReward(reward.id)}
@@ -183,13 +225,18 @@ const InProgressRewardsModal = ({
                           </button>
                         ) : rewardState === "redeemed" ? (
                           <div className="in-progress-redeemed-badge">
-                            <span className="in-progress-redeemed-icon">
-                              ✅
-                            </span>
+                            <span className="in-progress-redeemed-icon">✅</span>
                             <span className="in-progress-redeemed-text">
                               Reward Redeemed
                             </span>
                           </div>
+                        ) : modalType === "ready-to-redeem" ? (
+                          <button
+                            className="in-progress-redeem-button"
+                            onClick={() => handleRedeemReward(reward.id)}
+                          >
+                            🎉 Redeem Now
+                          </button>
                         ) : (
                           <button
                             className="in-progress-add-stamp-button"
@@ -197,7 +244,7 @@ const InProgressRewardsModal = ({
                               handleAddStamp(reward.id, reward.name)
                             }
                           >
-                            + Add Stamp
+                            📱 Add Stamp
                           </button>
                         )}
                       </div>

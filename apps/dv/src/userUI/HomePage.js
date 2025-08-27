@@ -17,7 +17,7 @@ import InProgressRewardsModal from "./components/InProgressRewardsModal";
 import "./HomePage.css";
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, authErrors, clearAuthErrors } = useAuth();
   const [qrCode, setQrCode] = useState("");
   const [selectedAvatarId, setSelectedAvatarId] = useState("neural-cloud");
   const [isAvatarSelectorOpen, setIsAvatarSelectorOpen] = useState(false);
@@ -30,6 +30,9 @@ export default function Home() {
   const [currentTransaction, setCurrentTransaction] = useState(null);
   const [currentReward, setCurrentReward] = useState(null);
   const [inProgressModalOpen, setInProgressModalOpen] = useState(false);
+  const [modalType, setModalType] = useState("in-progress"); // "in-progress", "ready-to-redeem", "availed"
+  const [modalTitle, setModalTitle] = useState("");
+  const [notification, setNotification] = useState(null); // For showing stamp notifications
   const [lifetimeStats, setLifetimeStats] = useState({
     totalStamps: 0,
     totalRewards: 0,
@@ -99,9 +102,67 @@ export default function Home() {
 
   // Fetch data on component mount
   useEffect(() => {
-    fetchAvailableRewards();
-    fetchUserProgress();
+    if (user) {
+      fetchAvailableRewards();
+      fetchUserProgress();
+    }
   }, [user]);
+
+  // Auto-refresh user progress every 30 seconds when component is active
+  useEffect(() => {
+    let intervalId;
+    
+    if (user) {
+      intervalId = setInterval(() => {
+        fetchUserProgress();
+      }, 30000); // Refresh every 30 seconds
+    }
+    
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [user]);
+
+  // Show notifications for authentication errors
+  useEffect(() => {
+    if (authErrors && authErrors.length > 0) {
+      const latestError = authErrors[authErrors.length - 1];
+      showNotification(latestError.message, "error");
+      // Clear the errors after showing
+      setTimeout(() => {
+        clearAuthErrors();
+      }, 1000);
+    }
+  }, [authErrors, clearAuthErrors]);
+
+  // Manual refresh function
+  const handleRefresh = async () => {
+    setProgressLoading(true);
+    
+    // Store current stamps count to detect changes
+    const previousTotalStamps = lifetimeStats.totalStamps;
+    
+    await Promise.all([
+      fetchAvailableRewards(),
+      fetchUserProgress()
+    ]);
+
+    // Show notification if stamps increased
+    const newTotalStamps = lifetimeStats.totalStamps;
+    if (newTotalStamps > previousTotalStamps) {
+      showNotification("🎉 Your stamps have been updated!", "success");
+    }
+  };
+
+  // Show notification function
+  const showNotification = (message, type = "info") => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification(null);
+    }, 4000);
+  };
 
   // Generate QR code data
   useEffect(() => {
@@ -242,18 +303,21 @@ export default function Home() {
         </div>
 
         <div className="home-loyalty-stats-section">
+          <div className="home-stats-header">
+            <h3>Your Progress</h3>
+            <button 
+              className="home-refresh-button" 
+              onClick={handleRefresh}
+              disabled={progressLoading}
+              title="Refresh progress"
+            >
+              {progressLoading ? "🔄" : "↻"}
+            </button>
+          </div>
           <div className="home-stats-grid">
-            <div className="home-stat-card">
-              <div className="home-stat-icon">🎁</div>
-              <div className="home-stat-value">
-                {lifetimeStats.totalRewards}
-              </div>
-              <div className="home-stat-label">Rewards Availed</div>
-            </div>
-
             <div
               className="home-stat-card home-stat-clickable"
-              onClick={() => setInProgressModalOpen(true)}
+              onClick={() => openRewardsModal("in-progress", "In Progress Rewards")}
             >
               <div className="home-stat-icon">⏳</div>
               <div className="home-stat-value">
@@ -262,12 +326,26 @@ export default function Home() {
               <div className="home-stat-label">In Progress</div>
             </div>
 
-            <div className="home-stat-card">
+            <div 
+              className="home-stat-card home-stat-clickable"
+              onClick={() => openRewardsModal("ready-to-redeem", "Ready to Redeem")}
+            >
               <div className="home-stat-icon">✅</div>
               <div className="home-stat-value">
                 {lifetimeStats.rewardsReadyToRedeem}
               </div>
               <div className="home-stat-label">Ready to Redeem</div>
+            </div>
+
+            <div 
+              className="home-stat-card home-stat-clickable"
+              onClick={() => openRewardsModal("availed", "Availed Rewards")}
+            >
+              <div className="home-stat-icon">🎁</div>
+              <div className="home-stat-value">
+                {lifetimeStats.totalRewards}
+              </div>
+              <div className="home-stat-label">Rewards Availed</div>
             </div>
           </div>
         </div>
@@ -518,11 +596,39 @@ export default function Home() {
     handleRedeemReward(rewardId);
   }
 
-  // Get in-progress rewards for the modal
-  function getInProgressRewards() {
+  function openRewardsModal(type, title) {
+    try {
+      setModalType(type || "in-progress");
+      setModalTitle(title || "Rewards");
+      setInProgressModalOpen(true);
+    } catch (error) {
+      console.error("Error opening rewards modal:", error);
+    }
+  }
+
+  // Get rewards by status for the modal
+  function getRewardsByStatus(status) {
+    if (!Array.isArray(availableRewards)) {
+      return [];
+    }
+    
     return availableRewards.filter((reward) => {
+      if (!reward || !reward.id) {
+        return false; // Skip invalid reward objects
+      }
+      
       const progress = userProgress[reward.id];
-      return progress && progress.stamps_collected > 0;
+      
+      switch (status) {
+        case "in-progress":
+          return progress && progress.stamps_collected > 0 && !progress.is_completed;
+        case "ready-to-redeem":
+          return progress && progress.is_completed && progress.status === "ready_to_redeem";
+        case "availed":
+          return progress && progress.is_completed && progress.status === "redeemed";
+        default:
+          return false;
+      }
     });
   }
 
@@ -534,6 +640,19 @@ export default function Home() {
         {renderUserProfile()}
         {renderAllRewards()}
       </div>
+
+      {/* Notification */}
+      {notification && (
+        <div className={`home-notification home-notification-${notification.type}`}>
+          <span className="home-notification-message">{notification.message}</span>
+          <button 
+            className="home-notification-close"
+            onClick={() => setNotification(null)}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Avatar Selector Modal */}
       <AvatarSelector
@@ -551,11 +670,13 @@ export default function Home() {
         rewardName={currentReward?.name}
       />
 
-      {/* In Progress Rewards Modal */}
+      {/* Unified Rewards Modal */}
       <InProgressRewardsModal
         isOpen={inProgressModalOpen}
         onClose={() => setInProgressModalOpen(false)}
-        inProgressRewards={getInProgressRewards()}
+        modalType={modalType}
+        modalTitle={modalTitle}
+        inProgressRewards={getRewardsByStatus(modalType)}
         userProgress={userProgress}
         onAddStamp={handleInProgressAddStamp}
         onRedeemReward={handleInProgressRedeemReward}

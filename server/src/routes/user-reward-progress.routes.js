@@ -4,6 +4,7 @@ const { UserRewardProgress } = require("../models/userRewardProgress.model");
 const { authenticateUser } = require("../middleware/supabase-auth.middleware");
 const { validate } = require("../middleware/validation.middleware");
 const { logger } = require("../utils/logger");
+const User = require("../models/user.model");
 
 const router = express.Router();
 
@@ -26,10 +27,19 @@ const createProgressValidation = [
  */
 router.get("/", authenticateUser, async (req, res) => {
   try {
-    const userId = req.user.id;
-    const progress = await UserRewardProgress.findByUserId(userId);
+    const authUserId = req.user.id; // Supabase auth user ID
+    
+    // Get the database user by auth user ID
+    const dbUser = await User.findByAuthUserId(authUserId);
+    if (!dbUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found in database",
+      });
+    }
 
-    logger.info(`Retrieved reward progress for user: ${userId}`);
+    const progress = await UserRewardProgress.findByUserId(dbUser.id);
+
     res.status(200).json({
       success: true,
       data: progress,
@@ -51,10 +61,19 @@ router.get("/", authenticateUser, async (req, res) => {
  */
 router.get("/:rewardId", authenticateUser, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const authUserId = req.user.id; // Supabase auth user ID
     const rewardId = parseInt(req.params.rewardId);
 
-    const progress = await UserRewardProgress.getProgress(userId, rewardId);
+    // Get the database user by auth user ID
+    const dbUser = await User.findByAuthUserId(authUserId);
+    if (!dbUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found in database",
+      });
+    }
+
+    const progress = await UserRewardProgress.getProgress(dbUser.id, rewardId);
 
     if (!progress) {
       return res.status(404).json({
@@ -63,7 +82,6 @@ router.get("/:rewardId", authenticateUser, async (req, res) => {
       });
     }
 
-    logger.info(`Retrieved progress for user ${userId}, reward ${rewardId}`);
     res.status(200).json({
       success: true,
       data: progress,
@@ -90,18 +108,24 @@ router.post(
   authenticateUser,
   async (req, res) => {
     try {
-      const userId = req.user.id;
+      const authUserId = req.user.id; // Supabase auth user ID
       const { rewardId, stampsRequired } = req.body;
 
+      // Get the database user by auth user ID
+      const dbUser = await User.findByAuthUserId(authUserId);
+      if (!dbUser) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found in database",
+        });
+      }
+
       const progress = await UserRewardProgress.create(
-        userId,
+        dbUser.id,
         rewardId,
         stampsRequired
       );
 
-      logger.info(
-        `Created/updated progress for user ${userId}, reward ${rewardId}`
-      );
       res.status(201).json({
         success: true,
         data: progress,
@@ -129,22 +153,31 @@ router.post(
   authenticateUser,
   async (req, res) => {
     try {
-      const userId = req.user.id;
+      const authUserId = req.user.id; // Supabase auth user ID
       const rewardId = parseInt(req.params.rewardId);
+
+      // Get the database user by auth user ID
+      const dbUser = await User.findByAuthUserId(authUserId);
+      if (!dbUser) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found in database",
+        });
+      }
 
       // Check if progress exists, create if not
       let progress = await UserRewardProgress.findByUserAndReward(
-        userId,
+        dbUser.id,
         rewardId
       );
       if (!progress) {
         // Default to 10 stamps if not specified
-        progress = await UserRewardProgress.create(userId, rewardId, 10);
+        progress = await UserRewardProgress.create(dbUser.id, rewardId, 10);
       }
 
       // Add stamp
       const updatedProgress = await UserRewardProgress.addStamp(
-        userId,
+        dbUser.id,
         rewardId
       );
 
@@ -154,10 +187,6 @@ router.post(
           message: "Reward progress not found",
         });
       }
-
-      logger.info(
-        `Added stamp for user ${userId}, reward ${rewardId}. Progress: ${updatedProgress.stamps_collected}/${updatedProgress.stamps_required}`
-      );
 
       res.status(200).json({
         success: true,
@@ -183,10 +212,19 @@ router.post(
  */
 router.put("/:rewardId/reset", authenticateUser, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const authUserId = req.user.id; // Supabase auth user ID
     const rewardId = parseInt(req.params.rewardId);
 
-    const progress = await UserRewardProgress.resetProgress(userId, rewardId);
+    // Get the database user by auth user ID
+    const dbUser = await User.findByAuthUserId(authUserId);
+    if (!dbUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found in database",
+      });
+    }
+
+    const progress = await UserRewardProgress.resetProgress(dbUser.id, rewardId);
 
     if (!progress) {
       return res.status(404).json({
@@ -195,7 +233,6 @@ router.put("/:rewardId/reset", authenticateUser, async (req, res) => {
       });
     }
 
-    logger.info(`Reset progress for user ${userId}, reward ${rewardId}`);
     res.status(200).json({
       success: true,
       data: progress,
@@ -217,10 +254,19 @@ router.put("/:rewardId/reset", authenticateUser, async (req, res) => {
  */
 router.delete("/:rewardId", authenticateUser, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const authUserId = req.user.id; // Supabase auth user ID
     const rewardId = parseInt(req.params.rewardId);
 
-    const progress = await UserRewardProgress.delete(userId, rewardId);
+    // Get the database user by auth user ID
+    const dbUser = await User.findByAuthUserId(authUserId);
+    if (!dbUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found in database",
+      });
+    }
+
+    const progress = await UserRewardProgress.delete(dbUser.id, rewardId);
 
     if (!progress) {
       return res.status(404).json({
@@ -229,7 +275,6 @@ router.delete("/:rewardId", authenticateUser, async (req, res) => {
       });
     }
 
-    logger.info(`Deleted progress for user ${userId}, reward ${rewardId}`);
     res.status(200).json({
       success: true,
       message: "Reward progress deleted successfully",
