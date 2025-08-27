@@ -54,24 +54,14 @@ class UserRewardProgress {
   static async findByUserId(userId) {
     try {
       const query = `
-        SELECT urp.*, r.name as reward_name, r.description as reward_description, 
-               r.type as reward_type, r.value as reward_value, r.points_required as reward_points_required
-        FROM user_reward_progress urp
-        JOIN rewards r ON urp.reward_id = r.id
-        WHERE urp.user_id = $1 AND r.is_active = true
-        ORDER BY urp.updated_at DESC
+        SELECT * FROM user_reward_progress 
+        WHERE user_id = $1 
+        ORDER BY updated_at DESC
       `;
       const results = await db.getMany(query, [userId]);
-      return results.map((result) => ({
-        ...new UserRewardProgress(result),
-        reward_name: result.reward_name,
-        reward_description: result.reward_description,
-        reward_type: result.reward_type,
-        reward_value: result.reward_value,
-        reward_points_required: result.reward_points_required,
-      }));
+      return results.map((result) => new UserRewardProgress(result));
     } catch (error) {
-      logger.error("Error finding user reward progress:", error);
+      console.log("Error finding user reward progress:", error);
       throw error;
     }
   }

@@ -4,8 +4,6 @@ import {
   tokenStorage,
   isTokenValid,
   getUserFromToken,
-  isTokenExpiringSoon,
-  refreshToken as refreshJWTToken,
 } from "../utils/jwt.js";
 import { authAPI, apiErrorHandler } from "../utils/api.js";
 
@@ -26,39 +24,140 @@ export const AuthProvider = ({ children }) => {
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
   const [lockoutTime, setLockoutTime] = useState(null);
+  const [authErrors, setAuthErrors] = useState([]);
   const navigate = useNavigate();
 
   // Security constants
   const MAX_LOGIN_ATTEMPTS = 5;
   const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
-  const TOKEN_REFRESH_INTERVAL = 4 * 60 * 1000; // 4 minutes (refresh before 5-min expiry)
 
+  // Load lockout state from localStorage on startup
+  function loadLockoutState() {
+    try {
+      const lockoutData = localStorage.getItem('authLockout');
+      if (lockoutData) {
+        const { attempts, isLocked: wasLocked, lockoutTime: savedLockoutTime } = JSON.parse(lockoutData);
+        const now = Date.now();
+        
+        if (wasLocked && savedLockoutTime && (now - savedLockoutTime < LOCKOUT_DURATION)) {
+          setLoginAttempts(attempts || 0);
+          setIsLocked(true);
+          setLockoutTime(savedLockoutTime);
+        } else {
+          // Lockout expired, clear state
+          clearLockout();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load lockout state:', error);
+      clearLockout();
+    }
+  }
+
+  // Save lockout state to localStorage
+  function saveLockoutState(attempts, locked, time) {
+    try {
+      localStorage.setItem('authLockout', JSON.stringify({
+        attempts,
+        isLocked: locked,
+        lockoutTime: time
+      }));
+    } catch (error) {
+      console.error('Failed to save lockout state:', error);
+    }
+  }
+
+  // Clear lockout state
+  function clearLockout() {
+    setIsLocked(false);
+    setLoginAttempts(0);
+    setLockoutTime(null);
+    localStorage.removeItem('authLockout');
+  }
+
+  // Clear auth errors
+  function clearAuthErrors() {
+    setAuthErrors([]);
+  }
+
+  // Add auth error
+  function addAuthError(error) {
+    setAuthErrors(prev => [...prev, {
+      id: Date.now(),
+      message: error,
+      timestamp: new Date()
+    }]);
+  }
+
+  // Simple logout function without timers
+  function logout() {
+    try {
+      // Call API logout endpoint (don't await to avoid blocking)
+      authAPI.logout().catch(error => console.warn("Logout API call failed:", error));
+    } catch (error) {
+      console.warn("Logout API call failed:", error);
+    } finally {
+      // Always clear local data immediately
+      clearAuthData();
+      clearAuthErrors();
+      clearLockout();
+      navigate("/");
+    }
+  }
+
+  // Simple initialization - only run once on mount
   useEffect(() => {
-    // Check for existing authentication on app load
+    loadLockoutState();
     checkAuthStatus();
   }, []);
 
-  useEffect(() => {
-    // Auto-unlock after lockout duration
-    if (isLocked && lockoutTime) {
-      const timer = setTimeout(() => {
-        setIsLocked(false);
-        setLoginAttempts(0);
-        setLockoutTime(null);
-      }, LOCKOUT_DURATION);
-      return () => clearTimeout(timer);
+  async function login(email, password) {
+    if (isLocked) {
+      const remainingTime = Math.ceil((LOCKOUT_DURATION - (Date.now() - lockoutTime)) / 60000);
+      throw new Error(`Account temporarily locked. Please try again in ${remainingTime} minutes.`);
     }
-  }, [isLocked, lockoutTime]);
 
-  useEffect(() => {
-    // Set up token refresh interval
-    if (isAuthenticated) {
-      const interval = setInterval(handleTokenRefresh, TOKEN_REFRESH_INTERVAL);
-      return () => clearInterval(interval);
+    try {
+      clearAuthErrors();
+      
+      // Call API for authentication
+      const response = await authAPI.login(email, password);
+
+      // Update state
+      setUser(response.user);
+      setIsAuthenticated(true);
+      clearLockout(); // Clear any previous lockout state
+
+      console.log('Login successful for user:', response.user?.email);
+      return { success: true, user: response.user };
+    } catch (error) {
+      // Handle login failures
+      const newAttempts = loginAttempts + 1;
+      setLoginAttempts(newAttempts);
+
+      let errorMessage = apiErrorHandler.handleError(error);
+
+      if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
+        const lockTime = Date.now();
+        setIsLocked(true);
+        setLockoutTime(lockTime);
+        saveLockoutState(newAttempts, true, lockTime);
+        
+        errorMessage = "Too many failed attempts. Account locked for 15 minutes.";
+      } else {
+        // Save current attempt count
+        saveLockoutState(newAttempts, false, null);
+        
+        const remainingAttempts = MAX_LOGIN_ATTEMPTS - newAttempts;
+        errorMessage = `${errorMessage} (${remainingAttempts} attempts remaining)`;
+      }
+
+      addAuthError(errorMessage);
+      throw new Error(errorMessage);
     }
-  }, [isAuthenticated]);
+  }
 
-  const checkAuthStatus = async () => {
+  async function checkAuthStatus() {
     try {
       const token = tokenStorage.getToken();
 
@@ -66,47 +165,16 @@ export const AuthProvider = ({ children }) => {
         // Extract user data from token
         const tokenUser = getUserFromToken(token);
         if (tokenUser) {
-          try {
-            // Fetch complete user profile from API
-            const profileResponse = await authAPI.getProfile();
-            const completeUser = {
-              ...tokenUser,
-              // Merge with profile data
-              internalUserId: profileResponse.data?.id,
-              tenantId: profileResponse.data?.tenant_id ?? null,
-              phone: profileResponse.data?.phone ?? tokenUser.phone,
-              avatarUrl: profileResponse.data?.avatar_url ?? null,
-              isActive: profileResponse.data?.is_active ?? true,
-              emailVerified:
-                tokenUser?.emailVerified ??
-                profileResponse.data?.email_verified ??
-                false,
-              createdAt:
-                tokenUser?.createdAt || profileResponse.data?.created_at,
-              updatedAt: profileResponse.data?.updated_at || null,
-              permissions: profileResponse.data?.permissions || {},
-            };
-
-            setUser(completeUser);
-            setIsAuthenticated(true);
-            // Update stored user data with complete profile
-            tokenStorage.setUser(completeUser);
-          } catch (profileError) {
-            console.warn(
-              "Failed to fetch user profile, using token data only:",
-              profileError
-            );
-            // Fallback to token data if profile fetch fails
-            setUser(tokenUser);
-            setIsAuthenticated(true);
-            tokenStorage.setUser(tokenUser);
-          }
+          setUser(tokenUser);
+          setIsAuthenticated(true);
+          console.log("User authenticated:", tokenUser.email);
         } else {
-          // Token is valid but no user data, clear storage
+          console.warn("Token valid but no user data found");
           clearAuthData();
         }
       } else {
-        // No token or invalid token, clear storage
+        // Token is missing or invalid - just clear data, don't show errors on startup
+        console.log("No valid token found");
         clearAuthData();
       }
     } catch (error) {
@@ -115,71 +183,12 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
-  const handleTokenRefresh = async () => {
+  async function signup(userData) {
     try {
-      const token = tokenStorage.getToken();
-      if (token && isTokenExpiringSoon(token)) {
-        // Try to refresh token via API first
-        try {
-          await authAPI.refreshToken();
-        } catch (error) {
-          // If API refresh fails, try local refresh
-          const newToken = refreshJWTToken(token);
-          if (newToken) {
-            tokenStorage.setToken(newToken);
-          } else {
-            // Token refresh failed, logout user
-            logout();
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Token refresh failed:", error);
-      logout();
-    }
-  };
-
-  const login = async (email, password) => {
-    if (isLocked) {
-      throw new Error("Account temporarily locked. Please try again later.");
-    }
-
-    try {
-      // Call API for authentication
-      const response = await authAPI.login(email, password);
-
-      // Update state
-      setUser(response.user);
-      setIsAuthenticated(true);
-      setLoginAttempts(0);
-
-      return { success: true, user: response.user };
-    } catch (error) {
-      // Handle login failures
-      const newAttempts = loginAttempts + 1;
-      setLoginAttempts(newAttempts);
-
-      if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
-        setIsLocked(true);
-        setLockoutTime(Date.now());
-        throw new Error(
-          "Too many failed attempts. Account locked for 15 minutes."
-        );
-      } else {
-        throw new Error(
-          apiErrorHandler.handleError(error) ||
-            `Invalid credentials. ${
-              MAX_LOGIN_ATTEMPTS - newAttempts
-            } attempts remaining.`
-        );
-      }
-    }
-  };
-
-  const signup = async (userData) => {
-    try {
+      clearAuthErrors();
+      
       // Call API for user registration
       const response = await authAPI.register(userData);
 
@@ -205,38 +214,24 @@ export const AuthProvider = ({ children }) => {
       setUser(mergedUser);
       setIsAuthenticated(true);
 
+      console.log('Signup successful for user:', mergedUser.email);
       return { success: true, user: mergedUser };
     } catch (error) {
-      throw new Error(
-        apiErrorHandler.handleError(error) ||
-          "Account creation failed. Please try again."
-      );
+      const errorMessage = apiErrorHandler.handleError(error) || "Account creation failed. Please try again.";
+      addAuthError(errorMessage);
+      throw new Error(errorMessage);
     }
-  };
+  }
 
-  const logout = async () => {
-    try {
-      // Call API logout endpoint
-      await authAPI.logout();
-    } catch (error) {
-      console.warn("Logout API call failed:", error);
-    } finally {
-      // Always clear local data
-      clearAuthData();
-      navigate("/");
-    }
-  };
 
-  const clearAuthData = () => {
+
+  function clearAuthData() {
     tokenStorage.clearAll();
     setUser(null);
     setIsAuthenticated(false);
-    setLoginAttempts(0);
-    setIsLocked(false);
-    setLockoutTime(null);
-  };
+  }
 
-  const changePassword = async (currentPassword, newPassword) => {
+  async function changePassword(currentPassword, newPassword) {
     try {
       const response = await authAPI.changePassword(
         currentPassword,
@@ -311,7 +306,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const getSecurityStatus = () => {
+  function getSecurityStatus() {
     return {
       isLocked,
       loginAttempts,
@@ -319,24 +314,77 @@ export const AuthProvider = ({ children }) => {
       lockoutTime,
       isAuthenticated,
       tokenValid: isTokenValid(tokenStorage.getToken()),
-      tokenExpiringSoon: isTokenExpiringSoon(tokenStorage.getToken()),
     };
-  };
+  }
+
+  async function refreshUserSession() {
+    try {
+      console.log("Refreshing user session...");
+      await checkAuthStatus();
+      return { success: true, message: "User session refreshed" };
+    } catch (error) {
+      console.error("Failed to refresh user session:", error);
+      return { success: false, message: "Failed to refresh session" };
+    }
+  }
+
+  // Simple session validation - just check if user is authenticated and token is valid
+  function validateSession() {
+    try {
+      const token = tokenStorage.getToken();
+      const isValid = token && isTokenValid(token) && isAuthenticated;
+      return { 
+        success: isValid, 
+        message: isValid ? "Session is valid" : "Session is invalid" 
+      };
+    } catch (error) {
+      console.error("Session validation failed:", error);
+      return { success: false, message: "Session validation failed" };
+    }
+  }
 
   const value = {
+    // Core state
     user,
     isAuthenticated,
     isLoading,
+    token: tokenStorage.getToken(),
+    
+    // Security state
+    loginAttempts,
+    isLocked,
+    lockoutTime,
+    authErrors,
+    
+    // Auth methods
     login,
     signup,
     logout,
+    
+    // Password methods
     changePassword,
     resetPassword,
     verifyResetToken,
     setNewPassword,
+    
+    // Profile methods
     getProfile,
     updateProfile,
+    
+    // Utility methods
     getSecurityStatus,
+    checkAuthStatus,
+    refreshUserSession,
+    validateSession,
+    clearAuthErrors,
+    
+    // Helper methods
+    getRemainingLockoutTime: () => {
+      if (!isLocked || !lockoutTime) return 0;
+      return Math.max(0, LOCKOUT_DURATION - (Date.now() - lockoutTime));
+    },
+    
+    getRemainingAttempts: () => Math.max(0, MAX_LOGIN_ATTEMPTS - loginAttempts),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

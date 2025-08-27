@@ -506,11 +506,6 @@ export const rewardAPI = {
       method: "DELETE",
     });
   },
-
-  // Get reward by ID
-  getRewardById: async (rewardId) => {
-    return await makeRequest(`/rewards/${rewardId}`);
-  },
 };
 
 /**
@@ -520,43 +515,6 @@ export const userRewardProgressAPI = {
   // Get all user reward progress
   getUserProgress: async () => {
     return await makeRequest("/user-reward-progress");
-  },
-
-  // Get specific reward progress
-  getRewardProgress: async (rewardId) => {
-    return await makeRequest(`/user-reward-progress/${rewardId}`);
-  },
-
-  // Create or update reward progress
-  createProgress: async (rewardId, stampsRequired) => {
-    return await makeRequest("/user-reward-progress", {
-      method: "POST",
-      body: JSON.stringify({
-        rewardId,
-        stampsRequired,
-      }),
-    });
-  },
-
-  // Add stamp to reward progress
-  addStamp: async (rewardId) => {
-    return await makeRequest(`/user-reward-progress/${rewardId}/add-stamp`, {
-      method: "POST",
-    });
-  },
-
-  // Reset reward progress
-  resetProgress: async (rewardId) => {
-    return await makeRequest(`/user-reward-progress/${rewardId}/reset`, {
-      method: "PUT",
-    });
-  },
-
-  // Delete reward progress
-  deleteProgress: async (rewardId) => {
-    return await makeRequest(`/user-reward-progress/${rewardId}`, {
-      method: "DELETE",
-    });
   },
 };
 
@@ -585,10 +543,9 @@ export const stampTransactionAPI = {
   },
 
   // Get all stamp transactions (admin audit)
-  getAllTransactions: async () => {
-    return await makeRequest("/stamp-transactions", {
-      method: "GET",
-    });
+  getAllTransactions: async (params = {}) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return await makeRequest(`/stamp-transactions?${queryParams}`);
   },
 
   // Scan QR code (staff only)
@@ -600,37 +557,6 @@ export const stampTransactionAPI = {
         storeId,
         qrData,
       }),
-    });
-  },
-
-  // Get all transactions (admin only)
-  getAllTransactions: async (params = {}) => {
-    const queryParams = new URLSearchParams(params).toString();
-    return await makeRequest(`/stamp-transactions?${queryParams}`);
-  },
-
-  // Get user's transaction history
-  getUserTransactions: async (params = {}) => {
-    const queryParams = new URLSearchParams(params).toString();
-    return await makeRequest(`/stamp-transactions/user?${queryParams}`);
-  },
-
-  // Get specific transaction details
-  getTransactionDetails: async (transactionCode) => {
-    return await makeRequest(`/stamp-transactions/${transactionCode}`);
-  },
-
-  // Cancel pending transaction
-  cancelTransaction: async (transactionCode) => {
-    return await makeRequest(`/stamp-transactions/${transactionCode}/cancel`, {
-      method: "PUT",
-    });
-  },
-
-  // Clean up expired transactions (admin only)
-  cleanupExpired: async () => {
-    return await makeRequest("/stamp-transactions/cleanup", {
-      method: "POST",
     });
   },
 };

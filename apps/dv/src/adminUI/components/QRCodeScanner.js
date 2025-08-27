@@ -149,26 +149,16 @@ const QRCodeScanner = () => {
         <div className="qr-scanner-camera">
           <div className="qr-scanner-video-container">
             <Scanner
-              onResult={(result) => {
+              onScan={(result) => {
                 console.log("Scanner result:", result);
-                handleScan(result[0].rawValue);
-                setIsScanning(false);
+                if (result && result[0] && result[0].rawValue) {
+                  handleScan(result[0].rawValue);
+                  setIsScanning(false);
+                }
               }}
               onError={(error) => {
                 console.log("Scanner error:", error);
                 setError("Camera access error. Please check permissions.");
-              }}
-              styles={{
-                container: {
-                  width: "100%",
-                  maxWidth: "500px",
-                  margin: "0 auto",
-                  borderRadius: "1em",
-                  overflow: "hidden",
-                },
-                video: {
-                  borderRadius: "1em",
-                },
               }}
             />
           </div>

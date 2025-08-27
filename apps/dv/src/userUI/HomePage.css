@@ -241,6 +241,53 @@
     border-top: 1px solid rgba(59, 130, 246, 0.2);
 }
 
+.home-stats-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1em;
+}
+
+.home-stats-header h3 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.home-refresh-button {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 0.5em;
+    color: #3b82f6;
+    cursor: pointer;
+    font-size: 1.2em;
+    padding: 0.4em 0.6em;
+    transition: all 0.3s ease;
+}
+
+.home-refresh-button:hover:not(:disabled) {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.4);
+    transform: rotate(180deg);
+}
+
+.home-refresh-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    animation: home-refresh-spin 1s linear infinite;
+}
+
+@keyframes home-refresh-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .home-stats-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -693,6 +740,74 @@
 
     100% {
         transform: scale(1);
+    }
+}
+
+/* Notification */
+.home-notification {
+    position: fixed;
+    top: 2em;
+    right: 2em;
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    padding: 1em 1.5em;
+    border-radius: 0.75em;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    animation: home-notification-slide-in 0.3s ease-out;
+    max-width: 300px;
+}
+
+.home-notification-success {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.15));
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: #22c55e;
+}
+
+.home-notification-info {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(79, 70, 229, 0.15));
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #3b82f6;
+}
+
+.home-notification-error {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.15));
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+}
+
+.home-notification-message {
+    flex: 1;
+    font-weight: 500;
+    font-size: 0.9em;
+}
+
+.home-notification-close {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 1.1em;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+    padding: 0.2em;
+}
+
+.home-notification-close:hover {
+    opacity: 1;
+}
+
+@keyframes home-notification-slide-in {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
     }
 }
 

@@ -8,8 +8,8 @@ const {
 } = require("../middleware/supabase-auth.middleware");
 const { validate } = require("../middleware/validation.middleware");
 const { logger } = require("../utils/logger");
-const { User } = require("../models/user.model");
-const { Reward } = require("../models/reward.model");
+const User = require("../models/user.model");
+const Reward = require("../models/reward.model");
 
 const router = express.Router();
 
@@ -47,12 +47,21 @@ router.post(
   authenticateUser,
   async (req, res) => {
     try {
-      const userId = req.user.id;
+      const authUserId = req.user.id; // Supabase auth user ID
       const { rewardId, storeId, stampsAdded = 1 } = req.body;
 
-      // Create stamp transaction
+      // Get the database user by auth user ID
+      const dbUser = await User.findByAuthUserId(authUserId);
+      if (!dbUser) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found in database",
+        });
+      }
+
+      // Create stamp transaction using database user ID
       const transaction = await StampTransaction.create(
-        userId,
+        dbUser.id, // Use internal database user ID
         rewardId,
         storeId,
         stampsAdded
@@ -66,7 +75,7 @@ router.post(
       }
 
       logger.info(
-        `Created stamp transaction: ${transaction.transaction_code} for user ${userId}, reward ${rewardId}`
+        `Created stamp transaction: ${transaction.transaction_code} for auth user ${authUserId} (db user ${dbUser.id}), reward ${rewardId}`
       );
 
       res.status(201).json({
@@ -76,7 +85,7 @@ router.post(
           expires_at: transaction.expires_at,
           qr_data: JSON.stringify({
             code: transaction.transaction_code,
-            user_id: userId,
+            user_id: authUserId, // Send auth user ID in QR data
             reward_id: rewardId,
             expires_at: transaction.expires_at,
           }),
@@ -451,11 +460,14 @@ router.post("/process-scan", authenticateUser, async (req, res) => {
       });
     }
 
-    // Get user and reward details
-    const user = await User.findById(user_id);
+    console.log(`Processing QR scan - Auth User ID: ${typeof user_id}, Reward ID: ${typeof reward_id}`);
+
+    // Get user by Supabase auth ID (user_id from QR code is the auth user ID)
+    const user = await User.findByAuthUserId(user_id);
     const reward = await Reward.findById(reward_id);
 
     if (!user) {
+      logger.error(`User not found for auth ID: ${user_id}`);
       return res.status(404).json({
         success: false,
         message: "User not found",
@@ -463,67 +475,74 @@ router.post("/process-scan", authenticateUser, async (req, res) => {
     }
 
     if (!reward) {
+      logger.error(`Reward not found for ID: ${reward_id}`);
       return res.status(404).json({
         success: false,
         message: "Reward not found",
       });
     }
 
-    // Get or create user reward progress
-    let progress = await UserRewardProgress.findByUserAndReward(
-      user_id,
-      reward_id
-    );
+    // // Use the database user ID for reward progress
+    // const dbUserId = user.id;
+    // logger.info(`Found database user ID: ${dbUserId} for auth user ID: ${user_id}`);
 
-    if (!progress) {
-      // Create new progress record
-      progress = await UserRewardProgress.create(
-        user_id,
-        reward_id,
-        reward.points_required || reward.stamps_required || 10
-      );
-      // Set initial stamp
-      progress.stamps_collected = 1;
-      await progress.save();
-    } else {
-      // Add stamp to existing progress
-      progress.stamps_collected += 1;
+    // // Get or create user reward progress using database user ID
+    // let progress = await UserRewardProgress.findByUserAndReward(
+    //   dbUserId,
+    //   reward_id
+    // );
 
-      // Check if reward is completed
-      if (progress.stamps_collected >= progress.stamps_required) {
-        progress.is_completed = true;
-        progress.status = "ready_to_redeem";
-      }
+    // if (!progress) {
+    //   // Create new progress record
+    //   progress = await UserRewardProgress.create(
+    //     dbUserId,
+    //     reward_id,
+    //     reward.points_required || reward.stamps_required || 10
+    //   );
+      
+    //   // Add the first stamp
+    //   progress = await UserRewardProgress.addStamp(dbUserId, reward_id);
+    // } else {
+    //   // Add stamp to existing progress
+    //   progress = await UserRewardProgress.addStamp(dbUserId, reward_id);
+    // }
 
-      await progress.save();
-    }
+    // if (!progress) {
+    //   return res.status(500).json({
+    //     success: false,
+    //     message: "Failed to update user progress",
+    //   });
+    // }
 
-    // Create stamp transaction record
-    const transaction = await StampTransaction.create({
-      user_id,
-      reward_id,
-      scanned_by,
-      store_id,
-      stamps_added: 1,
-      transaction_type: "stamp_added",
-    });
+    // Update status if completed
+    // if (progress.is_completed && progress.status !== "ready_to_redeem") {
+    //   progress.status = "ready_to_redeem";
+    //   progress.completed_at = new Date();
+    //   await progress.save();
+    // }
+
+    // logger.info(
+    //   `Stamp added for auth user ${user_id} (db user ${dbUserId}), reward ${reward_id}. Progress: ${progress.stamps_collected}/${progress.stamps_required}`
+    // );
 
     // Return success response with updated progress
-    res.json({
-      success: true,
-      message: "Stamp added successfully",
-      data: {
-        customer_name: `${user.first_name} ${user.last_name}`,
-        reward_name: reward.name,
-        stamps_collected: progress.stamps_collected,
-        stamps_required: progress.stamps_required,
-        is_completed: progress.is_completed,
-        status: progress.status,
-        transaction_id: transaction.id,
-      },
-    });
+    // res.json({
+    //   success: true,
+    //   message: progress.is_completed 
+    //     ? "Stamp added! Reward completed!" 
+    //     : "Stamp added successfully",
+    //   data: {
+    //     customer_name: `${user.first_name} ${user.last_name}`,
+    //     reward_name: reward.name,
+    //     stamps_collected: progress.stamps_collected,
+    //     stamps_required: progress.stamps_required,
+    //     is_completed: progress.is_completed,
+    //     status: progress.status,
+    //     transaction_id: `SCAN_${Date.now()}`, // Generate a simple transaction ID
+    //   },
+    // });
   } catch (error) {
-    console.error("Error processing QR scan:", error);
+    logger.error("Error processing QR scan:", error);
     res.status(500).json({
       success: false,
       message: "Failed to process scan",

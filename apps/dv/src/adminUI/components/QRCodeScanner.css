@@ -204,6 +204,17 @@
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
+/* QrReader specific styling */
+.qr-scanner-video-container>div {
+    border-radius: 1em;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.qr-scanner-video-container canvas {
+    border-radius: 1em;
+}
+
 .qr-scanner-camera-controls {
     display: flex;
     justify-content: center;
@@ -241,6 +252,8 @@
 .qr-scanner-error-icon {
     font-size: 1.1em;
 }
+
+
 
 /* Result Section */
 .qr-scanner-result {

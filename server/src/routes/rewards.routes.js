@@ -33,7 +33,6 @@ const updateRewardValidation = Joi.object({
 
 // Helper function to convert frontend data to model format
 const convertToModelFormat = (frontendData) => {
-  console.log("frontendData=---", frontendData);
   const modelData = {
     name: frontendData.name,
     description: frontendData.description,
@@ -56,28 +55,21 @@ const convertToModelFormat = (frontendData) => {
       // For discount, use discount_percentage
       modelData.discount_percentage = frontendData.discount_percentage || 0;
       modelData.discount_amount = null;
-      console.log(
-        "Discount: discount_percentage =",
-        modelData.discount_percentage
-      );
       break;
     case "free_item":
       // For free item, no monetary value needed
       modelData.discount_amount = null;
       modelData.discount_percentage = null;
-      console.log("Free item: no monetary value");
       break;
     case "cashback":
       // For cashback, use discount_amount
       modelData.discount_amount = frontendData.discount_amount || 0;
       modelData.discount_percentage = null;
-      console.log("Cashback: discount_amount =", modelData.discount_amount);
       break;
     default:
-      console.log("Unknown reward type:", frontendData.type);
+      break;
   }
 
-  console.log("Final modelData:", modelData);
   return modelData;
 };
 
@@ -139,7 +131,6 @@ router.get("/", authenticateUser, requireAdmin, async (req, res) => {
       totalCount,
     });
   } catch (error) {
-    console.error("Error fetching rewards:", error);
     res.status(500).json({ error: "Failed to fetch rewards" });
   }
 });
@@ -158,7 +149,6 @@ router.get("/:id", authenticateUser, requireAdmin, async (req, res) => {
     const formattedReward = convertToFrontendFormat(reward);
     res.json(formattedReward);
   } catch (error) {
-    console.error("Error fetching reward:", error);
     res.status(500).json({ error: "Failed to fetch reward" });
   }
 });
@@ -184,7 +174,6 @@ router.post(
 
       res.status(201).json(formattedReward);
     } catch (error) {
-      console.error("Error creating reward:", error);
       res.status(500).json({ error: "Failed to create reward" });
     }
   }
@@ -211,7 +200,6 @@ router.put(
       const formattedReward = convertToFrontendFormat(reward);
       res.json(formattedReward);
     } catch (error) {
-      console.error("Error updating reward:", error);
       res.status(500).json({ error: "Failed to update reward" });
     }
   }
@@ -229,7 +217,6 @@ router.delete("/:id", authenticateUser, requireAdmin, async (req, res) => {
 
     res.json({ message: "Reward deleted successfully" });
   } catch (error) {
-    console.error("Error deleting reward:", error);
     res.status(500).json({ error: "Failed to delete reward" });
   }
 });
