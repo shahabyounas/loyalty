@@ -32,8 +32,7 @@ export const MENU_PERMISSIONS = {
   SETTINGS_VIEW: "settings_view",
   SETTINGS_UPDATE: "settings_update",
 
-  // Staff scanner
-  STAFF_SCANNER: "staff_scanner",
+  // QR Scanner and stamp transactions
   QR_SCANNER: "qr_scanner",
   STAMP_TRANSACTIONS: "stamp_transactions",
 };
@@ -87,15 +86,6 @@ export const MENU_CONFIG = [
     ],
     description: "Manage rewards and offers",
     category: "loyalty",
-  },
-  {
-    id: "staff-scanner",
-    label: "Staff Scanner",
-    icon: "📱",
-    component: "StaffScanner",
-    permissions: [MENU_PERMISSIONS.STAFF_SCANNER, MENU_PERMISSIONS.SUPER_ADMIN],
-    description: "Scan QR codes to add stamps",
-    category: "operations",
   },
   {
     id: "qr-scanner",
@@ -172,9 +162,9 @@ export const PERMISSION_GROUPS = {
       MENU_PERMISSIONS.SUPER_ADMIN,
     ],
   },
-  staff: {
-    name: "Staff Operations",
-    permissions: [MENU_PERMISSIONS.STAFF_SCANNER, MENU_PERMISSIONS.SUPER_ADMIN],
+  scanner: {
+    name: "QR Scanner Operations",
+    permissions: [MENU_PERMISSIONS.QR_SCANNER, MENU_PERMISSIONS.SUPER_ADMIN],
   },
   settings: {
     name: "Settings Management",

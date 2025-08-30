@@ -1,552 +1,699 @@
 const express = require("express");
-const { body } = require("express-validator");
 const { StampTransaction } = require("../models/stampTransaction.model");
-const { UserRewardProgress } = require("../models/userRewardProgress.model");
 const {
   authenticateUser,
   requireAdmin,
 } = require("../middleware/supabase-auth.middleware");
-const { validate } = require("../middleware/validation.middleware");
 const { logger } = require("../utils/logger");
 const User = require("../models/user.model");
 const Reward = require("../models/reward.model");
+const { UserRewardProgress } = require("../models/userRewardProgress.model");
+const { ScanHistory } = require("../models/scanHistory.model");
 
 const router = express.Router();
-
-// Validation rules
-const createTransactionValidation = [
-  body("rewardId").isInt({ min: 1 }).withMessage("Valid reward ID is required"),
-  body("storeId")
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage("Valid store ID is required"),
-  body("stampsAdded")
-    .optional()
-    .isInt({ min: 1, max: 10 })
-    .withMessage("Stamps added must be between 1 and 10"),
-];
-
-const scanTransactionValidation = [
-  body("transactionCode")
-    .isString()
-    .notEmpty()
-    .withMessage("Transaction code is required"),
-  body("storeId").isInt({ min: 1 }).withMessage("Valid store ID is required"),
-  body("qrData").optional().isObject().withMessage("QR data must be an object"),
-];
-
-/**
- * @route POST /api/stamp-transactions
- * @desc Create new stamp transaction (generate QR code)
- * @access Private
- */
-router.post(
-  "/",
-  createTransactionValidation,
-  validate,
-  authenticateUser,
-  async (req, res) => {
-    try {
-      const authUserId = req.user.id; // Supabase auth user ID
-      const { rewardId, storeId, stampsAdded = 1 } = req.body;
-
-      // Get the database user by auth user ID
-      const dbUser = await User.findByAuthUserId(authUserId);
-      if (!dbUser) {
-        return res.status(404).json({
-          success: false,
-          message: "User not found in database",
-        });
-      }
-
-      // Create stamp transaction using database user ID
-      const transaction = await StampTransaction.create(
-        dbUser.id, // Use internal database user ID
-        rewardId,
-        storeId,
-        stampsAdded
-      );
-
-      if (!transaction) {
-        return res.status(500).json({
-          success: false,
-          message: "Failed to create stamp transaction",
-        });
-      }
-
-      logger.info(
-        `Created stamp transaction: ${transaction.transaction_code} for auth user ${authUserId} (db user ${dbUser.id}), reward ${rewardId}`
-      );
-
-      res.status(201).json({
-        success: true,
-        data: {
-          transaction_code: transaction.transaction_code,
-          expires_at: transaction.expires_at,
-          qr_data: JSON.stringify({
-            code: transaction.transaction_code,
-            user_id: authUserId, // Send auth user ID in QR data
-            reward_id: rewardId,
-            expires_at: transaction.expires_at,
-          }),
-        },
-        message: "Stamp transaction created successfully",
-      });
-    } catch (error) {
-      logger.error("Create stamp transaction error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to create stamp transaction",
-      });
-    }
-  }
-);
-
-/**
- * @route POST /api/stamp-transactions/scan
- * @desc Scan QR code and complete transaction (staff only)
- * @access Private (Staff)
- */
-router.post(
-  "/scan",
-  scanTransactionValidation,
-  validate,
-  authenticateUser,
-  async (req, res) => {
-    try {
-      const staffId = req.user.id;
-      const { transactionCode, storeId, qrData } = req.body;
-
-      let transaction;
-
-      // If qrData is provided, create transaction from QR data
-      if (qrData) {
-        // Check if QR code is expired
-        const expiresAt = new Date(qrData.expires_at);
-        if (expiresAt < new Date()) {
-          return res.status(400).json({
-            success: false,
-            message: "QR code has expired",
-          });
-        }
-
-        // Create transaction from QR data
-        transaction = await StampTransaction.create(
-          qrData.user_id,
-          qrData.reward_id,
-          storeId,
-          1
-        );
-
-        if (!transaction) {
-          return res.status(500).json({
-            success: false,
-            message: "Failed to create transaction from QR data",
-          });
-        }
-      } else {
-        // Legacy flow: find existing transaction
-        transaction = await StampTransaction.findByCode(transactionCode);
-
-        if (!transaction) {
-          return res.status(404).json({
-            success: false,
-            message: "Transaction not found",
-          });
-        }
-
-        if (!transaction.isValid()) {
-          return res.status(400).json({
-            success: false,
-            message:
-              transaction.transaction_status === "pending"
-                ? "Transaction has expired"
-                : "Transaction is no longer valid",
-          });
-        }
-      }
-
-      // Complete transaction
-      const completedTransaction = await StampTransaction.completeTransaction(
-        transaction.transaction_code,
-        staffId,
-        storeId
-      );
-
-      if (!completedTransaction) {
-        return res.status(500).json({
-          success: false,
-          message: "Failed to complete transaction",
-        });
-      }
-
-      // Add stamp to user's reward progress
-      const progress = await UserRewardProgress.addStamp(
-        transaction.user_id,
-        transaction.reward_id
-      );
-
-      if (!progress) {
-        return res.status(500).json({
-          success: false,
-          message: "Failed to update user progress",
-        });
-      }
-
-      logger.info(
-        `Completed stamp transaction: ${transaction.transaction_code} by staff ${staffId} at store ${storeId}`
-      );
-
-      res.status(200).json({
-        success: true,
-        data: {
-          transaction: completedTransaction,
-          progress: progress,
-          user_name: `${transaction.user_first_name} ${transaction.user_last_name}`,
-          reward_name: transaction.reward_name,
-          stamps_collected: progress.stamps_collected,
-          stamps_required: progress.stamps_required,
-          is_completed: progress.is_completed,
-        },
-        message: progress.is_completed
-          ? "Stamp added! Reward completed!"
-          : "Stamp added successfully",
-      });
-    } catch (error) {
-      logger.error("Scan stamp transaction error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Failed to scan transaction",
-      });
-    }
-  }
-);
 
 /**
  * @route GET /api/stamp-transactions
  * @desc Get all stamp transactions (admin only)
  * @access Private (Admin)
  */
-router.get("/", requireAdmin, async (req, res) => {
+router.get("/", async (req, res) => {
   try {
+    // Validate and sanitize query parameters
     const {
       page = 1,
       limit = 20,
       search = "",
-      userId,
-      rewardId,
-      storeId,
-      staffId,
-      status,
+      tenantId,
+      stampCardId,
+      staffUserId,
       dateFrom,
       dateTo,
     } = req.query;
 
-    const offset = (page - 1) * limit;
+    // Ensure page and limit are positive integers
+    const validatedPage = Math.max(1, parseInt(page) || 1);
+    const validatedLimit = Math.min(Math.max(1, parseInt(limit) || 20), 100); // Cap at 100
+    const offset = (validatedPage - 1) * validatedLimit;
 
+    // Build options object with validated data
     const options = {
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      search,
-      userId: userId ? parseInt(userId) : null,
-      rewardId: rewardId ? parseInt(rewardId) : null,
-      storeId: storeId ? parseInt(storeId) : null,
-      staffId: staffId ? parseInt(staffId) : null,
-      status,
-      dateFrom,
-      dateTo,
+      limit: validatedLimit,
+      offset: offset,
+      search: typeof search === 'string' ? search.trim() : '',
+      tenantId: tenantId || null,
+      stampCardId: stampCardId || null,
+      staffUserId: staffUserId || null,
+      dateFrom: dateFrom || null,
+      dateTo: dateTo || null,
     };
 
-    const [transactions, totalCount] = await Promise.all([
-      StampTransaction.findAll(options),
-      StampTransaction.count(options),
-    ]);
+    // Execute both queries with proper error handling
+    let transactions = [];
+    let totalCount = 0;
+
+    try {
+      const [transactionsResult, totalCountResult] = await Promise.all([
+        StampTransaction.findAll(options).catch(error => {
+          logger.error("Error fetching transactions:", error);
+          throw new Error("Failed to fetch transactions");
+        }),
+        StampTransaction.count(options).catch(error => {
+          logger.error("Error counting transactions:", error);
+          throw new Error("Failed to count transactions");
+        })
+      ]);
+
+      transactions = Array.isArray(transactionsResult) ? transactionsResult : [];
+      totalCount = typeof totalCountResult === 'number' ? totalCountResult : 0;
+
+    } catch (dbError) {
+      logger.error("Database error in stamp transactions:", dbError);
+      return res.status(500).json({
+        success: false,
+        message: "Database error occurred while retrieving transactions",
+        data: [],
+        pagination: {
+          page: validatedPage,
+          limit: validatedLimit,
+          total: 0,
+          pages: 0,
+        }
+      });
+    }
+
+    // Ensure transactions is an array and totalCount is a number
+    if (!Array.isArray(transactions)) {
+      transactions = [];
+    }
+    if (typeof totalCount !== 'number' || totalCount < 0) {
+      totalCount = 0;
+    }
+
+    const totalPages = Math.ceil(totalCount / validatedLimit);
 
     logger.info(
-      `Retrieved ${transactions.length} stamp transactions for admin`
+      `Retrieved ${transactions.length} stamp transactions for admin (page ${validatedPage}/${totalPages})`
     );
 
     res.status(200).json({
       success: true,
       data: transactions,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: validatedPage,
+        limit: validatedLimit,
         total: totalCount,
-        pages: Math.ceil(totalCount / limit),
+        pages: totalPages,
+        hasNext: validatedPage < totalPages,
+        hasPrev: validatedPage > 1,
       },
-      message: "Stamp transactions retrieved successfully",
+      message: transactions.length > 0 
+        ? "Stamp transactions retrieved successfully" 
+        : "No stamp transactions found",
     });
+
   } catch (error) {
-    logger.error("Get stamp transactions error:", error);
+    logger.error("Unexpected error in GET stamp transactions:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to retrieve stamp transactions",
-    });
-  }
-});
-
-/**
- * @route GET /api/stamp-transactions/user
- * @desc Get user's transaction history
- * @access Private
- */
-router.get("/user", authenticateUser, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { page = 1, limit = 20 } = req.query;
-    const offset = (page - 1) * limit;
-
-    const options = {
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-    };
-
-    const transactions = await StampTransaction.findByUserId(userId, options);
-
-    logger.info(
-      `Retrieved ${transactions.length} transactions for user ${userId}`
-    );
-
-    res.status(200).json({
-      success: true,
-      data: transactions,
+      message: "An unexpected error occurred while retrieving stamp transactions",
+      data: [],
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-      },
-      message: "User transaction history retrieved successfully",
-    });
-  } catch (error) {
-    logger.error("Get user transactions error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to retrieve user transactions",
+        page: 1,
+        limit: 20,
+        total: 0,
+        pages: 0,
+      }
     });
   }
 });
 
 /**
- * @route GET /api/stamp-transactions/:transactionCode
- * @desc Get specific transaction details
+ * @route POST /api/stamp-transactions
+ * @desc Create a new stamp transaction
  * @access Private
  */
-router.get("/:transactionCode", authenticateUser, async (req, res) => {
+router.post("/", authenticateUser, async (req, res) => {
   try {
-    const { transactionCode } = req.params;
-    const transaction = await StampTransaction.findByCode(transactionCode);
+    const { 
+      tenantId, 
+      stampCardId, 
+      stampsAdded = 1, 
+      description,
+      staffUserId 
+    } = req.body;
 
-    if (!transaction) {
-      return res.status(404).json({
-        success: false,
-        message: "Transaction not found",
-      });
-    }
-
-    // Only allow user to view their own transactions or admin to view any
-    if (
-      transaction.user_id !== req.user.id &&
-      req.user.role !== "super_admin"
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      data: transaction,
-      message: "Transaction details retrieved successfully",
-    });
-  } catch (error) {
-    logger.error("Get transaction details error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to retrieve transaction details",
-    });
-  }
-});
-
-/**
- * @route PUT /api/stamp-transactions/:transactionCode/cancel
- * @desc Cancel pending transaction
- * @access Private
- */
-router.put("/:transactionCode/cancel", authenticateUser, async (req, res) => {
-  try {
-    const { transactionCode } = req.params;
-    const transaction = await StampTransaction.findByCode(transactionCode);
-
-    if (!transaction) {
-      return res.status(404).json({
-        success: false,
-        message: "Transaction not found",
-      });
-    }
-
-    // Only allow user to cancel their own transactions
-    if (transaction.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied",
-      });
-    }
-
-    const cancelledTransaction = await StampTransaction.cancelTransaction(
-      transactionCode
-    );
-
-    if (!cancelledTransaction) {
+    // Validate required fields
+    if (!tenantId || typeof tenantId !== 'string' || tenantId.trim() === '') {
       return res.status(400).json({
         success: false,
-        message: "Transaction cannot be cancelled",
+        message: "Valid tenant ID is required",
       });
     }
 
-    logger.info(
-      `Cancelled stamp transaction: ${transactionCode} by user ${req.user.id}`
-    );
+    if (!stampCardId || typeof stampCardId !== 'string' || stampCardId.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: "Valid stamp card ID is required",
+      });
+    }
 
-    res.status(200).json({
+    const validStampsAdded = parseInt(stampsAdded);
+    if (isNaN(validStampsAdded) || validStampsAdded < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Stamps added must be a positive number",
+      });
+    }
+
+    let transaction;
+    try {
+      transaction = await StampTransaction.create(
+        tenantId.trim(),
+        stampCardId.trim(),
+        validStampsAdded,
+        description || null,
+        staffUserId || null
+      );
+    } catch (dbError) {
+      logger.error("Database error creating stamp transaction:", dbError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to create stamp transaction",
+      });
+    }
+
+    if (!transaction) {
+      return res.status(500).json({
+        success: false,
+        message: "Failed to create stamp transaction",
+      });
+    }
+
+    logger.info(`Created stamp transaction: ${transaction.id} for stamp card ${stampCardId}`);
+
+    res.status(201).json({
       success: true,
-      data: cancelledTransaction,
-      message: "Transaction cancelled successfully",
+      data: transaction,
+      message: "Stamp transaction created successfully",
     });
+
   } catch (error) {
-    logger.error("Cancel transaction error:", error);
+    logger.error("Unexpected error creating stamp transaction:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to cancel transaction",
+      message: "An unexpected error occurred while creating the stamp transaction",
     });
   }
 });
 
 /**
- * @route POST /api/stamp-transactions/cleanup
- * @desc Clean up expired transactions (admin only)
+ * @route GET /api/stamp-transactions/scan-history
+ * @desc Get all scan history (admin only)
  * @access Private (Admin)
  */
-router.post("/cleanup", requireAdmin, async (req, res) => {
+router.get("/scan-history", requireAdmin, async (req, res) => {
   try {
-    const cleanedCount = await StampTransaction.cleanupExpired();
+    const {
+      page = 1,
+      limit = 50,
+      userId,
+      rewardId,
+      storeId,
+      scannedByUserId,
+      dateFrom,
+      dateTo,
+    } = req.query;
 
-    logger.info(`Cleaned up ${cleanedCount} expired stamp transactions`);
+    // Validate and sanitize query parameters
+    const validatedPage = Math.max(1, parseInt(page) || 1);
+    const validatedLimit = Math.min(Math.max(1, parseInt(limit) || 50), 100);
+    const offset = (validatedPage - 1) * validatedLimit;
+
+    const options = {
+      limit: validatedLimit,
+      offset: offset,
+      userId: userId || null,
+      rewardId: rewardId || null,
+      storeId: storeId || null,
+      scannedByUserId: scannedByUserId || null,
+      dateFrom: dateFrom || null,
+      dateTo: dateTo || null,
+    };
+
+    let scanHistory = [];
+    let totalCount = 0;
+
+    try {
+      const [historyResult, countResult] = await Promise.all([
+        ScanHistory.findAll(options).catch(error => {
+          logger.error("Error fetching scan history:", error);
+          throw new Error("Failed to fetch scan history");
+        }),
+        ScanHistory.count(options).catch(error => {
+          logger.error("Error counting scan history:", error);
+          throw new Error("Failed to count scan history");
+        })
+      ]);
+
+      scanHistory = Array.isArray(historyResult) ? historyResult : [];
+      totalCount = typeof countResult === 'number' ? countResult : 0;
+
+    } catch (dbError) {
+      logger.error("Database error in scan history:", dbError);
+      return res.status(500).json({
+        success: false,
+        message: "Database error occurred while retrieving scan history",
+        data: [],
+        pagination: {
+          page: validatedPage,
+          limit: validatedLimit,
+          total: 0,
+          pages: 0,
+        }
+      });
+    }
+
+    const totalPages = Math.ceil(totalCount / validatedLimit);
+
+    logger.info(`Retrieved ${scanHistory.length} scan history records for admin (page ${validatedPage}/${totalPages})`);
 
     res.status(200).json({
       success: true,
-      data: { cleaned_count: cleanedCount },
-      message: `Cleaned up ${cleanedCount} expired transactions`,
+      data: scanHistory,
+      pagination: {
+        page: validatedPage,
+        limit: validatedLimit,
+        total: totalCount,
+        pages: totalPages,
+        hasNext: validatedPage < totalPages,
+        hasPrev: validatedPage > 1,
+      },
+      message: scanHistory.length > 0 
+        ? "Scan history retrieved successfully" 
+        : "No scan history found",
     });
+
   } catch (error) {
-    logger.error("Cleanup transactions error:", error);
+    logger.error("Unexpected error in GET scan history:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to cleanup expired transactions",
+      message: "An unexpected error occurred while retrieving scan history",
+      data: [],
+      pagination: {
+        page: 1,
+        limit: 50,
+        total: 0,
+        pages: 0,
+      }
+    });
+  }
+});
+
+/**
+ * @route GET /api/stamp-transactions/scan-history/progress/:progressId
+ * @desc Get scan history for a specific user reward progress
+ * @access Private (Admin)
+ */
+router.get("/scan-history/progress/:progressId", requireAdmin, async (req, res) => {
+  try {
+    const { progressId } = req.params;
+    const { page = 1, limit = 50 } = req.query;
+
+    // Validate progress ID
+    if (!progressId || isNaN(parseInt(progressId))) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid progress ID is required",
+      });
+    }
+
+    const validatedPage = Math.max(1, parseInt(page) || 1);
+    const validatedLimit = Math.min(Math.max(1, parseInt(limit) || 50), 100);
+    const offset = (validatedPage - 1) * validatedLimit;
+
+    const options = {
+      limit: validatedLimit,
+      offset: offset,
+    };
+
+    let scanHistory;
+    try {
+      scanHistory = await ScanHistory.findByProgressId(parseInt(progressId), options);
+    } catch (dbError) {
+      logger.error(`Database error finding scan history for progress ${progressId}:`, dbError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to retrieve scan history for this progress",
+      });
+    }
+
+    if (!Array.isArray(scanHistory)) {
+      scanHistory = [];
+    }
+
+    logger.info(`Retrieved ${scanHistory.length} scan records for progress ${progressId}`);
+
+    res.status(200).json({
+      success: true,
+      data: scanHistory,
+      message: scanHistory.length > 0 
+        ? "Scan history retrieved successfully" 
+        : "No scan history found for this progress",
+    });
+
+  } catch (error) {
+    logger.error("Unexpected error retrieving progress scan history:", error);
+    res.status(500).json({
+      success: false,
+      message: "An unexpected error occurred while retrieving scan history",
+    });
+  }
+});
+
+/**
+ * @route GET /api/stamp-transactions/scan-history/statistics
+ * @desc Get scan statistics for admin dashboard
+ * @access Private (Admin)
+ */
+router.get("/scan-history/statistics", requireAdmin, async (req, res) => {
+  try {
+    const { dateFrom, dateTo, storeId } = req.query;
+
+    const options = {
+      dateFrom: dateFrom || null,
+      dateTo: dateTo || null,
+      storeId: storeId || null,
+    };
+
+    let statistics;
+    try {
+      statistics = await ScanHistory.getStatistics(options);
+    } catch (dbError) {
+      logger.error("Database error getting scan statistics:", dbError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to retrieve scan statistics",
+      });
+    }
+
+    logger.info("Retrieved scan statistics for admin dashboard");
+
+    res.status(200).json({
+      success: true,
+      data: statistics,
+      message: "Scan statistics retrieved successfully",
+    });
+
+  } catch (error) {
+    logger.error("Unexpected error retrieving scan statistics:", error);
+    res.status(500).json({
+      success: false,
+      message: "An unexpected error occurred while retrieving scan statistics",
     });
   }
 });
 
 // Process QR code scan (any authenticated staff member)
-router.post("/process-scan", authenticateUser, async (req, res) => {
+router.post("/process-scan", async (req, res) => {
   try {
     const { user_id, reward_id, scanned_by, store_id } = req.body;
 
-    // Validate required fields
-    if (!user_id || !reward_id || !scanned_by) {
+    // Validate required fields with type checking
+    if (!user_id || typeof user_id !== 'string' || user_id.trim() === '') {
       return res.status(400).json({
         success: false,
-        message: "user_id, reward_id, and scanned_by are required",
+        message: "Valid user_id is required",
       });
     }
 
-    console.log(`Processing QR scan - Auth User ID: ${typeof user_id}, Reward ID: ${typeof reward_id}`);
-
-    // Get user by Supabase auth ID (user_id from QR code is the auth user ID)
-    const user = await User.findByAuthUserId(user_id);
-    const reward = await Reward.findById(reward_id);
-
-    if (!user) {
-      logger.error(`User not found for auth ID: ${user_id}`);
-      return res.status(404).json({
+    if (!reward_id || typeof reward_id !== 'string' || reward_id.trim() === '') {
+      return res.status(400).json({
         success: false,
-        message: "User not found",
+        message: "Valid reward_id is required",
       });
     }
 
-    if (!reward) {
-      logger.error(`Reward not found for ID: ${reward_id}`);
-      return res.status(404).json({
+    if (!scanned_by || typeof scanned_by !== 'string' || scanned_by.trim() === '') {
+      return res.status(400).json({
         success: false,
-        message: "Reward not found",
+        message: "Valid scanned_by identifier is required",
       });
     }
 
-    // // Use the database user ID for reward progress
-    // const dbUserId = user.id;
-    // logger.info(`Found database user ID: ${dbUserId} for auth user ID: ${user_id}`);
+    const sanitizedUserId = user_id.trim();
+    const validRewardId = reward_id.trim();
+    const sanitizedScannedBy = scanned_by.trim();
 
-    // // Get or create user reward progress using database user ID
-    // let progress = await UserRewardProgress.findByUserAndReward(
-    //   dbUserId,
-    //   reward_id
-    // );
+    // Get user by Supabase auth ID with comprehensive error handling
+    let user;
+    try {
+      user = await User.findByAuthUserId(sanitizedUserId);
+      if (!user) {
+        logger.error(`User not found for auth ID: ${sanitizedUserId}`);
+        return res.status(404).json({
+          success: false,
+          message: "User not found in the system",
+        });
+      }
+    } catch (userError) {
+      logger.error(`Error finding user by auth ID ${sanitizedUserId}:`, userError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to verify user information",
+      });
+    }
 
-    // if (!progress) {
-    //   // Create new progress record
-    //   progress = await UserRewardProgress.create(
-    //     dbUserId,
-    //     reward_id,
-    //     reward.points_required || reward.stamps_required || 10
-    //   );
+    // Get reward with error handling
+    let reward;
+    try {
+      reward = await Reward.findById(validRewardId);
+      if (!reward) {
+        logger.error(`Reward not found for ID: ${validRewardId}`);
+        return res.status(404).json({
+          success: false,
+          message: "Reward not found",
+        });
+      }
+    } catch (rewardError) {
+      logger.error(`Error finding reward ${validRewardId}:`, rewardError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to verify reward information",
+      });
+    }
+
+    // Validate user and reward data
+    if (!user.id) {
+      logger.error(`Invalid user ID structure for auth ID ${sanitizedUserId}:`, user);
+      return res.status(500).json({
+        success: false,
+        message: "Invalid user data structure",
+      });
+    }
+
+    
+    console.log('Reward fetched:', reward);
+
+    if (!reward.name) {
+      logger.error(`Invalid reward structure for ID ${validRewardId}:`, reward);
+      return res.status(500).json({
+        success: false,
+        message: "Invalid reward configuration",
+      });
+    }
+
+    const dbUserId = user.id;
+    logger.info(`Processing scan for database user ID: ${dbUserId}, auth user ID: ${sanitizedUserId}`);
+
+    // Get or create user reward progress with enhanced error handling
+    let progress;
+    try {
+      progress = await UserRewardProgress.findByUserAndReward(dbUserId, validRewardId);
+    } catch (findError) {
+      logger.error(`Error finding user reward progress for user ${dbUserId}, reward ${validRewardId}:`, findError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to retrieve user reward progress",
+      });
+    }
+
+    if (!progress) {
+      logger.info(`No existing progress found. Creating new progress for user ${dbUserId}, reward ${validRewardId}`);
+      try {
+        
+        const requiredStamps = reward.points_required || reward.stamps_required || 10;
+        logger.info(`requiredStamps ${requiredStamps}, type ${typeof requiredStamps}`);
+        
+        // Validate required stamps
+        if (typeof requiredStamps !== 'number' || requiredStamps <= 0) {
+          logger.error(`Invalid stamps requirement for reward ${validRewardId}: ${requiredStamps}`);
+          return res.status(500).json({
+            success: false,
+            message: "Invalid reward stamp configuration",
+          });
+        }
+
+        progress = await UserRewardProgress.create(dbUserId, validRewardId, requiredStamps);
+        
+        if (!progress) {
+          logger.error(`Failed to create progress record for user ${dbUserId}, reward ${validRewardId}`);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to create user reward progress",
+          });
+        }
+        
+        logger.info(`Created new progress record for user ${dbUserId}, reward ${validRewardId}`);
+      } catch (createError) {
+        logger.error(`Error creating user reward progress:`, createError);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to initialize user reward progress",
+        });
+      }
+    }
+
+    // Validate progress data before adding stamp
+    if (!progress || typeof progress.stamps_collected !== 'number' || typeof progress.stamps_required !== 'number') {
+      logger.error(`Invalid progress data structure:`, progress);
+      return res.status(500).json({
+        success: false,
+        message: "Invalid user progress data",
+      });
+    }
+
+    // Check if already completed
+    if (progress.stamps_collected >= progress.stamps_required) {
+      return res.status(400).json({
+        success: false,
+        message: "Reward already completed",
+        data: {
+          customer_name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown Customer',
+          reward_name: reward.name || 'Unknown Reward',
+          stamps_collected: progress.stamps_collected,
+          stamps_required: progress.stamps_required,
+          is_completed: true,
+          status: progress.status || 'completed',
+        },
+      });
+    }
+
+    // Add stamp to progress with rollback capability
+    let updatedProgress;
+    const stampsBeforeScan = progress.stamps_collected;
+    try {
+      updatedProgress = await UserRewardProgress.addStamp(dbUserId, validRewardId);
       
-    //   // Add the first stamp
-    //   progress = await UserRewardProgress.addStamp(dbUserId, reward_id);
-    // } else {
-    //   // Add stamp to existing progress
-    //   progress = await UserRewardProgress.addStamp(dbUserId, reward_id);
-    // }
+      if (!updatedProgress) {
+        logger.error(`addStamp returned null for user ${dbUserId}, reward ${validRewardId}`);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to update user progress",
+        });
+      }
 
-    // if (!progress) {
-    //   return res.status(500).json({
-    //     success: false,
-    //     message: "Failed to update user progress",
-    //   });
-    // }
+      // Validate updated progress
+      if (typeof updatedProgress.stamps_collected !== 'number' || typeof updatedProgress.stamps_required !== 'number') {
+        logger.error(`Invalid updated progress data:`, updatedProgress);
+        return res.status(500).json({
+          success: false,
+          message: "Progress update resulted in invalid data",
+        });
+      }
 
-    // Update status if completed
-    // if (progress.is_completed && progress.status !== "ready_to_redeem") {
-    //   progress.status = "ready_to_redeem";
-    //   progress.completed_at = new Date();
-    //   await progress.save();
-    // }
+    } catch (addStampError) {
+      logger.error(`Error adding stamp for user ${dbUserId}, reward ${validRewardId}:`, addStampError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to add stamp to user progress",
+      });
+    }
 
-    // logger.info(
-    //   `Stamp added for auth user ${user_id} (db user ${dbUserId}), reward ${reward_id}. Progress: ${progress.stamps_collected}/${progress.stamps_required}`
-    // );
+    // Record scan history for tracking
+    try {
+      // Try to find staff user by the scanned_by identifier (could be email, ID, etc.)
+      let staffUserId = null;
+      if (sanitizedScannedBy) {
+        try {
+          // Try to find staff user by email or auth ID
+          const staffUser = await User.findByEmail(sanitizedScannedBy).catch(() => 
+            User.findByAuthUserId(sanitizedScannedBy).catch(() => null)
+          );
+          if (staffUser && (staffUser.role === 'staff' || staffUser.role === 'store_manager' || staffUser.role === 'tenant_admin')) {
+            staffUserId = staffUser.id;
+            logger.info(`Found staff user for scan: ${staffUser.email} (${staffUser.role})`);
+          }
+        } catch (staffLookupError) {
+          logger.warn(`Could not find staff user for identifier: ${sanitizedScannedBy}`, staffLookupError);
+        }
+      }
 
-    // Return success response with updated progress
-    // res.json({
-    //   success: true,
-    //   message: progress.is_completed 
-    //     ? "Stamp added! Reward completed!" 
-    //     : "Stamp added successfully",
-    //   data: {
-    //     customer_name: `${user.first_name} ${user.last_name}`,
-    //     reward_name: reward.name,
-    //     stamps_collected: progress.stamps_collected,
-    //     stamps_required: progress.stamps_required,
-    //     is_completed: progress.is_completed,
-    //     status: progress.status,
-    //     transaction_id: `SCAN_${Date.now()}`, // Generate a simple transaction ID
-    //   },
-    // });
+      const scanRecord = await ScanHistory.create(
+        progress.id, // user_reward_progress_id
+        dbUserId, // user_id
+        validRewardId, // reward_id
+        staffUserId, // scanned_by_user_id (null if staff not found)
+        store_id || null, // store_id
+        1, // stamps_added
+        stampsBeforeScan, // stamps_before_scan
+        updatedProgress.stamps_collected // stamps_after_scan
+      );
+      
+      if (scanRecord) {
+        logger.info(`Scan history recorded: ${scanRecord.id} for progress ${progress.id}, scanned by: ${staffUserId ? 'staff-' + staffUserId : 'anonymous'}`);
+      }
+    } catch (scanHistoryError) {
+      // Don't fail the main request if scan history fails, just log it
+      logger.error(`Failed to record scan history for user ${dbUserId}, reward ${validRewardId}:`, scanHistoryError);
+    }
+
+    // Update completion status if completed with error handling
+    if (updatedProgress.is_completed && updatedProgress.status !== "ready_to_redeem") {
+      try {
+        updatedProgress.status = "ready_to_redeem";
+        updatedProgress.completed_at = new Date();
+        await updatedProgress.save();
+        logger.info(`Reward ${validRewardId} completed for user ${dbUserId}`);
+      } catch (completionError) {
+        logger.error(`Error updating completion status:`, completionError);
+        // Don't fail the request for this, just log it and continue
+      }
+    }
+
+    logger.info(
+      `Stamp added for auth user ${sanitizedUserId} (db user ${dbUserId}), reward ${validRewardId}. Progress: ${updatedProgress.stamps_collected}/${updatedProgress.stamps_required}`
+    );
+
+    // Return success response with validated data
+    const customerName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown Customer';
+    const rewardName = reward.name || 'Unknown Reward';
+    const stampsCollected = Math.max(0, updatedProgress.stamps_collected);
+    const stampsRequired = Math.max(1, updatedProgress.stamps_required);
+    const isCompleted = stampsCollected >= stampsRequired;
+
+    res.status(200).json({
+      success: true,
+      message: isCompleted 
+        ? "Stamp added! Reward completed!" 
+        : "Stamp added successfully",
+      data: {
+        customer_name: customerName,
+        reward_name: rewardName,
+        stamps_collected: stampsCollected,
+        stamps_required: stampsRequired,
+        is_completed: isCompleted,
+        status: updatedProgress.status || (isCompleted ? 'completed' : 'in_progress'),
+        transaction_id: `SCAN_${Date.now()}_${dbUserId}_${validRewardId}`, // More unique transaction ID
+      },
+    });
+
   } catch (error) {
-    logger.error("Error processing QR scan:", error);
+    logger.error("Unexpected error processing QR scan:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to process scan",
-      error: error.message,
+      message: "An unexpected error occurred while processing the scan. Please try again.",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 });

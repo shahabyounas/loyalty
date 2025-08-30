@@ -10,8 +10,17 @@
     --gray-light: #f8fafc;
     --gray-dark: #1e293b;
 
-    /* Status Colors (1 color) */
+    /* Status Colors (extended) */
     --error: #ef4444;
+    --success: #10b981;
+    --success-light: #d1fae5;
+    --success-dark: #065f46;
+    --warning: #f59e0b;
+    --warning-light: #fef3c7;
+    --warning-dark: #92400e;
+    --info: #3b82f6;
+    --info-light: #dbeafe;
+    --info-dark: #1e40af;
 
     /* AI & Sci-Fi Colors (4 colors) */
     --ai-cyan: #00d4ff;

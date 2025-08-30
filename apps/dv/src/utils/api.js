@@ -509,6 +509,21 @@ export const rewardAPI = {
 };
 
 /**
+ * API methods for admin progress rewards
+ */
+export const adminProgressAPI = {
+  // Get all user progress rewards for admin (simplified)
+  getAllProgressRewards: async () => {
+    return await makeRequest("/admin/progress-rewards");
+  },
+
+  // Get scan history for a specific progress reward (simplified)
+  getProgressScanHistory: async (progressId) => {
+    return await makeRequest(`/admin/progress-rewards/${progressId}/scan-history`);
+  },
+};
+
+/**
  * API methods for user reward progress
  */
 export const userRewardProgressAPI = {
@@ -548,16 +563,22 @@ export const stampTransactionAPI = {
     return await makeRequest(`/stamp-transactions?${queryParams}`);
   },
 
-  // Scan QR code (staff only)
-  scanTransaction: async (transactionCode, storeId, qrData = null) => {
-    return await makeRequest("/stamp-transactions/scan", {
-      method: "POST",
-      body: JSON.stringify({
-        transactionCode,
-        storeId,
-        qrData,
-      }),
-    });
+  // Get all scan history (admin only)
+  getScanHistory: async (params = {}) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return await makeRequest(`/stamp-transactions/scan-history?${queryParams}`);
+  },
+
+  // Get scan history for specific progress
+  getProgressScanHistory: async (progressId, params = {}) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return await makeRequest(`/stamp-transactions/scan-history/progress/${progressId}?${queryParams}`);
+  },
+
+  // Get scan statistics
+  getScanStatistics: async (params = {}) => {
+    const queryParams = new URLSearchParams(params).toString();
+    return await makeRequest(`/stamp-transactions/scan-history/statistics?${queryParams}`);
   },
 };
 
