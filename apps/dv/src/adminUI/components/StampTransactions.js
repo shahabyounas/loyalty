@@ -1,30 +1,39 @@
 import React, { useState, useEffect } from "react";
-import { stampTransactionAPI } from "../../utils/api";
+import { adminProgressAPI } from "../../utils/api";
+import ProgressDetailsModal from "./ProgressDetailsModal";
 import "./StampTransactions.css";
 
 const StampTransactions = () => {
-  const [transactions, setTransactions] = useState([]);
+  const [progressRewards, setProgressRewards] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({
-    store: "",
-    dateFrom: "",
-    dateTo: "",
-    transactionType: "",
-  });
+  const [selectedProgress, setSelectedProgress] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   useEffect(() => {
-    fetchTransactions();
+    fetchProgressRewards();
   }, []);
 
-  const fetchTransactions = async () => {
+  const fetchProgressRewards = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
-      const response = await stampTransactionAPI.getAllTransactions();
-      setTransactions(response.data || []);
+      const response = await adminProgressAPI.getAllProgressRewards();
+
+      if (response && response.success) {
+        setProgressRewards(response.data || []);
+      } else {
+        // Silently handle API errors, show empty list
+        console.warn("API response unsuccessful:", response?.message || "Unknown error");
+        setProgressRewards([]);
+        setError(response?.message || "Unable to load data at the moment");
+      }
     } catch (error) {
-      console.error("Failed to fetch transactions:", error);
-      setError("Failed to load transactions");
+      // Silently handle network/API errors, show empty list
+      console.warn("Failed to fetch progress rewards:", error);
+      setProgressRewards([]);
+      setError("Network error - showing cached data");
     } finally {
       setLoading(false);
     }
@@ -34,66 +43,49 @@ const StampTransactions = () => {
     return new Date(dateString).toLocaleString();
   };
 
-  const getTransactionTypeIcon = (type) => {
-    switch (type) {
-      case "stamp_added":
-        return "➕";
-      case "stamp_removed":
-        return "➖";
-      case "reward_redeemed":
-        return "🎉";
-      default:
-        return "📝";
-    }
+  const getStatusIcon = (status, isCompleted) => {
+    if (status === "redeemed") return "🎉";
+    if (isCompleted && status === "ready_to_redeem") return "✅";
+    return "🔄";
   };
 
-  const getTransactionTypeLabel = (type) => {
-    switch (type) {
-      case "stamp_added":
-        return "Stamp Added";
-      case "stamp_removed":
-        return "Stamp Removed";
-      case "reward_redeemed":
-        return "Reward Redeemed";
-      default:
-        return type;
-    }
+  const getStatusLabel = (status, isCompleted) => {
+    if (status === "redeemed") return "Redeemed";
+    if (isCompleted && status === "ready_to_redeem") return "Ready to Redeem";
+    return "In Progress";
   };
 
-  const filteredTransactions = transactions.filter((transaction) => {
-    if (filters.store && transaction.store_id !== filters.store) return false;
-    if (
-      filters.transactionType &&
-      transaction.transaction_type !== filters.transactionType
-    )
-      return false;
+  const getStatusClass = (status, isCompleted) => {
+    if (status === "redeemed") return "redeemed";
+    if (isCompleted && status === "ready_to_redeem") return "ready";
+    return "in-progress";
+  };
 
-    if (filters.dateFrom || filters.dateTo) {
-      const transactionDate = new Date(transaction.created_at);
-      if (filters.dateFrom && transactionDate < new Date(filters.dateFrom))
-        return false;
-      if (filters.dateTo && transactionDate > new Date(filters.dateTo))
-        return false;
-    }
+  const openDetailsModal = (progress) => {
+    setSelectedProgress(progress);
+    setShowDetailsModal(true);
+  };
 
-    return true;
-  });
-
-  const clearFilters = () => {
-    setFilters({
-      store: "",
-      dateFrom: "",
-      dateTo: "",
-      transactionType: "",
-    });
+  const closeDetailsModal = () => {
+    setSelectedProgress(null);
+    setShowDetailsModal(false);
   };
 
   if (loading) {
     return (
       <div className="stamp-transactions-container">
+        <div className="stamp-transactions-header">
+          <h2 className="stamp-transactions-title">
+            <span className="stamp-transactions-icon">🎯</span>
+            User Progress Rewards
+          </h2>
+          <p className="stamp-transactions-subtitle">
+            Manage and track customer reward progress across all stamps and redemptions
+          </p>
+        </div>
         <div className="stamp-transactions-loading">
           <div className="stamp-transactions-spinner"></div>
-          <p>Loading transactions...</p>
+          <p>Loading progress rewards...</p>
         </div>
       </div>
     );
@@ -103,227 +95,145 @@ const StampTransactions = () => {
     <div className="stamp-transactions-container">
       <div className="stamp-transactions-header">
         <h2 className="stamp-transactions-title">
-          <span className="stamp-transactions-icon">📊</span>
-          Stamp Transaction History
+          <span className="stamp-transactions-icon">🎯</span>
+          User Progress Rewards
         </h2>
         <p className="stamp-transactions-subtitle">
-          Complete audit trail of all stamp transactions across all stores
+          Manage and track customer reward progress across all stamps and redemptions
         </p>
+        <div className="stamp-transactions-header-actions">
+          <button onClick={fetchProgressRewards} className="stamp-transactions-refresh-btn">
+            🔄 Refresh
+          </button>
+          {error && (
+            <span className="stamp-transactions-error-indicator" title={error}>
+              ⚠️ Connection Issue
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="stamp-transactions-filters">
-        <div className="stamp-transactions-filter-group">
-          <label className="stamp-transactions-filter-label">Store:</label>
-          <select
-            className="stamp-transactions-filter-select"
-            value={filters.store}
-            onChange={(e) => setFilters({ ...filters, store: e.target.value })}
-          >
-            <option value="">All Stores</option>
-            <option value="1">Downtown Store</option>
-            <option value="2">Mall Location</option>
-            <option value="3">Airport Store</option>
-            <option value="4">Suburban Branch</option>
-          </select>
-        </div>
-
-        <div className="stamp-transactions-filter-group">
-          <label className="stamp-transactions-filter-label">
-            Transaction Type:
-          </label>
-          <select
-            className="stamp-transactions-filter-select"
-            value={filters.transactionType}
-            onChange={(e) =>
-              setFilters({ ...filters, transactionType: e.target.value })
-            }
-          >
-            <option value="">All Types</option>
-            <option value="stamp_added">Stamp Added</option>
-            <option value="stamp_removed">Stamp Removed</option>
-            <option value="reward_redeemed">Reward Redeemed</option>
-          </select>
-        </div>
-
-        <div className="stamp-transactions-filter-group">
-          <label className="stamp-transactions-filter-label">Date From:</label>
-          <input
-            type="date"
-            className="stamp-transactions-filter-input"
-            value={filters.dateFrom}
-            onChange={(e) =>
-              setFilters({ ...filters, dateFrom: e.target.value })
-            }
-          />
-        </div>
-
-        <div className="stamp-transactions-filter-group">
-          <label className="stamp-transactions-filter-label">Date To:</label>
-          <input
-            type="date"
-            className="stamp-transactions-filter-input"
-            value={filters.dateTo}
-            onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
-          />
-        </div>
-
-        <button
-          className="stamp-transactions-clear-filters"
-          onClick={clearFilters}
-        >
-          🔄 Clear Filters
-        </button>
-      </div>
-
-      {/* Summary Stats */}
+      {/* Summary Cards */}
       <div className="stamp-transactions-summary">
-        <div className="stamp-transactions-stat">
-          <div className="stamp-transactions-stat-value">
-            {filteredTransactions.length}
-          </div>
-          <div className="stamp-transactions-stat-label">
-            Total Transactions
-          </div>
+        <div className="stamp-transactions-summary-card">
+          <div className="stamp-transactions-summary-number">{progressRewards.length}</div>
+          <div className="stamp-transactions-summary-label">Total Progress</div>
         </div>
-        <div className="stamp-transactions-stat">
-          <div className="stamp-transactions-stat-value">
-            {
-              filteredTransactions.filter(
-                (t) => t.transaction_type === "stamp_added"
-              ).length
-            }
+        <div className="stamp-transactions-summary-card">
+          <div className="stamp-transactions-summary-number">
+            {progressRewards.filter(p => !p.is_completed).length}
           </div>
-          <div className="stamp-transactions-stat-label">Stamps Added</div>
+          <div className="stamp-transactions-summary-label">In Progress</div>
         </div>
-        <div className="stamp-transactions-stat">
-          <div className="stamp-transactions-stat-value">
-            {
-              filteredTransactions.filter(
-                (t) => t.transaction_type === "reward_redeemed"
-              ).length
-            }
+        <div className="stamp-transactions-summary-card">
+          <div className="stamp-transactions-summary-number">
+            {progressRewards.filter(p => p.is_completed && p.status === 'ready_to_redeem').length}
           </div>
-          <div className="stamp-transactions-stat-label">Rewards Redeemed</div>
+          <div className="stamp-transactions-summary-label">Ready to Redeem</div>
+        </div>
+        <div className="stamp-transactions-summary-card">
+          <div className="stamp-transactions-summary-number">
+            {progressRewards.filter(p => p.status === 'redeemed').length}
+          </div>
+          <div className="stamp-transactions-summary-label">Redeemed</div>
         </div>
       </div>
 
-      {/* Transactions Table */}
+      {/* Progress Table */}
       <div className="stamp-transactions-table-container">
-        {error && (
-          <div className="stamp-transactions-error">
-            <span className="stamp-transactions-error-icon">⚠️</span>
-            {error}
-          </div>
-        )}
-
-        {filteredTransactions.length === 0 ? (
+        {progressRewards.length === 0 ? (
           <div className="stamp-transactions-empty">
-            <div className="stamp-transactions-empty-icon">📭</div>
-            <h3>No transactions found</h3>
-            <p>Try adjusting your filters or check back later</p>
+            <div className="stamp-transactions-empty-icon">📋</div>
+            <h3>No Progress Rewards Found</h3>
+            {error ? (
+              <div>
+                <p>Unable to load data at the moment. Please try refreshing.</p>
+                <button onClick={fetchProgressRewards} className="stamp-transactions-retry-btn">
+                  🔄 Try Again
+                </button>
+              </div>
+            ) : (
+              <p>There are no customer progress rewards to display at the moment.</p>
+            )}
           </div>
         ) : (
-          <div className="stamp-transactions-table">
-            <div className="stamp-transactions-table-header">
-              <div className="stamp-transactions-table-cell">Type</div>
-              <div className="stamp-transactions-table-cell">Customer</div>
-              <div className="stamp-transactions-table-cell">Reward</div>
-              <div className="stamp-transactions-table-cell">Staff Member</div>
-              <div className="stamp-transactions-table-cell">Store</div>
-              <div className="stamp-transactions-table-cell">Stamps</div>
-              <div className="stamp-transactions-table-cell">Date & Time</div>
-              <div className="stamp-transactions-table-cell">
-                Transaction ID
-              </div>
-            </div>
-
-            <div className="stamp-transactions-table-body">
-              {filteredTransactions.map((transaction) => (
-                <div
-                  key={transaction.id}
-                  className="stamp-transactions-table-row"
-                >
-                  <div className="stamp-transactions-table-cell">
-                    <div className="stamp-transactions-type">
-                      <span className="stamp-transactions-type-icon">
-                        {getTransactionTypeIcon(transaction.transaction_type)}
-                      </span>
-                      <span className="stamp-transactions-type-label">
-                        {getTransactionTypeLabel(transaction.transaction_type)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="stamp-transactions-table-cell">
-                    <div className="stamp-transactions-customer">
+          <table className="stamp-transactions-table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Reward</th>
+                <th>Progress</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {progressRewards.map((progress) => (
+                <tr key={progress.id} className="stamp-transactions-row">
+                  <td className="stamp-transactions-customer">
+                    <div className="stamp-transactions-customer-info">
                       <div className="stamp-transactions-customer-name">
-                        {transaction.customer_name || "Unknown"}
+                        {progress.customer_name}
                       </div>
-                      <div className="stamp-transactions-customer-id">
-                        ID: {transaction.user_id}
+                      <div className="stamp-transactions-customer-email">
+                        {progress.customer_email}
                       </div>
                     </div>
-                  </div>
-
-                  <div className="stamp-transactions-table-cell">
-                    <div className="stamp-transactions-reward">
+                  </td>
+                  <td className="stamp-transactions-reward">
+                    <div className="stamp-transactions-reward-info">
                       <div className="stamp-transactions-reward-name">
-                        {transaction.reward_name || "Unknown"}
+                        {progress.reward_name}
                       </div>
-                      <div className="stamp-transactions-reward-id">
-                        ID: {transaction.reward_id}
+                      {progress.reward_description && (
+                        <div className="stamp-transactions-reward-desc">
+                          {progress.reward_description}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="stamp-transactions-progress">
+                    <div className="stamp-transactions-progress-info">
+                      <div className="stamp-transactions-progress-text">
+                        {progress.stamps_collected} / {progress.stamps_required} stamps
+                      </div>
+                      <div className="stamp-transactions-progress-percentage">
+                        {Math.round(progress.completion_percentage)}%
                       </div>
                     </div>
-                  </div>
-
-                  <div className="stamp-transactions-table-cell">
-                    <div className="stamp-transactions-staff">
-                      {transaction.scanned_by_name || "Unknown"}
-                    </div>
-                  </div>
-
-                  <div className="stamp-transactions-table-cell">
-                    <div className="stamp-transactions-store">
-                      {transaction.store_name || "Unknown"}
-                    </div>
-                  </div>
-
-                  <div className="stamp-transactions-table-cell">
-                    <div className="stamp-transactions-stamps">
-                      {transaction.stamps_added > 0
-                        ? `+${transaction.stamps_added}`
-                        : transaction.stamps_added}
-                    </div>
-                  </div>
-
-                  <div className="stamp-transactions-table-cell">
-                    <div className="stamp-transactions-date">
-                      {formatDate(transaction.created_at)}
-                    </div>
-                  </div>
-
-                  <div className="stamp-transactions-table-cell">
-                    <div className="stamp-transactions-id">
-                      {transaction.id}
-                    </div>
-                  </div>
-                </div>
+                  </td>
+                  <td className="stamp-transactions-status">
+                    <span className={`stamp-transactions-status-badge ${getStatusClass(progress.status, progress.is_completed)}`}>
+                      {getStatusIcon(progress.status, progress.is_completed)} {getStatusLabel(progress.status, progress.is_completed)}
+                    </span>
+                  </td>
+                  <td className="stamp-transactions-date">
+                    {formatDate(progress.created_at)}
+                  </td>
+                  <td className="stamp-transactions-actions">
+                    <button
+                      className="stamp-transactions-view-btn"
+                      onClick={() => openDetailsModal(progress)}
+                      title="View Details"
+                    >
+                      👁️ View
+                    </button>
+                  </td>
+                </tr>
               ))}
-            </div>
-          </div>
+            </tbody>
+          </table>
         )}
       </div>
 
-      {/* Export Options */}
-      <div className="stamp-transactions-export">
-        <button className="stamp-transactions-export-btn">
-          📊 Export to CSV
-        </button>
-        <button className="stamp-transactions-export-btn">
-          📄 Export to PDF
-        </button>
-      </div>
+      {/* Details Modal */}
+      {showDetailsModal && selectedProgress && (
+        <ProgressDetailsModal
+          progress={selectedProgress}
+          onClose={closeDetailsModal}
+        />
+      )}
     </div>
   );
 };

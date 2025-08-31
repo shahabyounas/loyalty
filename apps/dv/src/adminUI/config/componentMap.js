@@ -5,7 +5,6 @@ import Dashboard from "../components/Dashboard";
 import Users from "../components/Users";
 import Stores from "../components/Stores";
 import Rewards from "../components/Rewards";
-import StaffScanner from "../components/StaffScanner";
 import QRCodeScanner from "../components/QRCodeScanner";
 import StampTransactions from "../components/StampTransactions";
 import Settings from "../components/Settings";
@@ -16,7 +15,6 @@ export const COMPONENT_MAP = {
   Users,
   Stores,
   Rewards,
-  StaffScanner,
   QR_SCANNER: QRCodeScanner,
   STAMP_TRANSACTIONS: StampTransactions,
   Settings,

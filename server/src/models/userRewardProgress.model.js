@@ -200,6 +200,34 @@ class UserRewardProgress {
       throw error;
     }
   }
+
+  // Get scan history for this progress
+  async getScanHistory(options = {}) {
+    try {
+      const { ScanHistory } = require("./scanHistory.model");
+      return await ScanHistory.findByProgressId(this.id, options);
+    } catch (error) {
+      logger.error("Error getting scan history for progress:", error);
+      throw error;
+    }
+  }
+
+  // Get progress with scan history included
+  static async getProgressWithHistory(userId, rewardId, scanOptions = {}) {
+    try {
+      const progress = await UserRewardProgress.findByUserAndReward(userId, rewardId);
+      if (!progress) return null;
+
+      const scanHistory = await progress.getScanHistory(scanOptions);
+      return {
+        ...progress,
+        scan_history: scanHistory
+      };
+    } catch (error) {
+      logger.error("Error getting progress with history:", error);
+      throw error;
+    }
+  }
 }
 
 module.exports = { UserRewardProgress };

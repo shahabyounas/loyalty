@@ -7,19 +7,17 @@ import "./QRCodeScanner.css";
 const QRCodeScanner = () => {
   const { user } = useAuth();
   const [isScanning, setIsScanning] = useState(false);
-  const [scannedData, setScannedData] = useState(null);
   const [scanResult, setScanResult] = useState(null);
-  const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const startScanning = () => {
+  const startScanning = (e) => {
+    e?.preventDefault();
     setIsScanning(true);
-    setScannedData(null);
     setScanResult(null);
-    setError(null);
   };
 
-  const stopScanning = () => {
+  const stopScanning = (e) => {
+    e?.preventDefault();
     setIsScanning(false);
   };
 
@@ -29,7 +27,6 @@ const QRCodeScanner = () => {
 
     try {
       setIsProcessing(true);
-      setScannedData(data);
 
       // Parse the QR code data
       const qrData = JSON.parse(data);
@@ -53,98 +50,61 @@ const QRCodeScanner = () => {
         data: response.data,
       });
 
-      // Stop scanning after successful scan
+      // Stop scanning and show result for 2 seconds, then reset
+      setIsScanning(false);
       setTimeout(() => {
-        stopScanning();
+        setScanResult(null);
       }, 2000);
+
     } catch (err) {
       console.error("Error processing scan:", err);
       setScanResult({
         success: false,
         message: err.message || "Failed to process scan",
       });
+      
+      // Stop scanning and show error for 3 seconds, then reset
+      setIsScanning(false);
+      setTimeout(() => {
+        setScanResult(null);
+      }, 2000);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleManualInput = async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const qrCode = formData.get("qrCode").trim();
-
-    if (!qrCode) {
-      setError("Please enter a QR code");
-      return;
-    }
-
-    await handleScan(qrCode);
-  };
-
-  const resetScanner = () => {
-    setScannedData(null);
-    setScanResult(null);
-    setError(null);
-    setIsProcessing(false);
-  };
-
   return (
     <div className="qr-scanner-container">
-      <div className="qr-scanner-header">
-        <h2 className="qr-scanner-title">
-          <span className="qr-scanner-icon">📱</span>
-          QR Code Scanner
-        </h2>
-        <p className="qr-scanner-subtitle">
-          Scan customer QR codes to add stamps to their rewards
-        </p>
-      </div>
-
-      {!isScanning && !scannedData && (
-        <div className="qr-scanner-setup">
-          <div className="qr-scanner-instructions">
-            <h3>How to use:</h3>
-            <ol>
-              <li>Customer opens their loyalty app</li>
-              <li>They select a reward and generate a QR code</li>
-              <li>Customer shows the QR code to you</li>
-              <li>Click "Start Scanning" and scan the QR code</li>
-              <li>The stamp will be automatically added to their reward</li>
-            </ol>
-          </div>
-
-          <div className="qr-scanner-actions">
-            <button className="qr-scanner-start-btn" onClick={startScanning}>
-              📱 Start Scanning
-            </button>
-
-            <div className="qr-scanner-divider">
-              <span>or</span>
+      {/* Main Scan Button - Show when not scanning and no recent result */}
+      {!isScanning && !scanResult && (
+        <div className="qr-scanner-main">
+          <button 
+            type="button"
+            className="qr-scanner-scan-btn" 
+            onClick={startScanning}
+            disabled={isProcessing}
+          >
+            <div className="qr-code-visual">
+              <div className="qr-corner top-left"></div>
+              <div className="qr-corner top-right"></div>
+              <div className="qr-corner bottom-left"></div>
+              <div className="qr-corner bottom-right"></div>
+              <div className="qr-center">
+                <div className="dv-brand">DV</div>
+                <div className="qr-pattern">
+                  <div className="qr-dot"></div>
+                  <div className="qr-dot"></div>
+                  <div className="qr-dot"></div>
+                  <div className="qr-dot"></div>
+                </div>
+              </div>
             </div>
-
-            <form
-              onSubmit={handleManualInput}
-              className="qr-scanner-manual-form"
-            >
-              <input
-                type="text"
-                name="qrCode"
-                placeholder="Enter QR code manually..."
-                className="qr-scanner-manual-input"
-                disabled={isProcessing}
-              />
-              <button
-                type="submit"
-                className="qr-scanner-manual-btn"
-                disabled={isProcessing}
-              >
-                {isProcessing ? "Processing..." : "Submit"}
-              </button>
-            </form>
-          </div>
+            <span className="scan-btn-text">SCAN NOW</span>
+          </button>
         </div>
       )}
 
+      {/* Camera Scanner */}
       {isScanning && (
         <div className="qr-scanner-camera">
           <div className="qr-scanner-video-container">
@@ -153,97 +113,56 @@ const QRCodeScanner = () => {
                 console.log("Scanner result:", result);
                 if (result && result[0] && result[0].rawValue) {
                   handleScan(result[0].rawValue);
-                  setIsScanning(false);
                 }
               }}
               onError={(error) => {
                 console.log("Scanner error:", error);
-                setError("Camera access error. Please check permissions.");
+                setScanResult({
+                  success: false,
+                  message: "Camera access error. Please check permissions.",
+                });
+                setIsScanning(false);
               }}
             />
           </div>
 
           <div className="qr-scanner-camera-controls">
-            <button className="qr-scanner-stop-btn" onClick={stopScanning}>
-              ⏹️ Stop Scanning
+            <button type="button" className="qr-scanner-stop-btn" onClick={stopScanning}>
+              ✕ Cancel
             </button>
           </div>
+        </div>
+      )}
 
-          {error && (
-            <div className="qr-scanner-error">
-              <span className="qr-scanner-error-icon">⚠️</span>
-              {error}
+      {/* Scan Result */}
+      {scanResult && (
+        <div className={`qr-scanner-result ${scanResult.success ? 'success' : 'error'}`}>
+          {scanResult.success ? (
+            <div className="qr-scanner-success">
+              <div className="qr-scanner-success-icon">✅</div>
+              <h3>Success!</h3>
+              <p>{scanResult.message}</p>
+              {scanResult.data && (
+                <div className="qr-scanner-result-details">
+                  <p><strong>Customer:</strong> {scanResult.data.customer_name}</p>
+                  <p><strong>Reward:</strong> {scanResult.data.reward_name}</p>
+                  <p>
+                    <strong>Progress:</strong> {scanResult.data.stamps_collected}/{scanResult.data.stamps_required} stamps
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="qr-scanner-failure">
+              <div className="qr-scanner-failure-icon">❌</div>
+              <h3>Error</h3>
+              <p>{scanResult.message}</p>
             </div>
           )}
         </div>
       )}
 
-      {scannedData && (
-        <div className="qr-scanner-result">
-          <div className="qr-scanner-result-header">
-            <h3>Scan Result</h3>
-            <button className="qr-scanner-reset-btn" onClick={resetScanner}>
-              🔄 Scan Another
-            </button>
-          </div>
-
-          <div className="qr-scanner-result-content">
-            {scanResult?.success ? (
-              <div className="qr-scanner-success">
-                <div className="qr-scanner-success-icon">✅</div>
-                <h4>Success!</h4>
-                <p>{scanResult.message}</p>
-                {scanResult.data && (
-                  <div className="qr-scanner-result-details">
-                    <p>
-                      <strong>Customer:</strong> {scanResult.data.customer_name}
-                    </p>
-                    <p>
-                      <strong>Reward:</strong> {scanResult.data.reward_name}
-                    </p>
-                    <p>
-                      <strong>Stamps:</strong>{" "}
-                      {scanResult.data.stamps_collected}/
-                      {scanResult.data.stamps_required}
-                    </p>
-                    <p>
-                      <strong>Progress:</strong>{" "}
-                      {Math.round(
-                        (scanResult.data.stamps_collected /
-                          scanResult.data.stamps_required) *
-                          100
-                      )}
-                      %
-                    </p>
-                    <p>
-                      <strong>Scanned by:</strong> {user?.firstName}{" "}
-                      {user?.lastName}
-                    </p>
-                    <p>
-                      <strong>Store:</strong>{" "}
-                      {user?.store_name || user?.store_id || "Not assigned"}
-                    </p>
-                    <p>
-                      <strong>Time:</strong> {new Date().toLocaleString()}
-                    </p>
-                    <p>
-                      <strong>Transaction ID:</strong>{" "}
-                      {scanResult.data.transaction_id}
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="qr-scanner-failure">
-                <div className="qr-scanner-failure-icon">❌</div>
-                <h4>Error</h4>
-                <p>{scanResult?.message || "Failed to process scan"}</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
+      {/* Processing Indicator */}
       {isProcessing && (
         <div className="qr-scanner-processing">
           <div className="qr-scanner-processing-spinner"></div>
