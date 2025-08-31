@@ -405,10 +405,17 @@ export default function Home() {
 
             // Determine reward state for styling
             let rewardState = "new";
-            if (isCompleted && status === "ready_to_redeem") {
-              rewardState = "ready";
-            } else if (stampsCollected > 0 && !isCompleted) {
-              rewardState = "in-progress";
+            let rewardDescription = "Available";
+            
+            if (progress) {
+              if (isCompleted && (status === "ready_to_redeem" || status === "redeemed")) {
+                // Reward is completed or redeemed - show as normal reward so user can collect again
+                rewardState = "new";
+                rewardDescription = "Available";
+              } else if (stampsCollected > 0 && !isCompleted) {
+                rewardState = "in-progress";
+                rewardDescription = "In Progress";
+              }
             }
 
             return (
@@ -418,9 +425,7 @@ export default function Home() {
               >
                 <div className="home-reward-header">
                   <div className="home-reward-icon">
-                    {rewardState === "ready"
-                      ? "🎉"
-                      : reward.type === "discount"
+                    {reward.type === "discount"
                       ? "💰"
                       : reward.type === "free_item"
                       ? "🎁"
@@ -429,7 +434,7 @@ export default function Home() {
                       : "🏆"}
                   </div>
                   <div className="home-reward-type">
-                    {rewardState === "ready" ? "Ready to Redeem!" : rewardState === "in-progress" ? "In Progress" : "Available"}
+                    {rewardDescription}
                   </div>
                 </div>
 
@@ -464,17 +469,7 @@ export default function Home() {
                     </div>
                   )}
 
-                  {/* Show completion badge for ready rewards */}
-                  {rewardState === "ready" && (
-                    <div className="home-reward-completion">
-                      <div className="home-completion-badge">
-                        <span className="home-completion-icon">✅</span>
-                        <span className="home-completion-text">
-                          All stamps collected!
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                  {/* Remove completed reward badge - show as normal reward */}
 
                   <div className="home-reward-details">
                     <div className="home-reward-points">
@@ -515,23 +510,15 @@ export default function Home() {
                 </div>
 
                 <div className="home-reward-actions">
-                  {rewardState === "ready" ? (
-                    <button
-                      className="home-redeem-button home-redeem-ready"
-                      onClick={() => handleRedeemReward(reward.id)}
-                    >
-                      🎉 Redeem Now
-                    </button>
-                  ) : (
-                    <button
-                      className="home-add-stamp-button"
-                      onClick={() => handleAddStamp(reward.id, reward.name)}
-                    >
-                      {rewardState === "new"
-                        ? "📱 Get QR Code"
-                        : "📱 Add Stamp"}
-                    </button>
-                  )}
+                  {/* Only show stamp collection button - no redeem in main section */}
+                  <button
+                    className="home-add-stamp-button"
+                    onClick={() => handleAddStamp(reward.id, reward.name)}
+                  >
+                    {rewardState === "new"
+                      ? "📱 Grab Stamp"
+                      : "📱 Grab Stamp"}
+                  </button>
                 </div>
               </div>
             );
@@ -542,12 +529,17 @@ export default function Home() {
   }
 
   function handleAddStamp(rewardId, rewardName) {
+    // Check if this is a completed reward that user wants to collect again
+    const progress = userProgress[rewardId];
+    const isCompletedReward = progress && progress.is_completed;
+    
     // Generate QR code data for admin scanning
     const qrData = {
       user_id: user?.id, // This is the Supabase auth user ID
       reward_id: rewardId,
       timestamp: Date.now(),
       expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(), // 15 minutes from now
+      reset_progress: isCompletedReward, // Flag to indicate this should reset progress if already completed
     };
 
     setCurrentTransaction({
