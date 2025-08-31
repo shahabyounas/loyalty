@@ -453,6 +453,15 @@
     background: rgba(34, 197, 94, 0.1);
 }
 
+.home-reward-completed-reset {
+    border: 1px solid rgba(139, 92, 246, 0.3) !important;
+    background: rgba(139, 92, 246, 0.05) !important;
+}
+
+.home-reward-completed-reset .home-reward-header {
+    background: rgba(139, 92, 246, 0.1);
+}
+
 .home-reward-header {
     display: flex;
     align-items: center;
@@ -554,6 +563,16 @@
     padding: 0.5em 0.75em;
     border-radius: 0.5em;
     border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.home-completion-badge.home-completed-reset-badge {
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.home-completion-badge.home-completed-reset-badge .home-completion-text {
+    color: #8b5cf6;
+    font-size: 0.85em;
 }
 
 .home-completion-icon {
