@@ -202,18 +202,54 @@ const ProgressDetailsModal = ({ progress, onClose }) => {
                   <thead>
                     <tr>
                       <th>Date & Time</th>
+                      <th>Stamps Added</th>
+                      <th>Progress (Before → After)</th>
                       <th>Scanned By</th>
-                      <th>Staff Member</th>
-                      <th>Location</th>
+                      <th>Store</th>
                     </tr>
                   </thead>
                   <tbody>
                     {scanHistory.map((scan, index) => (
-                      <tr key={index}>
-                        <td>{formatDate(scan.scanned_at)}</td>
-                        <td>{scan.user_name || "Customer"}</td>
-                        <td>{scan.staff_name || "N/A"}</td>
-                        <td>{scan.location || "Store"}</td>
+                      <tr key={scan.id || index}>
+                        <td>
+                          <div className="scan-date">
+                            <div className="date-primary">
+                              {new Date(scan.created_at).toLocaleDateString()}
+                            </div>
+                            <div className="date-secondary">
+                              {new Date(scan.created_at).toLocaleTimeString()}
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="stamps-badge">
+                            +{scan.stamps_added || 1}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="progress-change">
+                            <span className="progress-before">{scan.stamps_before_scan || 0}</span>
+                            <span className="progress-arrow">→</span>
+                            <span className="progress-after">{scan.stamps_after_scan || 0}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="staff-info">
+                            {scan.staff_name ? (
+                              <>
+                                <div className="staff-name">{scan.staff_name}</div>
+                                <div className="staff-role">{scan.staff_role || 'Staff'}</div>
+                              </>
+                            ) : (
+                              <span className="no-staff">Self-scan</span>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <span className="store-name">
+                            {scan.store_name || "Unknown Store"}
+                          </span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

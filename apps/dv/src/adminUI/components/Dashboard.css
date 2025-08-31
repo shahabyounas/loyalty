@@ -299,6 +299,45 @@
      gap: 1.5em;
  }
 
+ /* Compact Metrics - Single Row */
+ .dashboard-metrics.compact-metrics {
+     grid-template-columns: repeat(4, 1fr);
+     gap: 1em;
+ }
+
+ .metric-card.ai-metric.compact {
+     padding: 1em;
+     min-height: 140px;
+ }
+
+ .metric-card.ai-metric.compact .metric-content {
+     text-align: center;
+ }
+
+ .metric-card.ai-metric.compact .metric-header {
+     justify-content: center;
+     margin-bottom: 0.5em;
+ }
+
+ .metric-card.ai-metric.compact .metric-icon {
+     font-size: 1.5em;
+ }
+
+ .metric-card.ai-metric.compact .metric-value {
+     font-size: 1.8em;
+     font-weight: 700;
+     margin-bottom: 0.3em;
+ }
+
+ .metric-card.ai-metric.compact .metric-label {
+     font-size: 0.85em;
+     margin-bottom: 0.5em;
+ }
+
+ .metric-card.ai-metric.compact .metric-growth {
+     font-size: 0.8em;
+ }
+
  .metric-card.ai-metric {
      position: relative;
      background: rgba(255, 255, 255, 0.05);
@@ -827,6 +866,20 @@
          grid-template-columns: 1fr;
      }
 
+     .dashboard-metrics.compact-metrics {
+         grid-template-columns: repeat(2, 1fr);
+         gap: 0.75em;
+     }
+
+     .metric-card.ai-metric.compact {
+         padding: 0.75em;
+         min-height: 120px;
+     }
+
+     .metric-card.ai-metric.compact .metric-value {
+         font-size: 1.5em;
+     }
+
      .dashboard-analytics {
          grid-template-columns: 1fr;
      }
@@ -867,5 +920,149 @@
 
      .action-grid {
          grid-template-columns: 1fr;
+     }
+ }
+
+ /* Error and Empty States */
+ .dashboard-error {
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     min-height: 100vh;
+     background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+     color: var(--white);
+ }
+
+ .error-container {
+     text-align: center;
+     padding: 3em;
+     background: rgba(255, 255, 255, 0.05);
+     border-radius: 16px;
+     border: 1px solid rgba(255, 255, 255, 0.1);
+     backdrop-filter: blur(10px);
+     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+ }
+
+ .error-icon {
+     font-size: 4em;
+     margin-bottom: 0.5em;
+ }
+
+ .error-container h3 {
+     font-size: 1.5em;
+     margin-bottom: 0.5em;
+     color: #ff6b6b;
+ }
+
+ .error-container p {
+     margin-bottom: 1.5em;
+     color: rgba(255, 255, 255, 0.8);
+ }
+
+ .retry-button {
+     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+     color: white;
+     border: none;
+     padding: 0.75em 1.5em;
+     border-radius: 8px;
+     cursor: pointer;
+     font-weight: 600;
+     transition: all 0.3s ease;
+ }
+
+ .retry-button:hover {
+     transform: translateY(-2px);
+     box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+ }
+
+ .dashboard-empty {
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     min-height: 100vh;
+     background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+     color: var(--white);
+ }
+
+ .empty-container {
+     text-align: center;
+     padding: 3em;
+     background: rgba(255, 255, 255, 0.05);
+     border-radius: 16px;
+     border: 1px solid rgba(255, 255, 255, 0.1);
+     backdrop-filter: blur(10px);
+     box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+ }
+
+ .empty-icon {
+     font-size: 4em;
+     margin-bottom: 0.5em;
+     opacity: 0.7;
+ }
+
+ .empty-container h3 {
+     font-size: 1.5em;
+     margin-bottom: 0.5em;
+     color: rgba(255, 255, 255, 0.9);
+ }
+
+ .empty-container p {
+     color: rgba(255, 255, 255, 0.7);
+ }
+
+ /* Enhanced Metric Cards */
+ .metric-secondary {
+     font-size: 0.8em;
+     color: rgba(255, 255, 255, 0.7);
+     margin-top: 0.5em;
+ }
+
+ /* Activity Period Indicator */
+ .activity-period {
+     background: rgba(255, 255, 255, 0.1);
+     padding: 0.25em 0.75em;
+     border-radius: 12px;
+     font-size: 0.8em;
+     color: rgba(255, 255, 255, 0.8);
+ }
+
+ /* Responsive Improvements */
+ @media (max-width: 480px) {
+
+     .dashboard-metrics.compact-metrics {
+         grid-template-columns: repeat(2, 1fr);
+         gap: 0.5em;
+     }
+
+     .metric-card.ai-metric.compact {
+         padding: 0.6em;
+         min-height: 100px;
+     }
+
+     .metric-card.ai-metric.compact .metric-icon {
+         font-size: 1.2em;
+     }
+
+     .metric-card.ai-metric.compact .metric-value {
+         font-size: 1.3em;
+     }
+
+     .metric-card.ai-metric.compact .metric-label {
+         font-size: 0.75em;
+     }
+
+     .metric-card.ai-metric.compact .metric-growth {
+         font-size: 0.7em;
+     }
+
+     .error-container,
+     .empty-container {
+         margin: 1em;
+         padding: 2em 1.5em;
+     }
+
+     .retry-button {
+         width: 100%;
+         padding: 1em;
      }
  }

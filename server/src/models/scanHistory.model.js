@@ -56,11 +56,15 @@ class ScanHistory {
         SELECT sh.*, 
                u.first_name || ' ' || u.last_name as customer_name,
                r.name as reward_name,
-               s.name as store_name
+               s.name as store_name,
+               staff.first_name || ' ' || staff.last_name as staff_name,
+               staff.email as staff_email,
+               staff.role as staff_role
         FROM scan_history sh
         LEFT JOIN users u ON sh.user_id::UUID = u.id
         LEFT JOIN rewards r ON sh.reward_id::UUID = r.id
         LEFT JOIN stores s ON sh.store_id = s.id
+        LEFT JOIN users staff ON sh.scanned_by_user_id = staff.id
         WHERE sh.user_reward_progress_id = $1
         ORDER BY sh.created_at DESC
         LIMIT $2 OFFSET $3
@@ -72,7 +76,10 @@ class ScanHistory {
         ...new ScanHistory(result),
         customer_name: result.customer_name,
         reward_name: result.reward_name,
-        store_name: result.store_name
+        store_name: result.store_name,
+        staff_name: result.staff_name,
+        staff_email: result.staff_email,
+        staff_role: result.staff_role
       }));
     } catch (error) {
       logger.error("Error finding scan history by progress ID:", error);
@@ -147,6 +154,9 @@ class ScanHistory {
                u.first_name || ' ' || u.last_name as customer_name,
                r.name as reward_name,
                s.name as store_name,
+               staff.first_name || ' ' || staff.last_name as staff_name,
+               staff.email as staff_email,
+               staff.role as staff_role,
                urp.stamps_collected,
                urp.stamps_required,
                urp.is_completed
@@ -154,6 +164,7 @@ class ScanHistory {
         LEFT JOIN users u ON sh.user_id::UUID = u.id
         LEFT JOIN rewards r ON sh.reward_id::UUID = r.id
         LEFT JOIN stores s ON sh.store_id = s.id
+        LEFT JOIN users staff ON sh.scanned_by_user_id = staff.id
         LEFT JOIN user_reward_progress urp ON sh.user_reward_progress_id = urp.id
         WHERE 1=1
       `;
@@ -198,6 +209,9 @@ class ScanHistory {
         customer_name: result.customer_name,
         reward_name: result.reward_name,
         store_name: result.store_name,
+        staff_name: result.staff_name,
+        staff_email: result.staff_email,
+        staff_role: result.staff_role,
         stamps_collected: result.stamps_collected,
         stamps_required: result.stamps_required,
         is_completed: result.is_completed

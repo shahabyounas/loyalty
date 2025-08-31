@@ -1,155 +1,54 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { analyticsAPI } from "../../utils/api";
 import "./Dashboard.css";
 
 const Dashboard = () => {
   const { user, token } = useAuth();
-  const [dashboardData, setDashboardData] = useState({
-    users: {
-      total: 0,
-      active: 0,
-      newThisMonth: 0,
-      growth: 0,
-      topRoles: [],
-    },
-    stores: {
-      total: 0,
-      active: 0,
-      newThisMonth: 0,
-      growth: 0,
-      topCities: [],
-    },
-    rewards: {
-      total: 0,
-      active: 0,
-      redeemed: 0,
-      growth: 0,
-      topTypes: [],
-    },
-    analytics: {
-      totalRevenue: 0,
-      monthlyGrowth: 0,
-      customerSatisfaction: 0,
-      retentionRate: 0,
-    },
-  });
+  const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedPeriod, setSelectedPeriod] = useState("month");
-  const [animatedValues, setAnimatedValues] = useState({
-    users: 0,
-    stores: 0,
-    rewards: 0,
-    revenue: 0,
-  });
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   useEffect(() => {
     fetchDashboardData();
   }, [token, selectedPeriod]);
 
-  useEffect(() => {
-    if (!loading) {
-      animateValues();
-    }
-  }, [loading, dashboardData]);
-
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-
-      // Simulated API call - replace with actual API
-      const mockData = {
-        users: {
-          total: 1247,
-          active: 1189,
-          newThisMonth: 89,
-          growth: 12.5,
-          topRoles: [
-            { role: "Customer", count: 892, percentage: 71.5 },
-            { role: "Store Manager", count: 234, percentage: 18.8 },
-            { role: "Admin", count: 121, percentage: 9.7 },
-          ],
-        },
-        stores: {
-          total: 156,
-          active: 142,
-          newThisMonth: 12,
-          growth: 8.3,
-          topCities: [
-            { city: "London", count: 45, percentage: 28.8 },
-            { city: "Manchester", count: 32, percentage: 20.5 },
-            { city: "Birmingham", count: 28, percentage: 17.9 },
-            { city: "Liverpool", count: 23, percentage: 14.7 },
-            { city: "Leeds", count: 18, percentage: 11.5 },
-          ],
-        },
-        rewards: {
-          total: 89,
-          active: 76,
-          redeemed: 2347,
-          growth: 15.2,
-          topTypes: [
-            { type: "Discount", count: 34, percentage: 38.2 },
-            { type: "Free Item", count: 23, percentage: 25.8 },
-            { type: "Points Bonus", count: 18, percentage: 20.2 },
-            { type: "Cashback", count: 14, percentage: 15.7 },
-          ],
-        },
-        analytics: {
-          totalRevenue: 284750,
-          monthlyGrowth: 18.5,
-          customerSatisfaction: 4.6,
-          retentionRate: 87.3,
-        },
-      };
-
-      setDashboardData(mockData);
+      setError(null);
+      
+      const data = await analyticsAPI.getDashboardAnalytics(selectedPeriod);
+      setDashboardData(data);
+      setLastUpdated(new Date(data.lastUpdated));
+      
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
+      setError(error.message || "Failed to fetch dashboard data");
     } finally {
       setLoading(false);
     }
   };
 
-  const animateValues = () => {
-    const duration = 2000;
-    const steps = 60;
-    const stepDuration = duration / steps;
-
-    let currentStep = 0;
-    const interval = setInterval(() => {
-      currentStep++;
-      const progress = currentStep / steps;
-      const easeOut = 1 - Math.pow(1 - progress, 3);
-
-      setAnimatedValues({
-        users: Math.floor(dashboardData.users.total * easeOut),
-        stores: Math.floor(dashboardData.stores.total * easeOut),
-        rewards: Math.floor(dashboardData.rewards.total * easeOut),
-        revenue: Math.floor(dashboardData.analytics.totalRevenue * easeOut),
-      });
-
-      if (currentStep >= steps) {
-        clearInterval(interval);
-      }
-    }, stepDuration);
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-GB", {
-      style: "currency",
-      currency: "GBP",
-    }).format(amount);
-  };
-
   const formatNumber = (num) => {
+    if (num === null || num === undefined) return "0";
     return new Intl.NumberFormat("en-GB").format(num);
   };
 
+  const formatPercentage = (num) => {
+    if (num === null || num === undefined) return "0.0";
+    return Math.abs(num).toFixed(1);
+  };
+
   const getGrowthColor = (growth) => {
+    if (growth === null || growth === undefined) return "neutral";
     return growth >= 0 ? "positive" : "negative";
   };
 
   const getGrowthIcon = (growth) => {
+    if (growth === null || growth === undefined) return "→";
     return growth >= 0 ? "↗️" : "↘️";
   };
 
@@ -158,6 +57,39 @@ const Dashboard = () => {
     if (hour < 12) return "morning";
     if (hour < 17) return "afternoon";
     return "evening";
+  };
+
+  const getPeriodLabel = (period) => {
+    const labels = {
+      week: "Last 7 Days",
+      month: "Last 30 Days", 
+      quarter: "Last 3 Months",
+      year: "Last Year"
+    };
+    return labels[period] || labels.month;
+  };
+
+  const getActivityDescription = (activity) => {
+    switch (activity.type) {
+      case 'scan':
+        return `${activity.user} scanned at ${activity.store}`;
+      case 'user_registration':
+        return `${activity.user} joined the platform`;
+      case 'reward_completion':
+        return `${activity.user} completed ${activity.reward}`;
+      default:
+        return 'Unknown activity';
+    }
+  };
+
+  const getActivityIcon = (type) => {
+    const icons = {
+      scan: '📱',
+      user_registration: '👤',
+      reward_completion: '🎁',
+      store_activity: '🏪'
+    };
+    return icons[type] || '📊';
   };
 
   if (loading) {
@@ -170,9 +102,39 @@ const Dashboard = () => {
             <div className="spinner-ring"></div>
           </div>
           <div className="loading-text">
-            <h3>Initializing AI Dashboard</h3>
-            <p>Analyzing business metrics...</p>
+            <h3>Loading Analytics Dashboard</h3>
+            <p>Fetching real-time business data...</p>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="dashboard-error">
+        <div className="error-container">
+          <div className="error-icon">⚠️</div>
+          <h3>Unable to Load Dashboard</h3>
+          <p>{error}</p>
+          <button 
+            onClick={fetchDashboardData}
+            className="retry-button"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!dashboardData) {
+    return (
+      <div className="dashboard-empty">
+        <div className="empty-container">
+          <div className="empty-icon">📊</div>
+          <h3>No Data Available</h3>
+          <p>Dashboard data is not available at the moment.</p>
         </div>
       </div>
     );
@@ -180,7 +142,7 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard">
-      {/* AI Header Section */}
+      {/* Header Section */}
       <div className="dashboard-header">
         <div className="ai-header-background">
           <div className="ai-particles"></div>
@@ -189,18 +151,15 @@ const Dashboard = () => {
         <div className="dashboard-header-content">
           <div className="dashboard-title">
             <div className="ai-title-container">
-              <h1 className="ai-title">
-                <span className="ai-icon">🤖</span>
-                AI Analytics Dashboard
-              </h1>
               <div className="ai-subtitle">
                 <p>
-                  Good {getTimeOfDay()}, {user?.first_name}! Your business
-                  intelligence is ready.
+                  Good {getTimeOfDay()}, {user?.first_name}! Your business insights are ready.
                 </p>
                 <div className="ai-status">
                   <span className="status-dot"></span>
-                  <span className="status-text">AI Analysis Complete</span>
+                  <span className="status-text">
+                    Live Data • Updated {lastUpdated ? lastUpdated.toLocaleTimeString() : 'recently'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -217,156 +176,92 @@ const Dashboard = () => {
                 <option value="quarter">Last 3 Months</option>
                 <option value="year">Last Year</option>
               </select>
-              <div className="ai-refresh-btn">
+              <button 
+                className="ai-refresh-btn"
+                onClick={fetchDashboardData}
+                title="Refresh Data"
+              >
                 <span className="refresh-icon">🔄</span>
-              </div>
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* AI Metrics Cards */}
-      <div className="dashboard-metrics">
-        <div className="metric-card ai-metric users-metric">
+      {/* Key Metrics Cards */}
+      <div className="dashboard-metrics compact-metrics">
+        <div className="metric-card ai-metric users-metric compact">
           <div className="metric-glow"></div>
           <div className="metric-content">
             <div className="metric-header">
               <div className="metric-icon">👥</div>
-              <div className="metric-badge">Live</div>
             </div>
             <div className="metric-value">
-              {formatNumber(animatedValues.users)}
+              {formatNumber(dashboardData.users?.total || 0)}
             </div>
             <div className="metric-label">Total Users</div>
-            <div
-              className={`metric-growth ${getGrowthColor(
-                dashboardData.users.growth
-              )}`}
-            >
-              {getGrowthIcon(dashboardData.users.growth)}{" "}
-              {Math.abs(dashboardData.users.growth)}%
-            </div>
-          </div>
-          <div className="metric-chart">
-            <div className="ai-chart">
-              <div className="chart-bar" style={{ height: "60%" }}></div>
-              <div className="chart-bar" style={{ height: "80%" }}></div>
-              <div className="chart-bar" style={{ height: "45%" }}></div>
-              <div className="chart-bar" style={{ height: "90%" }}></div>
-              <div className="chart-bar" style={{ height: "70%" }}></div>
-              <div className="chart-bar" style={{ height: "85%" }}></div>
-              <div className="chart-bar" style={{ height: "75%" }}></div>
+            <div className={`metric-growth ${getGrowthColor(dashboardData.users?.growth)}`}>
+              {getGrowthIcon(dashboardData.users?.growth)} {formatPercentage(dashboardData.users?.growth)}%
             </div>
           </div>
         </div>
 
-        <div className="metric-card ai-metric stores-metric">
+        <div className="metric-card ai-metric stores-metric compact">
           <div className="metric-glow"></div>
           <div className="metric-content">
             <div className="metric-header">
               <div className="metric-icon">🏪</div>
-              <div className="metric-badge">Active</div>
             </div>
             <div className="metric-value">
-              {formatNumber(animatedValues.stores)}
+              {formatNumber(dashboardData.stores?.total || 0)}
             </div>
-            <div className="metric-label">Active Stores</div>
-            <div
-              className={`metric-growth ${getGrowthColor(
-                dashboardData.stores.growth
-              )}`}
-            >
-              {getGrowthIcon(dashboardData.stores.growth)}{" "}
-              {Math.abs(dashboardData.stores.growth)}%
-            </div>
-          </div>
-          <div className="metric-chart">
-            <div className="ai-chart">
-              <div className="chart-bar" style={{ height: "70%" }}></div>
-              <div className="chart-bar" style={{ height: "85%" }}></div>
-              <div className="chart-bar" style={{ height: "60%" }}></div>
-              <div className="chart-bar" style={{ height: "90%" }}></div>
-              <div className="chart-bar" style={{ height: "75%" }}></div>
-              <div className="chart-bar" style={{ height: "80%" }}></div>
-              <div className="chart-bar" style={{ height: "65%" }}></div>
+            <div className="metric-label">Total Stores</div>
+            <div className={`metric-growth ${getGrowthColor(dashboardData.stores?.growth)}`}>
+              {getGrowthIcon(dashboardData.stores?.growth)} {formatPercentage(dashboardData.stores?.growth)}%
             </div>
           </div>
         </div>
 
-        <div className="metric-card ai-metric rewards-metric">
+        <div className="metric-card ai-metric rewards-metric compact">
           <div className="metric-glow"></div>
           <div className="metric-content">
             <div className="metric-header">
               <div className="metric-icon">🎁</div>
-              <div className="metric-badge">Hot</div>
             </div>
             <div className="metric-value">
-              {formatNumber(animatedValues.rewards)}
+              {formatNumber(dashboardData.rewards?.total || 0)}
             </div>
             <div className="metric-label">Active Rewards</div>
-            <div
-              className={`metric-growth ${getGrowthColor(
-                dashboardData.rewards.growth
-              )}`}
-            >
-              {getGrowthIcon(dashboardData.rewards.growth)}{" "}
-              {Math.abs(dashboardData.rewards.growth)}%
-            </div>
-          </div>
-          <div className="metric-chart">
-            <div className="ai-chart">
-              <div className="chart-bar" style={{ height: "80%" }}></div>
-              <div className="chart-bar" style={{ height: "65%" }}></div>
-              <div className="chart-bar" style={{ height: "90%" }}></div>
-              <div className="chart-bar" style={{ height: "70%" }}></div>
-              <div className="chart-bar" style={{ height: "85%" }}></div>
-              <div className="chart-bar" style={{ height: "75%" }}></div>
-              <div className="chart-bar" style={{ height: "80%" }}></div>
+            <div className={`metric-growth ${getGrowthColor(dashboardData.rewards?.growth)}`}>
+              {getGrowthIcon(dashboardData.rewards?.growth)} {formatPercentage(dashboardData.rewards?.growth)}%
             </div>
           </div>
         </div>
 
-        <div className="metric-card ai-metric revenue-metric">
+        <div className="metric-card ai-metric activity-metric compact">
           <div className="metric-glow"></div>
           <div className="metric-content">
             <div className="metric-header">
-              <div className="metric-icon">💰</div>
-              <div className="metric-badge">Trending</div>
+              <div className="metric-icon">⚡</div>
             </div>
             <div className="metric-value">
-              {formatCurrency(animatedValues.revenue)}
+              {formatNumber(dashboardData.business?.totalActivity || 0)}
             </div>
-            <div className="metric-label">Total Revenue</div>
-            <div
-              className={`metric-growth ${getGrowthColor(
-                dashboardData.analytics.monthlyGrowth
-              )}`}
-            >
-              {getGrowthIcon(dashboardData.analytics.monthlyGrowth)}{" "}
-              {Math.abs(dashboardData.analytics.monthlyGrowth)}%
-            </div>
-          </div>
-          <div className="metric-chart">
-            <div className="ai-chart">
-              <div className="chart-bar" style={{ height: "75%" }}></div>
-              <div className="chart-bar" style={{ height: "85%" }}></div>
-              <div className="chart-bar" style={{ height: "90%" }}></div>
-              <div className="chart-bar" style={{ height: "80%" }}></div>
-              <div className="chart-bar" style={{ height: "95%" }}></div>
-              <div className="chart-bar" style={{ height: "88%" }}></div>
-              <div className="chart-bar" style={{ height: "92%" }}></div>
+            <div className="metric-label">Total Activity</div>
+            <div className={`metric-growth ${getGrowthColor(dashboardData.business?.activityGrowth)}`}>
+              {getGrowthIcon(dashboardData.business?.activityGrowth)} {formatPercentage(dashboardData.business?.activityGrowth)}%
             </div>
           </div>
         </div>
       </div>
 
-      {/* AI Analytics Grid */}
+      {/* Analytics Grid */}
       <div className="dashboard-analytics">
         {/* User Analytics */}
         <div className="analytics-card ai-analytics users-analytics">
           <div className="analytics-glow"></div>
           <div className="analytics-header">
-            <h3>🤖 User Intelligence</h3>
+            <h3>👥 User Intelligence</h3>
             <div className="analytics-actions">
               <button className="ai-btn">View Details</button>
             </div>
@@ -375,45 +270,45 @@ const Dashboard = () => {
             <div className="analytics-stats">
               <div className="stat-item">
                 <div className="stat-value">
-                  {formatNumber(dashboardData.users.active)}
+                  {formatNumber(dashboardData.users?.active || 0)}
                 </div>
                 <div className="stat-label">Active Users</div>
               </div>
               <div className="stat-item">
                 <div className="stat-value">
-                  {formatNumber(dashboardData.users.newThisMonth)}
+                  {formatNumber(dashboardData.users?.newThisPeriod || 0)}
                 </div>
-                <div className="stat-label">New This Month</div>
+                <div className="stat-label">New This Period</div>
               </div>
               <div className="stat-item">
                 <div className="stat-value">
-                  {dashboardData.analytics.retentionRate}%
+                  {formatNumber(dashboardData.users?.engagement?.activeScanners || 0)}
                 </div>
-                <div className="stat-label">Retention Rate</div>
+                <div className="stat-label">Active Scanners</div>
               </div>
             </div>
-            <div className="analytics-chart">
-              <div className="chart-title">User Distribution by Role</div>
-              <div className="role-distribution">
-                {dashboardData.users.topRoles.map((role, index) => (
-                  <div key={index} className="role-item">
-                    <div className="role-info">
-                      <span className="role-name">{role.role}</span>
-                      <span className="role-count">
-                        {formatNumber(role.count)}
-                      </span>
+            {dashboardData.users?.topRoles && dashboardData.users.topRoles.length > 0 && (
+              <div className="analytics-chart">
+                <div className="chart-title">User Distribution by Role</div>
+                <div className="role-distribution">
+                  {dashboardData.users.topRoles.map((role, index) => (
+                    <div key={index} className="role-item">
+                      <div className="role-info">
+                        <span className="role-name">{role.role}</span>
+                        <span className="role-count">{formatNumber(role.count)}</span>
+                      </div>
+                      <div className="role-bar">
+                        <div
+                          className="role-bar-fill"
+                          style={{ width: `${Math.min(role.percentage, 100)}%` }}
+                        ></div>
+                      </div>
+                      <span className="role-percentage">{formatPercentage(role.percentage)}%</span>
                     </div>
-                    <div className="role-bar">
-                      <div
-                        className="role-bar-fill"
-                        style={{ width: `${role.percentage}%` }}
-                      ></div>
-                    </div>
-                    <span className="role-percentage">{role.percentage}%</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -430,45 +325,45 @@ const Dashboard = () => {
             <div className="analytics-stats">
               <div className="stat-item">
                 <div className="stat-value">
-                  {formatNumber(dashboardData.stores.active)}
+                  {formatNumber(dashboardData.stores?.active || 0)}
                 </div>
                 <div className="stat-label">Active Stores</div>
               </div>
               <div className="stat-item">
                 <div className="stat-value">
-                  {formatNumber(dashboardData.stores.newThisMonth)}
+                  {formatNumber(dashboardData.stores?.newThisPeriod || 0)}
                 </div>
-                <div className="stat-label">New This Month</div>
+                <div className="stat-label">New This Period</div>
               </div>
               <div className="stat-item">
                 <div className="stat-value">
-                  {dashboardData.analytics.customerSatisfaction}/5
+                  {formatPercentage(dashboardData.business?.customerSatisfaction || 0)}/5
                 </div>
                 <div className="stat-label">Satisfaction</div>
               </div>
             </div>
-            <div className="analytics-chart">
-              <div className="chart-title">Store Distribution by City</div>
-              <div className="city-distribution">
-                {dashboardData.stores.topCities.map((city, index) => (
-                  <div key={index} className="city-item">
-                    <div className="city-info">
-                      <span className="city-name">{city.city}</span>
-                      <span className="city-count">
-                        {formatNumber(city.count)}
-                      </span>
+            {dashboardData.stores?.topCities && dashboardData.stores.topCities.length > 0 && (
+              <div className="analytics-chart">
+                <div className="chart-title">Store Distribution by City</div>
+                <div className="city-distribution">
+                  {dashboardData.stores.topCities.map((city, index) => (
+                    <div key={index} className="city-item">
+                      <div className="city-info">
+                        <span className="city-name">{city.city}</span>
+                        <span className="city-count">{formatNumber(city.count)}</span>
+                      </div>
+                      <div className="city-bar">
+                        <div
+                          className="city-bar-fill"
+                          style={{ width: `${Math.min(city.percentage, 100)}%` }}
+                        ></div>
+                      </div>
+                      <span className="city-percentage">{formatPercentage(city.percentage)}%</span>
                     </div>
-                    <div className="city-bar">
-                      <div
-                        className="city-bar-fill"
-                        style={{ width: `${city.percentage}%` }}
-                      ></div>
-                    </div>
-                    <span className="city-percentage">{city.percentage}%</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -485,66 +380,64 @@ const Dashboard = () => {
             <div className="analytics-stats">
               <div className="stat-item">
                 <div className="stat-value">
-                  {formatNumber(dashboardData.rewards.active)}
+                  {formatNumber(dashboardData.rewards?.active || 0)}
                 </div>
                 <div className="stat-label">Active Rewards</div>
               </div>
               <div className="stat-item">
                 <div className="stat-value">
-                  {formatNumber(dashboardData.rewards.redeemed)}
+                  {formatNumber(dashboardData.rewards?.completedThisPeriod || 0)}
                 </div>
-                <div className="stat-label">Total Redeemed</div>
+                <div className="stat-label">Completed</div>
               </div>
               <div className="stat-item">
                 <div className="stat-value">
-                  {dashboardData.analytics.customerSatisfaction}/5
+                  {formatPercentage(dashboardData.rewards?.engagement?.avgCompletionRate || 0)}%
                 </div>
-                <div className="stat-label">Satisfaction</div>
+                <div className="stat-label">Completion Rate</div>
               </div>
             </div>
-            <div className="analytics-chart">
-              <div className="chart-title">Reward Distribution by Type</div>
-              <div className="reward-distribution">
-                {dashboardData.rewards.topTypes.map((type, index) => (
-                  <div key={index} className="reward-item">
-                    <div className="reward-info">
-                      <span className="reward-name">{type.type}</span>
-                      <span className="reward-count">
-                        {formatNumber(type.count)}
-                      </span>
+            {dashboardData.rewards?.topTypes && dashboardData.rewards.topTypes.length > 0 && (
+              <div className="analytics-chart">
+                <div className="chart-title">Reward Distribution by Type</div>
+                <div className="reward-distribution">
+                  {dashboardData.rewards.topTypes.map((type, index) => (
+                    <div key={index} className="reward-item">
+                      <div className="reward-info">
+                        <span className="reward-name">{type.type}</span>
+                        <span className="reward-count">{formatNumber(type.count)}</span>
+                      </div>
+                      <div className="reward-bar">
+                        <div
+                          className="reward-bar-fill"
+                          style={{ width: `${Math.min(type.percentage, 100)}%` }}
+                        ></div>
+                      </div>
+                      <span className="reward-percentage">{formatPercentage(type.percentage)}%</span>
                     </div>
-                    <div className="reward-bar">
-                      <div
-                        className="reward-bar-fill"
-                        style={{ width: `${type.percentage}%` }}
-                      ></div>
-                    </div>
-                    <span className="reward-percentage">
-                      {type.percentage}%
-                    </span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
-        {/* AI Quick Actions */}
+        {/* Quick Actions */}
         <div className="analytics-card ai-analytics quick-actions">
           <div className="analytics-glow"></div>
           <div className="analytics-header">
-            <h3>⚡ AI Actions</h3>
+            <h3>⚡ Quick Actions</h3>
           </div>
           <div className="analytics-content">
             <div className="action-grid">
               <button className="ai-action-btn">
                 <span className="action-icon">➕</span>
-                <span className="action-text">Add New User</span>
+                <span className="action-text">Add User</span>
                 <div className="action-glow"></div>
               </button>
               <button className="ai-action-btn">
                 <span className="action-icon">🏪</span>
-                <span className="action-text">Add New Store</span>
+                <span className="action-text">Add Store</span>
                 <div className="action-glow"></div>
               </button>
               <button className="ai-action-btn">
@@ -558,13 +451,13 @@ const Dashboard = () => {
                 <div className="action-glow"></div>
               </button>
               <button className="ai-action-btn">
-                <span className="action-icon">⚙️</span>
-                <span className="action-text">Settings</span>
+                <span className="action-icon">📱</span>
+                <span className="action-text">QR Scanner</span>
                 <div className="action-glow"></div>
               </button>
               <button className="ai-action-btn">
-                <span className="action-icon">📧</span>
-                <span className="action-text">Send Notification</span>
+                <span className="action-icon">⚙️</span>
+                <span className="action-text">Settings</span>
                 <div className="action-glow"></div>
               </button>
             </div>
@@ -572,53 +465,29 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* AI Activity Feed */}
-      <div className="dashboard-activity">
-        <div className="activity-header">
-          <h3>🔮 AI Activity Monitor</h3>
-          <button className="ai-activity-btn">View All</button>
-        </div>
-        <div className="activity-list">
-          <div className="activity-item ai-activity">
-            <div className="activity-icon">👤</div>
-            <div className="activity-content">
-              <div className="activity-title">New user registered</div>
-              <div className="activity-desc">John Doe joined the platform</div>
-              <div className="activity-time">2 minutes ago</div>
+      {/* Recent Activity */}
+      {dashboardData.activity && dashboardData.activity.length > 0 && (
+        <div className="dashboard-activity">
+          <div className="activity-header">
+            <h3>🔮 Recent Activity</h3>
+            <div className="activity-period">
+              {getPeriodLabel(selectedPeriod)}
             </div>
-            <div className="activity-glow"></div>
           </div>
-          <div className="activity-item ai-activity">
-            <div className="activity-icon">🏪</div>
-            <div className="activity-content">
-              <div className="activity-title">Store activated</div>
-              <div className="activity-desc">Coffee Corner in Manchester</div>
-              <div className="activity-time">15 minutes ago</div>
-            </div>
-            <div className="activity-glow"></div>
-          </div>
-          <div className="activity-item ai-activity">
-            <div className="activity-icon">🎁</div>
-            <div className="activity-content">
-              <div className="activity-title">Reward redeemed</div>
-              <div className="activity-desc">20% discount at Pizza Place</div>
-              <div className="activity-time">1 hour ago</div>
-            </div>
-            <div className="activity-glow"></div>
-          </div>
-          <div className="activity-item ai-activity">
-            <div className="activity-icon">💰</div>
-            <div className="activity-content">
-              <div className="activity-title">Revenue milestone</div>
-              <div className="activity-desc">
-                £50,000 monthly revenue achieved
+          <div className="activity-list">
+            {dashboardData.activity.slice(0, 8).map((activity, index) => (
+              <div key={index} className="activity-item ai-activity">
+                <div className="activity-icon">{getActivityIcon(activity.type)}</div>
+                <div className="activity-content">
+                  <div className="activity-title">{getActivityDescription(activity)}</div>
+                  <div className="activity-time">{activity.timeAgo}</div>
+                </div>
+                <div className="activity-glow"></div>
               </div>
-              <div className="activity-time">3 hours ago</div>
-            </div>
-            <div className="activity-glow"></div>
+            ))}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

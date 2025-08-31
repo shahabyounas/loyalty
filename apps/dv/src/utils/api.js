@@ -762,3 +762,48 @@ export const requestInterceptor = {
     };
   },
 };
+
+// Analytics API
+export const analyticsAPI = {
+  // Get dashboard analytics
+  getDashboardAnalytics: async (period = 'month') => {
+    try {
+      const response = await makeRequest(`/analytics/dashboard?period=${period}`, {
+        method: 'GET',
+        headers: createHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching dashboard analytics:', error);
+      throw error;
+    }
+  },
+
+  // Get detailed user analytics
+  getUserAnalytics: async (period = 'month', page = 1, limit = 10) => {
+    try {
+      const response = await makeRequest(`/analytics/users?period=${period}&page=${page}&limit=${limit}`, {
+        method: 'GET',
+        headers: createHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user analytics:', error);
+      throw error;
+    }
+  },
+
+  // Get real-time metrics
+  getRealTimeMetrics: async () => {
+    try {
+      const response = await makeRequest(`/analytics/realtime`, {
+        method: 'GET',
+        headers: createHeaders(),
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching real-time metrics:', error);
+      throw error;
+    }
+  }
+};

@@ -322,49 +322,55 @@
     background: #ffffff;
     border-radius: 12px;
     border: 1px solid #e2e8f0;
+    overflow: hidden;
 }
 
 .scan-history-header {
     background: #f8fafc;
-    padding: 20px 24px;
+    padding: 12px 16px;
     border-bottom: 1px solid #e2e8f0;
-    border-radius: 12px 12px 0 0;
+    margin-bottom: 0;
 }
 
 .scan-history-title {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 600;
     color: #1a202c;
     margin: 0;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
 }
 
 .scan-history-content {
-    padding: 24px;
+    padding: 0;
+    margin: 0;
 }
 
 .scan-history-table {
     width: 100%;
     border-collapse: collapse;
+    margin: 0;
+    border-spacing: 0;
 }
 
 .scan-history-table th {
-    background: #f1f5f9;
-    padding: 12px 16px;
+    background: #f8fafc;
+    padding: 8px 12px;
     text-align: left;
     font-weight: 600;
     color: #475569;
-    font-size: 14px;
-    border-bottom: 2px solid #e2e8f0;
+    font-size: 13px;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
 }
 
 .scan-history-table td {
-    padding: 16px;
+    padding: 8px 12px;
     border-bottom: 1px solid #f1f5f9;
-    font-size: 14px;
+    font-size: 13px;
     color: #334155;
+    vertical-align: top;
 }
 
 .scan-history-table tr:hover {
@@ -375,44 +381,131 @@
     border-bottom: none;
 }
 
+/* New scan history styles */
+.scan-date {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.date-primary {
+    font-weight: 600;
+    color: #334155;
+    font-size: 13px;
+}
+
+.date-secondary {
+    font-size: 11px;
+    color: #64748b;
+}
+
+.stamps-badge {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.progress-change {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.progress-before {
+    color: #64748b;
+    font-weight: 500;
+}
+
+.progress-arrow {
+    color: #3b82f6;
+    font-weight: bold;
+}
+
+.progress-after {
+    color: #059669;
+    font-weight: 600;
+}
+
+.staff-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.staff-name {
+    font-weight: 600;
+    color: #334155;
+    font-size: 13px;
+}
+
+.staff-role {
+    font-size: 11px;
+    color: #64748b;
+    text-transform: capitalize;
+}
+
+.no-staff {
+    color: #94a3b8;
+    font-style: italic;
+    font-size: 12px;
+}
+
+.store-name {
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 11px;
+    color: #475569;
+    font-weight: 500;
+    display: inline-block;
+}
+
 /* Empty State */
 .empty-state {
     text-align: center;
-    padding: 48px 24px;
+    padding: 32px 20px;
     color: #64748b;
 }
 
 .empty-state-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
+    font-size: 40px;
+    margin-bottom: 12px;
     opacity: 0.5;
 }
 
 .empty-state-title {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+    color: #374151;
 }
 
 .empty-state-description {
-    font-size: 14px;
+    font-size: 13px;
     margin: 0;
+    color: #6b7280;
 }
 
 /* Loading State */
 .loading-state {
     text-align: center;
-    padding: 48px 24px;
+    padding: 32px 20px;
 }
 
 .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid #e2e8f0;
-    border-top: 4px solid #667eea;
+    width: 32px;
+    height: 32px;
+    border: 3px solid #e2e8f0;
+    border-top: 3px solid #667eea;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin: 0 auto 16px;
+    margin: 0 auto 12px;
 }
 
 @keyframes spin {
@@ -427,29 +520,29 @@
 
 .loading-text {
     color: #64748b;
-    font-size: 16px;
+    font-size: 14px;
 }
 
 /* Error State */
 .error-state {
     text-align: center;
-    padding: 48px 24px;
+    padding: 32px 20px;
     color: #dc2626;
 }
 
 .error-state-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
+    font-size: 40px;
+    margin-bottom: 12px;
 }
 
 .error-state-title {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .error-state-description {
-    font-size: 14px;
+    font-size: 13px;
     margin: 0;
 }
 
@@ -638,7 +731,7 @@
 
 /* Scan History Section */
 .scan-history-section {
-    padding: 0 32px 32px;
+    padding: 0 32px 24px;
 }
 
 .scan-history-header {
@@ -766,7 +859,7 @@
 }
 
 .scan-table-cell {
-    padding: 16px 12px;
+    padding: 10px 8px;
     display: flex;
     align-items: center;
     font-size: 14px;
