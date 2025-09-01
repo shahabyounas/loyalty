@@ -285,6 +285,88 @@ class SupabaseAuthService {
   }
 
   /**
+   * Request password reset email
+   */
+  static async requestPasswordReset(email, redirectUrl) {
+    try {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      });
+
+      if (error) {
+        logger.error("Password reset request error:", error);
+        throw new Error(error.message);
+      }
+
+      logger.info(`Password reset email sent to: ${email}`);
+      return { message: "Password reset email sent successfully" };
+    } catch (error) {
+      logger.error("Password reset request failed:", error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Reset password with token
+   */
+  static async resetPassword(accessToken, newPassword) {
+    try {
+      // First, verify the token and get user info
+      const { data: { user }, error: verifyError } = await supabase.auth.getUser(accessToken);
+      
+      if (verifyError || !user) {
+        logger.error("Token verification error:", verifyError);
+        throw new Error("Invalid or expired reset token");
+      }
+
+      // Use Admin API to update the user's password
+      const { data, error } = await supabase.auth.admin.updateUserById(user.id, {
+        password: newPassword
+      });
+
+      if (error) {
+        logger.error("Password reset error:", error);
+        throw new Error(error.message);
+      }
+
+      logger.info(`Password reset successfully for user: ${user.id}`);
+      return { 
+        message: "Password reset successfully",
+        user: data.user 
+      };
+    } catch (error) {
+      logger.error("Password reset failed:", error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Verify reset token
+   */
+  static async verifyResetToken(accessToken) {
+    try {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser(accessToken);
+
+      if (error) {
+        logger.error("Reset token verification error:", error);
+        throw new Error(error.message);
+      }
+
+      if (!user) {
+        throw new Error("Invalid or expired reset token");
+      }
+
+      return user;
+    } catch (error) {
+      logger.error("Reset token verification failed:", error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Create a new session for a user (admin only)
    */
   static async createSession(userId) {

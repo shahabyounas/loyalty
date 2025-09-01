@@ -8,8 +8,7 @@ export function Login({ onToggleToSignup, isEmbedded = false }) {
     login, 
     isLocked, 
     authErrors, 
-    clearAuthErrors, 
-    getRemainingLockoutTime,
+    clearAuthErrors,
     getRemainingAttempts 
   } = useAuth();
   const navigate = useNavigate();
@@ -21,25 +20,6 @@ export function Login({ onToggleToSignup, isEmbedded = false }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [remainingTime, setRemainingTime] = useState(0);
-
-  // Update remaining lockout time
-  // useEffect(() => {
-  //   if (isLocked) {
-  //     const updateTimer = () => {
-  //       const remaining = getRemainingLockoutTime();
-  //       setRemainingTime(remaining);
-        
-  //       if (remaining <= 0) {
-  //         clearInterval(timer);
-  //       }
-  //     };
-      
-  //     updateTimer();
-  //     const timer = setInterval(updateTimer, 1000);
-      
-  //     return () => clearInterval(timer);
-  //   }
-  // }, [isLocked, getRemainingLockoutTime]);
 
   // Clear errors when component mounts or user starts typing
   useEffect(() => {
@@ -216,7 +196,22 @@ export function Login({ onToggleToSignup, isEmbedded = false }) {
                   aria-pressed={showPassword}
                   tabIndex={0}
                 >
-                  {showPassword ? "�" : "👁️"}
+                  {showPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
+              <div className="forgot-password-link">
+                <button
+                  type="button"
+                  className="link-button forgot-password"
+                  onClick={() => {
+                    console.log("Forgot password clicked, navigating to /auth/forgot-password");
+                    clearAuthErrors();
+                    setLocalErrors([]);
+                    navigate("/auth/forgot-password");
+                  }}
+                  disabled={isSubmitting || isLocked}
+                >
+                  Forgot Password?
                 </button>
               </div>
             </div>

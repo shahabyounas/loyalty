@@ -99,6 +99,26 @@ const changePasswordValidation = [
     ),
 ];
 
+const requestPasswordResetValidation = [
+  body("email")
+    .isEmail()
+    .normalizeEmail()
+    .withMessage("Please provide a valid email address"),
+];
+
+const resetPasswordValidation = [
+  body("password")
+    .isLength({ min: 8 })
+    .withMessage("Password must be at least 8 characters long")
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage(
+      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+    ),
+  body("access_token")
+    .notEmpty()
+    .withMessage("Access token is required"),
+];
+
 const updateProfileValidation = [
   body("firstName")
     .optional()
@@ -130,6 +150,24 @@ router.post(
   refreshTokenValidation,
   validate,
   SupabaseAuthController.refreshToken
+);
+
+// Password reset routes (public)
+router.post(
+  "/request-password-reset",
+  requestPasswordResetValidation,
+  validate,
+  SupabaseAuthController.requestPasswordReset
+);
+router.post(
+  "/reset-password",
+  resetPasswordValidation,
+  validate,
+  SupabaseAuthController.resetPassword
+);
+router.get(
+  "/verify-reset-token",
+  SupabaseAuthController.verifyResetToken
 );
 
 // Protected routes

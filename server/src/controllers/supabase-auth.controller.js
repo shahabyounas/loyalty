@@ -499,6 +499,135 @@ class SupabaseAuthController {
   }
 
   /**
+   * Request password reset
+   */
+  static async requestPasswordReset(req, res, next) {
+    try {
+      const { email } = req.body;
+
+      // Validate email
+      if (!email) {
+        return ApiResponse.badRequest(res, "Email is required");
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return ApiResponse.badRequest(res, "Invalid email format");
+      }
+
+      // Check if user exists in our database first
+      const existingUser = await User.findByEmail(email);
+      if (!existingUser) {
+        return ApiResponse.notFound(
+          res, 
+          "No account found with this email address. Please check your email or create a new account."
+        );
+      }
+
+      // Generate reset URL based on request origin
+      const origin = req.headers.origin || req.headers.referer || process.env.FRONTEND_URL;
+      const resetUrl = `${origin}/auth/reset-password`;
+
+      // Send password reset email
+      await SupabaseAuthService.requestPasswordReset(email, resetUrl);
+
+      logger.info(`Password reset requested for: ${email}`);
+      return ApiResponse.success(
+        res,
+        null,
+        "Password reset email sent. Please check your inbox and follow the instructions."
+      );
+    } catch (error) {
+      logger.error("Password reset request error:", error.message);
+      next(error);
+    }
+  }
+
+  /**
+   * Reset password with token
+   */
+  static async resetPassword(req, res, next) {
+    try {
+      const { password, access_token } = req.body;
+
+      // Validate inputs
+      if (!password || !access_token) {
+        return ApiResponse.badRequest(res, "Password and access token are required");
+      }
+
+      if (password.length < 8) {
+        return ApiResponse.badRequest(res, "Password must be at least 8 characters long");
+      }
+
+      // Check password complexity
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
+      if (!passwordRegex.test(password)) {
+        return ApiResponse.badRequest(res, "Password must contain at least one uppercase letter, one lowercase letter, and one number");
+      }
+
+      // Verify the reset token first
+      const user = await SupabaseAuthService.verifyResetToken(access_token);
+      if (!user) {
+        return ApiResponse.unauthorized(res, "Invalid or expired reset token");
+      }
+
+      // Reset the password
+      const result = await SupabaseAuthService.resetPassword(access_token, password);
+
+      logger.info(`Password reset successfully for user: ${user.email}`);
+      return ApiResponse.success(
+        res,
+        {
+          user: {
+            id: result.user.id,
+            email: result.user.email,
+            firstName: result.user.user_metadata?.first_name,
+            lastName: result.user.user_metadata?.last_name,
+          }
+        },
+        "Password reset successfully. You can now login with your new password."
+      );
+    } catch (error) {
+      logger.error("Password reset error:", error.message);
+      next(error);
+    }
+  }
+
+  /**
+   * Verify reset token
+   */
+  static async verifyResetToken(req, res, next) {
+    try {
+      const { access_token } = req.query;
+
+      if (!access_token) {
+        return ApiResponse.badRequest(res, "Access token is required");
+      }
+
+      // Verify the token
+      const user = await SupabaseAuthService.verifyResetToken(access_token);
+
+      return ApiResponse.success(
+        res,
+        {
+          valid: true,
+          user: {
+            id: user.id,
+            email: user.email,
+          }
+        },
+        "Reset token is valid"
+      );
+    } catch (error) {
+      logger.error("Reset token verification error:", error.message);
+      return ApiResponse.unauthorized(
+        res, 
+        "Invalid or expired reset token. Please request a new password reset."
+      );
+    }
+  }
+
+  /**
    * Delete user (admin only)
    */
   static async deleteUser(req, res, next) {

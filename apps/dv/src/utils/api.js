@@ -291,27 +291,26 @@ export const authAPI = {
     });
   },
 
-  // Reset password
+  // Reset password - request reset email
   resetPassword: async (email) => {
-    return await makeRequest("/auth/reset-password", {
+    return await makeRequest("/auth/request-password-reset", {
       method: "POST",
       body: JSON.stringify({ email }),
     });
   },
 
   // Verify reset token
-  verifyResetToken: async (token) => {
-    return await makeRequest("/auth/verify-reset-token", {
-      method: "POST",
-      body: JSON.stringify({ token }),
+  verifyResetToken: async (access_token) => {
+    return await makeRequest(`/auth/verify-reset-token?access_token=${access_token}`, {
+      method: "GET",
     });
   },
 
   // Set new password with reset token
-  setNewPassword: async (token, newPassword) => {
-    return await makeRequest("/auth/set-new-password", {
+  setNewPassword: async (access_token, password) => {
+    return await makeRequest("/auth/reset-password", {
       method: "POST",
-      body: JSON.stringify({ token, newPassword }),
+      body: JSON.stringify({ access_token, password }),
     });
   },
 
