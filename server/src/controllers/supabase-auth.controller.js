@@ -263,9 +263,10 @@ class SupabaseAuthController {
 
       const result = await SupabaseAuthService.signIn(email, password);
 
-      // Update last login time in our database
+      // Update last login time in our database and get user profile
+      let dbUser = null;
       try {
-        const dbUser = await User.findByAuthUserId(result.user.id);
+        dbUser = await User.findByAuthUserId(result.user.id);
         if (dbUser) {
           await User.updateLastLogin(dbUser.id, dbUser.tenant_id);
         }
@@ -286,6 +287,7 @@ class SupabaseAuthController {
             role: result.user.user_metadata?.role,
             emailVerified: result.user.email_confirmed_at ? true : false,
           },
+          dbUser, // Include database user profile
           session: {
             accessToken: result.session.access_token,
             refreshToken: result.session.refresh_token,

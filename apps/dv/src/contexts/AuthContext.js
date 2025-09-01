@@ -172,13 +172,31 @@ export const AuthProvider = ({ children }) => {
       // Call API for authentication
       const response = await authAPI.login(email, password);
 
+      // Merge auth user and db profile if available (same as signup)
+      const mergedUser = {
+        ...response.user,
+        // Flatten important DB profile fields onto the user object
+        internalUserId: response.dbUser?.id,
+        tenantId: response.dbUser?.tenant_id ?? null,
+        phone: response.dbUser?.phone ?? response.user.phone,
+        avatarUrl: response.dbUser?.avatar_url ?? null,
+        isActive: response.dbUser?.is_active ?? true,
+        emailVerified:
+          response.user?.emailVerified ??
+          response.dbUser?.email_verified ??
+          false,
+        createdAt: response.user?.createdAt || response.dbUser?.created_at,
+        updatedAt: response.dbUser?.updated_at || null,
+        permissions: response.dbUser?.permissions || {},
+      };
+
       // Update state
-      setUser(response.user);
+      setUser(mergedUser);
       setIsAuthenticated(true);
       clearLockout(); // Clear any previous lockout state
 
-      console.log('Login successful for user:', response.user?.email);
-      return { success: true, user: response.user };
+      console.log('Login successful for user:', mergedUser.email);
+      return { success: true, user: mergedUser };
     } catch (error) {
       // Handle login failures
       const newAttempts = loginAttempts + 1;
