@@ -557,6 +557,14 @@ export const stampTransactionAPI = {
     });
   },
 
+  // Process QR code scan for redemption (admin/staff)
+  processRedemption: async (redemptionData) => {
+    return await makeRequest("/stamp-transactions/process-redemption", {
+      method: "POST",
+      body: JSON.stringify(redemptionData),
+    });
+  },
+
   // Get all stamp transactions (admin audit)
   getAllTransactions: async (params = {}) => {
     const queryParams = new URLSearchParams(params).toString();

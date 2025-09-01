@@ -562,6 +562,9 @@ export default function Home() {
     setQrModalOpen(false);
     setCurrentTransaction(null);
     setCurrentReward(null);
+    
+    // Refresh user progress after closing QR modal to reflect any changes
+    fetchUserProgress();
   }
 
   function handleCancelTransaction() {
@@ -582,10 +585,36 @@ export default function Home() {
     handleAddStamp(rewardId, rewardName);
   }
 
-  function handleInProgressRedeemReward(rewardId) {
-    // Close the modal and redeem the reward
+  function handleInProgressRedeemReward(rewardId, rewardName) {
+    // Close the modal and generate redemption QR code
     setInProgressModalOpen(false);
-    handleRedeemReward(rewardId);
+    
+    // Find the reward to get its name
+    const reward = availableRewards.find(r => r.id === rewardId);
+    const displayName = rewardName || reward?.name || 'Unknown Reward';
+    
+    // Generate QR code data for redemption
+    const qrData = {
+      user_id: user?.id, // Supabase auth user ID
+      reward_id: rewardId,
+      action_type: "redemption", // Distinguish from stamp collection
+      timestamp: Date.now(),
+      expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(), // 15 minutes expiry
+    };
+
+    setCurrentTransaction({
+      transaction_code: `REDEEM_${user?.id}_${rewardId}_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)
+        .toUpperCase()}`,
+      user_id: user?.id,
+      reward_id: rewardId,
+      action_type: "redemption",
+      expires_at: qrData.expires_at,
+      qr_data: JSON.stringify(qrData),
+    });
+    setCurrentReward({ id: rewardId, name: displayName });
+    setQrModalOpen(true);
   }
 
   function openRewardsModal(type, title) {

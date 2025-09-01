@@ -13,6 +13,7 @@ class ScanHistory {
     this.stamps_after_scan = data.stamps_after_scan || 0;
     this.stamps_added = data.stamps_added || 1;
     this.scan_method = data.scan_method || 'qr_code';
+    this.action_type = data.action_type || 'stamp_collection';
     this.scan_location = data.scan_location;
     this.notes = data.notes;
     this.created_at = data.created_at || new Date();
@@ -22,7 +23,7 @@ class ScanHistory {
   /**
    * Create a new scan history record
    */
-  static async create(progressId, userId, rewardId, scannedByUserId, storeId = null, stampsAdded = 1, stampsBeforeScan = 0, stampsAfterScan = null) {
+  static async create(progressId, userId, rewardId, scannedByUserId, storeId = null, stampsAdded = 1, stampsBeforeScan = 0, stampsAfterScan = null, actionType = 'stamp_collection') {
     try {
       // Calculate stamps after scan if not provided
       const finalStampsAfterScan = stampsAfterScan !== null ? stampsAfterScan : stampsBeforeScan + stampsAdded;
@@ -30,12 +31,12 @@ class ScanHistory {
       const query = `
         INSERT INTO scan_history (
           user_reward_progress_id, user_id, reward_id, scanned_by_user_id, 
-          store_id, stamps_added, stamps_before_scan, stamps_after_scan, scan_method
+          store_id, stamps_added, stamps_before_scan, stamps_after_scan, scan_method, action_type
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING *
       `;
-      const params = [progressId, userId, rewardId, scannedByUserId, storeId, stampsAdded, stampsBeforeScan, finalStampsAfterScan, 'qr_code'];
+      const params = [progressId, userId, rewardId, scannedByUserId, storeId, stampsAdded, stampsBeforeScan, finalStampsAfterScan, 'qr_code', actionType];
 
       const result = await db.getOne(query, params);
       return result ? new ScanHistory(result) : null;
