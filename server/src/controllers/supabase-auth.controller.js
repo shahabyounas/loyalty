@@ -2,6 +2,7 @@ const SupabaseAuthService = require("../services/supabase-auth.service");
 const ApiResponse = require("../utils/response");
 const { logger } = require("../utils/logger");
 const User = require("../models/user.model");
+const Tenant = require("../models/tenant.model");
 
 class SupabaseAuthController {
   /**
@@ -58,11 +59,41 @@ class SupabaseAuthController {
         );
       }
 
+      // Determine tenant from request domain
+      let tenantId = null;
+      try {
+        const origin = req.headers.origin || req.headers.referer;
+        if (origin) {
+          // Extract and normalize domain from origin/referer
+          const url = new URL(origin);
+          const cleanDomain = url.host; // Just the hostname without protocol or path
+          
+          logger.info(`Signup request from domain: ${cleanDomain}`);
+          
+          // Find tenant by normalized domain
+          const tenant = await Tenant.findByDomain(cleanDomain);
+          console.log(`Assigned tenant ${tenant} (${tenantId}) for domain ${cleanDomain}`);
+          
+          if (tenant) {
+            tenantId = tenant.id;
+            console.log(`Assigned tenant ${tenant.business_name} (${tenantId}) for domain ${cleanDomain}`);
+          } else {
+            logger.warn(`No tenant found for domain: ${cleanDomain}`);
+          }
+        } else {
+          logger.warn("No origin/referer header found in signup request");
+        }
+      } catch (domainErr) {
+        logger.error("Error determining tenant from domain:", domainErr.message);
+        // Continue without tenant assignment - don't fail signup
+      }
+
       const result = await SupabaseAuthService.signUp(email, password, {
         firstName,
         lastName,
         role: role || "customer",
         phone: phone,
+        tenant_id: tenantId, // Custom field to track tenant association
       });
 
       // Create a corresponding profile record in our database users table
@@ -70,6 +101,7 @@ class SupabaseAuthController {
       try {
         dbUserRecord = await User.create({
           auth_user_id: result.user.id,
+          tenant_id: tenantId,
           email: email,
           first_name: firstName,
           last_name: lastName,

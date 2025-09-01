@@ -16,6 +16,7 @@ class SupabaseAuthService {
           first_name: userData.firstName,
           last_name: userData.lastName,
           role: userData.role || "customer",
+          tenant_id: userData.tenant_id || null,
         },
       });
 

@@ -86,6 +86,57 @@ class Tenant {
     }
   }
 
+  static async findByDomain(domain) {
+    try {
+      // Normalize the input domain (remove protocol and trailing slashes)
+      const normalizedDomain = this.normalizeDomain(domain);
+      
+      // Search for exact match first
+      let query = `
+        SELECT * FROM tenants 
+        WHERE domain = $1 AND is_active = true
+      `;
+      let result = await db.getOne(query, [normalizedDomain]);
+      
+      if (result) {
+        return new Tenant(result);
+      }
+      
+      // If no exact match, try to find by normalizing stored domains
+      query = `
+        SELECT * FROM tenants 
+        WHERE is_active = true
+      `;
+      const allTenants = await db.getMany(query, []);
+      
+      for (const tenantData of allTenants) {
+        const normalizedStoredDomain = this.normalizeDomain(tenantData.domain);
+        if (normalizedStoredDomain === normalizedDomain) {
+          return new Tenant(tenantData);
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      logger.error("Error finding tenant by domain:", error);
+      throw error;
+    }
+  }
+
+  static normalizeDomain(domain) {
+    if (!domain) return '';
+    
+    let normalized = domain.toLowerCase().trim();
+    
+    // Remove protocol
+    normalized = normalized.replace(/^https?:\/\//, '');
+    
+    // Remove trailing slashes
+    normalized = normalized.replace(/\/+$/, '');
+    
+    return normalized;
+  }
+
   static async update(id, updateData) {
     try {
       const fields = [];
