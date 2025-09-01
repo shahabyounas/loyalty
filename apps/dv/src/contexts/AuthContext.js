@@ -196,6 +196,13 @@ export const AuthProvider = ({ children }) => {
       clearLockout(); // Clear any previous lockout state
 
       console.log('Login successful for user:', mergedUser.email);
+      
+      // Role-based redirection
+      if (isAdmin(mergedUser)) {
+        console.log('Redirecting admin user to admin dashboard');
+        navigate('/admin');
+      }
+      
       return { success: true, user: mergedUser };
     } catch (error) {
       // Handle login failures
@@ -283,6 +290,13 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
 
       console.log('Signup successful for user:', mergedUser.email);
+      
+      // Role-based redirection
+      if (isAdmin(mergedUser)) {
+        console.log('Redirecting admin user to admin dashboard');
+        navigate('/admin');
+      }
+      
       return { success: true, user: mergedUser };
     } catch (error) {
       const errorMessage = apiErrorHandler.handleError(error) || "Account creation failed. Please try again.";
@@ -413,6 +427,18 @@ export const AuthProvider = ({ children }) => {
     return Math.max(0, MAX_LOGIN_ATTEMPTS - loginAttempts);
   }, [loginAttempts]);
 
+  // Check if user is admin
+  const isAdmin = useCallback((userObj = user) => {
+    if (!userObj) return false;
+    return ['super_admin', 'admin', 'tenant_admin'].includes(userObj.role);
+  }, [user]);
+
+  // Check if user is super admin
+  const isSuperAdmin = useCallback((userObj = user) => {
+    if (!userObj) return false;
+    return userObj.role === 'super_admin';
+  }, [user]);
+
   const value = {
     // Core state
     user,
@@ -451,6 +477,8 @@ export const AuthProvider = ({ children }) => {
     // Helper methods
     getRemainingLockoutTime,
     getRemainingAttempts,
+    isAdmin,
+    isSuperAdmin,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
