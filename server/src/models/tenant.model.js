@@ -6,9 +6,10 @@ class Tenant {
     this.id = data.id;
     this.business_name = data.business_name;
     this.business_type = data.business_type;
+    this.domain = data.domain;
     this.subscription_plan = data.subscription_plan || "basic";
-    this.max_stores = data.max_stores || 1;
-    this.max_users = data.max_users || 10;
+    this.max_stores = data.max_stores || 10;
+    this.max_users = data.max_users || 1000;
     this.contact_email = data.contact_email;
     this.contact_phone = data.contact_phone;
     this.address = data.address;
@@ -27,15 +28,16 @@ class Tenant {
     try {
       const query = `
         INSERT INTO tenants (
-          business_name, business_type, subscription_plan, max_stores, max_users,
+          business_name, business_type, domain, subscription_plan, max_stores, max_users,
           contact_email, contact_phone, address, city, country, postal_code, tax_id
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
         RETURNING *
       `;
       const params = [
         tenantData.business_name,
         tenantData.business_type,
+        tenantData.domain,
         tenantData.subscription_plan || "basic",
         tenantData.max_stores || 1,
         tenantData.max_users || 10,

@@ -1,22 +1,21 @@
-// Database Models for Multi-Tenant Loyalty System
-// All models support Row-Level Security (RLS) for tenant isolation
+// Core Database Models for Loyalty System
+// Only the 7 essential models needed for the loyalty system
 
 const Tenant = require("./tenant.model");
 const User = require("./user.model");
 const Store = require("./store.model");
-const CustomerLoyalty = require("./customerLoyalty.model");
-const StampCard = require("./stampCard.model");
 const Reward = require("./reward.model");
+const { UserRewardProgress } = require("./userRewardProgress.model");
+const { ScanHistory } = require("./scanHistory.model");
 const Role = require("./role.model");
-const AccessControl = require("./accessControl.model");
 
 module.exports = {
+  // Core 7 models
   Tenant,
   User,
   Store,
-  CustomerLoyalty,
-  StampCard,
   Reward,
+  UserRewardProgress,
+  ScanHistory,
   Role,
-  AccessControl,
 };

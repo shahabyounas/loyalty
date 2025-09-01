@@ -140,48 +140,6 @@ const Users = () => {
     } catch (error) {
       console.error("Error fetching users:", error);
       alert(apiErrorHandler.handleError(error));
-
-      // Set mock data for development
-      const mock = [
-        {
-          id: 1,
-          email: "admin@loyalty.com",
-          firstName: "John",
-          lastName: "Admin",
-          role: "super_admin",
-          phone: "+1234567890",
-          emailVerified: true,
-          createdAt: "2024-01-15",
-          lastSignIn: "2024-01-20",
-          isActive: true,
-        },
-        {
-          id: 2,
-          email: "manager@loyalty.com",
-          firstName: "Jane",
-          lastName: "Manager",
-          role: "manager",
-          phone: "+1234567891",
-          emailVerified: true,
-          createdAt: "2024-01-10",
-          lastSignIn: "2024-01-19",
-          isActive: true,
-        },
-        {
-          id: 3,
-          email: "customer@example.com",
-          firstName: "Bob",
-          lastName: "Customer",
-          role: "customer",
-          phone: "+1234567892",
-          emailVerified: false,
-          createdAt: "2024-01-05",
-          lastSignIn: "2024-01-18",
-          isActive: true,
-        },
-      ];
-      lastFetchedUsersRef.current = mock;
-      setUsers(applyFilters(lastFetchedUsersRef.current));
     } finally {
       setLoading(false);
     }

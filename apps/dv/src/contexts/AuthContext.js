@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
 import {
   tokenStorage,
@@ -68,29 +68,36 @@ export const AuthProvider = ({ children }) => {
   }
 
   // Clear lockout state
-  function clearLockout() {
+  const clearLockout = useCallback(() => {
     setIsLocked(false);
     setLoginAttempts(0);
     setLockoutTime(null);
     localStorage.removeItem('authLockout');
-  }
+  }, []);
 
   // Clear auth errors
-  function clearAuthErrors() {
+  const clearAuthErrors = useCallback(() => {
     setAuthErrors([]);
-  }
+  }, []);
 
   // Add auth error
-  function addAuthError(error) {
+  const addAuthError = useCallback((error) => {
     setAuthErrors(prev => [...prev, {
       id: Date.now(),
       message: error,
       timestamp: new Date()
     }]);
-  }
+  }, []);
+
+  // Clear auth data
+  const clearAuthData = useCallback(() => {
+    tokenStorage.clearAll();
+    setUser(null);
+    setIsAuthenticated(false);
+  }, []);
 
   // Simple logout function without timers
-  function logout() {
+  const logout = useCallback(() => {
     try {
       // Call API logout endpoint (don't await to avoid blocking)
       authAPI.logout().catch(error => console.warn("Logout API call failed:", error));
@@ -103,15 +110,57 @@ export const AuthProvider = ({ children }) => {
       clearLockout();
       navigate("/");
     }
-  }
+  }, [clearAuthData, clearAuthErrors, clearLockout, navigate]);
 
   // Simple initialization - only run once on mount
   useEffect(() => {
-    loadLockoutState();
-    checkAuthStatus();
-  }, []);
+    let mounted = true;
 
-  async function login(email, password) {
+    async function initializeAuth() {
+      try {
+        loadLockoutState();
+        
+        const token = tokenStorage.getToken();
+        if (token && isTokenValid(token)) {
+          // Extract user data from token
+          const tokenUser = getUserFromToken(token);
+          if (tokenUser && mounted) {
+            setUser(tokenUser);
+            setIsAuthenticated(true);
+            console.log("User authenticated:", tokenUser.email);
+          } else {
+            console.warn("Token valid but no user data found");
+            if (mounted) {
+              clearAuthData();
+            }
+          }
+        } else {
+          // Token is missing or invalid - just clear data, don't show errors on startup
+          console.log("No valid token found");
+          if (mounted) {
+            clearAuthData();
+          }
+        }
+      } catch (error) {
+        console.error("Auth initialization failed:", error);
+        if (mounted) {
+          clearAuthData();
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    initializeAuth();
+
+    return () => {
+      mounted = false;
+    };
+  }, []); // Empty dependency array - only run once on mount
+
+  const login = useCallback(async (email, password) => {
     if (isLocked) {
       const remainingTime = Math.ceil((LOCKOUT_DURATION - (Date.now() - lockoutTime)) / 60000);
       throw new Error(`Account temporarily locked. Please try again in ${remainingTime} minutes.`);
@@ -155,10 +204,11 @@ export const AuthProvider = ({ children }) => {
       addAuthError(errorMessage);
       throw new Error(errorMessage);
     }
-  }
+  }, [isLocked, lockoutTime, loginAttempts, clearAuthErrors, clearLockout, addAuthError]);
 
-  async function checkAuthStatus() {
+  const checkAuthStatus = useCallback(async () => {
     try {
+      setIsLoading(true);
       const token = tokenStorage.getToken();
 
       if (token && isTokenValid(token)) {
@@ -183,9 +233,9 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [clearAuthData]);
 
-  async function signup(userData) {
+  const signup = useCallback(async (userData) => {
     try {
       clearAuthErrors();
       
@@ -221,17 +271,9 @@ export const AuthProvider = ({ children }) => {
       addAuthError(errorMessage);
       throw new Error(errorMessage);
     }
-  }
+  }, [clearAuthErrors, addAuthError]);
 
-
-
-  function clearAuthData() {
-    tokenStorage.clearAll();
-    setUser(null);
-    setIsAuthenticated(false);
-  }
-
-  async function changePassword(currentPassword, newPassword) {
+  const changePassword = useCallback(async (currentPassword, newPassword) => {
     try {
       const response = await authAPI.changePassword(
         currentPassword,
@@ -243,9 +285,9 @@ export const AuthProvider = ({ children }) => {
         apiErrorHandler.handleError(error) || "Failed to change password"
       );
     }
-  };
+  }, []);
 
-  const resetPassword = async (email) => {
+  const resetPassword = useCallback(async (email) => {
     try {
       const response = await authAPI.resetPassword(email);
       return { success: true, message: "Password reset email sent" };
@@ -254,9 +296,9 @@ export const AuthProvider = ({ children }) => {
         apiErrorHandler.handleError(error) || "Failed to send reset email"
       );
     }
-  };
+  }, []);
 
-  const verifyResetToken = async (token) => {
+  const verifyResetToken = useCallback(async (token) => {
     try {
       const response = await authAPI.verifyResetToken(token);
       return { success: true, valid: true };
@@ -265,9 +307,9 @@ export const AuthProvider = ({ children }) => {
         apiErrorHandler.handleError(error) || "Invalid reset token"
       );
     }
-  };
+  }, []);
 
-  const setNewPassword = async (token, newPassword) => {
+  const setNewPassword = useCallback(async (token, newPassword) => {
     try {
       const response = await authAPI.setNewPassword(token, newPassword);
       return { success: true, message: "Password reset successfully" };
@@ -276,9 +318,9 @@ export const AuthProvider = ({ children }) => {
         apiErrorHandler.handleError(error) || "Failed to reset password"
       );
     }
-  };
+  }, []);
 
-  const getProfile = async () => {
+  const getProfile = useCallback(async () => {
     try {
       const profile = await authAPI.getProfile();
       // Update user state with latest profile data
@@ -290,9 +332,9 @@ export const AuthProvider = ({ children }) => {
         apiErrorHandler.handleError(error) || "Failed to get profile"
       );
     }
-  };
+  }, []);
 
-  const updateProfile = async (profileData) => {
+  const updateProfile = useCallback(async (profileData) => {
     try {
       const updatedProfile = await authAPI.updateProfile(profileData);
       // Update user state with new profile data
@@ -304,9 +346,9 @@ export const AuthProvider = ({ children }) => {
         apiErrorHandler.handleError(error) || "Failed to update profile"
       );
     }
-  };
+  }, []);
 
-  function getSecurityStatus() {
+  const getSecurityStatus = useCallback(() => {
     return {
       isLocked,
       loginAttempts,
@@ -315,9 +357,9 @@ export const AuthProvider = ({ children }) => {
       isAuthenticated,
       tokenValid: isTokenValid(tokenStorage.getToken()),
     };
-  }
+  }, [isLocked, loginAttempts, lockoutTime, isAuthenticated]);
 
-  async function refreshUserSession() {
+  const refreshUserSession = useCallback(async () => {
     try {
       console.log("Refreshing user session...");
       await checkAuthStatus();
@@ -326,10 +368,10 @@ export const AuthProvider = ({ children }) => {
       console.error("Failed to refresh user session:", error);
       return { success: false, message: "Failed to refresh session" };
     }
-  }
+  }, [checkAuthStatus]);
 
   // Simple session validation - just check if user is authenticated and token is valid
-  function validateSession() {
+  const validateSession = useCallback(() => {
     try {
       const token = tokenStorage.getToken();
       const isValid = token && isTokenValid(token) && isAuthenticated;
@@ -341,7 +383,17 @@ export const AuthProvider = ({ children }) => {
       console.error("Session validation failed:", error);
       return { success: false, message: "Session validation failed" };
     }
-  }
+  }, [isAuthenticated]);
+
+  // Helper methods
+  const getRemainingLockoutTime = useCallback(() => {
+    if (!isLocked || !lockoutTime) return 0;
+    return Math.max(0, LOCKOUT_DURATION - (Date.now() - lockoutTime));
+  }, [isLocked, lockoutTime]);
+  
+  const getRemainingAttempts = useCallback(() => {
+    return Math.max(0, MAX_LOGIN_ATTEMPTS - loginAttempts);
+  }, [loginAttempts]);
 
   const value = {
     // Core state
@@ -379,12 +431,8 @@ export const AuthProvider = ({ children }) => {
     clearAuthErrors,
     
     // Helper methods
-    getRemainingLockoutTime: () => {
-      if (!isLocked || !lockoutTime) return 0;
-      return Math.max(0, LOCKOUT_DURATION - (Date.now() - lockoutTime));
-    },
-    
-    getRemainingAttempts: () => Math.max(0, MAX_LOGIN_ATTEMPTS - loginAttempts),
+    getRemainingLockoutTime,
+    getRemainingAttempts,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

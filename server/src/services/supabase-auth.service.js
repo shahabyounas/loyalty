@@ -11,11 +11,11 @@ class SupabaseAuthService {
         email,
         password,
         email_confirm: true, // Auto-confirm email for development
+        phone: userData.phone,
         user_metadata: {
           first_name: userData.firstName,
           last_name: userData.lastName,
-          role: userData.role || "user",
-          phone: userData.phone || "",
+          role: userData.role || "customer",
         },
       });
 
@@ -36,9 +36,39 @@ class SupabaseAuthService {
   }
 
   /**
-   * Get user by email
+   * Check if email exists efficiently (without fetching all users)
+   * This method attempts a password reset to check if email exists
+   */
+  static async emailExists(email) {
+    try {
+      // Use password reset to check if email exists - this is more efficient
+      // than fetching all users. If email doesn't exist, Supabase will return an error
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://example.com/reset', // dummy redirect URL
+      });
+
+      // If no error, email exists
+      // If error is "User not found", email doesn't exist
+      if (error && error.message.includes('User not found')) {
+        return false;
+      }
+      
+      // For any other error or success, assume email exists
+      return true;
+    } catch (error) {
+      // If any unexpected error occurs, fall back to assuming email doesn't exist
+      logger.warn("Email existence check failed, assuming email doesn't exist:", error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Get user by email (DEPRECATED - use User.findByEmail() instead for efficiency)
+   * This method fetches ALL users which is extremely inefficient
    */
   static async getUserByEmail(email) {
+    logger.warn("getUserByEmail is deprecated and inefficient. Use User.findByEmail() instead.");
+    
     try {
       const { data, error } = await supabase.auth.admin.listUsers();
 

@@ -1,7 +1,7 @@
 const SupabaseAuthService = require("../services/supabase-auth.service");
 const ApiResponse = require("../utils/response");
 const { logger } = require("../utils/logger");
-const { db } = require("../config/database");
+const User = require("../models/user.model");
 
 class SupabaseAuthController {
   /**
@@ -11,98 +11,11 @@ class SupabaseAuthController {
     try {
       const { email, password, firstName, lastName, role, phone } = req.body;
 
-      const result = await SupabaseAuthService.signUp(email, password, {
-        firstName,
-        lastName,
-        role: role || "user",
-        phone: phone || "",
-      });
-
-      // Persist a corresponding profile record in our database users table
-      let dbUserRecord = null;
-      try {
-        const insertResult = await db.query(
-          `INSERT INTO users (
-            auth_user_id,
-            email,
-            first_name,
-            last_name,
-            role,
-            phone,
-            email_verified,
-            created_at,
-            updated_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)
-          ON CONFLICT (auth_user_id) DO UPDATE SET
-            email = EXCLUDED.email,
-            first_name = EXCLUDED.first_name,
-            last_name = EXCLUDED.last_name,
-            role = EXCLUDED.role,
-            phone = EXCLUDED.phone,
-            email_verified = EXCLUDED.email_verified,
-            updated_at = EXCLUDED.updated_at
-          RETURNING *`,
-          [
-            result.user.id,
-            email,
-            firstName,
-            lastName,
-            role || "user",
-            phone || "",
-            result.user.email_confirmed_at ? true : false,
-            new Date(),
-          ]
-        );
-        dbUserRecord = insertResult.rows ? insertResult.rows[0] : null;
-      } catch (dbErr) {
-        // Log but do not fail signup if profile insert has an issue
-        logger.error(
-          "User profile creation failed during signup:",
-          dbErr.message
-        );
-      }
-
-      logger.info(`User registered successfully: ${email}`);
-      return ApiResponse.created(
-        res,
-        {
-          user: {
-            id: result.user.id,
-            email: result.user.email,
-            firstName: result.user.user_metadata?.first_name,
-            lastName: result.user.user_metadata?.last_name,
-            role: result.user.user_metadata?.role,
-            phone: result.user.user_metadata?.phone,
-            emailVerified: result.user.email_confirmed_at ? true : false,
-            createdAt: result.user.created_at,
-          },
-          session: {
-            accessToken: result.session.access_token,
-            refreshToken: result.session.refresh_token,
-            expiresAt: result.session.expires_at,
-          },
-          dbUser: dbUserRecord,
-        },
-        "User registered successfully"
-      );
-    } catch (error) {
-      logger.error("Registration error:", error.message);
-      next(error);
-    }
-  }
-
-  /**
-   * Create a new user (admin only)
-   */
-  static async createUser(req, res, next) {
-    try {
-      const { email, password, firstName, lastName, role, phone } = req.body;
-
       // Validate required fields
-      if (!email || !password || !firstName || !lastName) {
+      if (!email || !password || !firstName || !lastName || !phone) {
         return ApiResponse.badRequest(
           res,
-          "Email, password, first name, and last name are required"
+          "Email, password, first name, last name, and phone number are required"
         );
       }
 
@@ -120,10 +33,140 @@ class SupabaseAuthController {
         return ApiResponse.badRequest(res, "Invalid email format");
       }
 
-      // Check if user already exists
-      const existingUser = await SupabaseAuthService.getUserByEmail(email);
+      // Validate phone number format (basic validation for international numbers)
+      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+      if (!phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))) {
+        return ApiResponse.badRequest(res, "Invalid phone number format");
+      }
+
+      // Check if user already exists in our database (efficient check)
+      // Using database check instead of Supabase Auth to avoid fetching all users
+      const existingDbUser = await User.findByEmail(email);
+      if (existingDbUser) {
+        return ApiResponse.conflict(
+          res,
+          "An account with this email already exists. Please login instead."
+        );
+      }
+
+      // Check if phone number already exists
+      const existingPhoneUser = await User.findByPhone(phone);
+      if (existingPhoneUser) {
+        return ApiResponse.conflict(
+          res,
+          "An account with this phone number already exists. Please use a different phone number."
+        );
+      }
+
+      const result = await SupabaseAuthService.signUp(email, password, {
+        firstName,
+        lastName,
+        role: role || "customer",
+        phone: phone,
+      });
+
+      // Create a corresponding profile record in our database users table
+      let dbUserRecord = null;
+      try {
+        dbUserRecord = await User.create({
+          auth_user_id: result.user.id,
+          email: email,
+          first_name: firstName,
+          last_name: lastName,
+          role: role || "customer",
+          phone: phone,
+          email_verified: result.user.email_confirmed_at ? true : false,
+        });
+      } catch (dbErr) {
+        // If user record creation fails, attempt to delete the auth user
+        try {
+          await SupabaseAuthService.deleteUser(result.user.id);
+        } catch (deleteErr) {``
+          logger.error("Failed to cleanup auth user after DB error:", deleteErr.message);
+        }
+        logger.error("User profile creation failed during signup:", dbErr.message);
+        throw new Error("Failed to create user profile. Please try again.");
+      }
+
+      logger.info(`User registered successfully: ${email}`);
+      
+      return ApiResponse.created(
+        res,
+        {
+          user: {
+            id: result.user.id,
+            email: result.user.email,
+            firstName: result.user.user_metadata?.first_name,
+            lastName: result.user.user_metadata?.last_name,
+            role: result.user.user_metadata?.role,
+            phone: result.user.phone,
+            emailVerified: result.user.email_confirmed_at ? true : false,
+            createdAt: result.user.created_at,
+          },
+          session: {
+            accessToken: result.session.access_token,
+            refreshToken: result.session.refresh_token,
+            expiresAt: result.session.expires_at,
+          },
+          dbUser: dbUserRecord ? dbUserRecord.toJSON() : null,
+        },
+        "User registered successfully"
+      );
+    } catch (error) {
+      logger.error("Registration error:", error.message);
+      next(error);
+    }
+  }
+
+  /**
+   * Create a new user (admin only)
+   */
+  static async createUser(req, res, next) {
+    try {
+      const { email, password, firstName, lastName, role, phone } = req.body;
+
+      // Validate required fields
+      if (!email || !password || !firstName || !lastName || !phone) {
+        return ApiResponse.badRequest(
+          res,
+          "Email, password, first name, last name, and phone number are required"
+        );
+      }
+
+      // Validate password strength
+      if (password.length < 6) {
+        return ApiResponse.badRequest(
+          res,
+          "Password must be at least 6 characters long"
+        );
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return ApiResponse.badRequest(res, "Invalid email format");
+      }
+
+      // Validate phone number format (basic validation for international numbers)
+      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+      if (!phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))) {
+        return ApiResponse.badRequest(res, "Invalid phone number format");
+      }
+
+      // Check if user already exists in our database (efficient check)
+      // Using database check instead of Supabase Auth to avoid fetching all users
+      const existingUser = await User.findByEmail(email);
       if (existingUser) {
         return ApiResponse.conflict(res, "User with this email already exists");
+      }
+
+      // Check if phone number already exists
+      const existingPhoneUser = await User.findByPhone(phone);
+      if (existingPhoneUser) {
+        return ApiResponse.conflict(
+          res,
+          "User with this phone number already exists"
+        );
       }
 
       // First create the user in Supabase Auth
@@ -131,7 +174,7 @@ class SupabaseAuthController {
         firstName,
         lastName,
         role: role || "staff",
-        phone: phone || "",
+        phone: phone,
       });
 
       if (!authResult?.user?.id) {
@@ -139,32 +182,17 @@ class SupabaseAuthController {
       }
 
       // Then create the user record in our database
-      const userRecord = await db.query(
-        `INSERT INTO users (
-          auth_user_id,
-          email,
-          first_name,
-          last_name,
-          role,
-          phone,
-          email_verified,
-          created_at,
-          updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)
-        RETURNING *`,
-        [
-          authResult.user.id,
-          email,
-          firstName,
-          lastName,
-          role || "staff",
-          phone || "",
-          authResult.user.email_confirmed_at ? true : false,
-          new Date(),
-        ]
-      );
+      const userRecord = await User.create({
+        auth_user_id: authResult.user.id,
+        email: email,
+        first_name: firstName,
+        last_name: lastName,
+        role: role || "staff",
+        phone: phone,
+        email_verified: authResult.user.email_confirmed_at ? true : false,
+      });
 
-      if (!userRecord.rows[0]) {
+      if (!userRecord) {
         // If user record creation fails, attempt to delete the auth user
         await SupabaseAuthService.deleteUser(authResult.user.id);
         throw new Error("Failed to create user record in database");
@@ -184,7 +212,7 @@ class SupabaseAuthController {
             emailVerified: authResult.user.email_confirmed_at ? true : false,
             createdAt: authResult.user.created_at,
           },
-          dbUser: userRecord.rows[0],
+          dbUser: userRecord.toJSON(),
         },
         "User created successfully"
       );
@@ -202,6 +230,17 @@ class SupabaseAuthController {
       const { email, password } = req.body;
 
       const result = await SupabaseAuthService.signIn(email, password);
+
+      // Update last login time in our database
+      try {
+        const dbUser = await User.findByAuthUserId(result.user.id);
+        if (dbUser) {
+          await User.updateLastLogin(dbUser.id, dbUser.tenant_id);
+        }
+      } catch (dbErr) {
+        // Log but don't fail login if last login update fails
+        logger.warn("Failed to update last login:", dbErr.message);
+      }
 
       logger.info(`User logged in successfully: ${email}`);
       return ApiResponse.success(

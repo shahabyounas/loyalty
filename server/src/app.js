@@ -33,10 +33,30 @@ app.use("/api/", limiter);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// CORS configuration - Allow any origin and any method
+// CORS configuration - Allow specific origins and any method
+const allowedOrigins = [
+  'https://diamondvapesloyalty.co.uk',
+  'https://royaltyrewards.co.uk',
+  'http://localhost:4200',
+  'http://localhost:3001',
+  'http://localhost:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://127.0.0.1:4200'
+];
+
 app.use(
   cors({
-    origin: true, // Allow any origin
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
     allowedHeaders: [
@@ -66,7 +86,8 @@ app.get("/health", (req, res) => {
     environment: process.env.NODE_ENV || "development",
     cors: {
       origin: req.headers.origin,
-      message: "CORS allows any origin",
+      allowed: req.headers.origin ? allowedOrigins.includes(req.headers.origin) : 'no-origin',
+      allowedOrigins: allowedOrigins,
     },
   });
 });
