@@ -11,6 +11,7 @@ class UserRewardProgress {
     this.is_completed = data.is_completed || false;
     this.status = data.status || "in_progress";
     this.completed_at = data.completed_at;
+    this.redeemed_at = data.redeemed_at;
     this.created_at = data.created_at || new Date();
     this.updated_at = data.updated_at || new Date();
   }
@@ -176,8 +177,9 @@ class UserRewardProgress {
             is_completed = $2,
             status = $3,
             completed_at = $4,
+            redeemed_at = $5,
             updated_at = CURRENT_TIMESTAMP
-        WHERE user_id = $5 AND reward_id = $6
+        WHERE user_id = $6 AND reward_id = $7
         RETURNING *
       `;
       const params = [
@@ -185,6 +187,7 @@ class UserRewardProgress {
         this.is_completed,
         this.status,
         this.completed_at,
+        this.redeemed_at,
         this.user_id,
         this.reward_id,
       ];

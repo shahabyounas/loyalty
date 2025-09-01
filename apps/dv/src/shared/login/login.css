@@ -420,3 +420,25 @@
         transform: none;
     }
 }
+
+/* Forgot Password Link Styles */
+.forgot-password-link {
+    text-align: right;
+    margin-top: 0.5rem;
+}
+
+.forgot-password-link .link-button {
+    font-size: 0.875rem;
+    color: var(--text-link, #3b82f6);
+    font-weight: 500;
+    text-decoration: none;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.forgot-password-link .link-button:hover:not(:disabled) {
+    color: var(--text-link-hover, #2563eb);
+    text-decoration: underline;
+    background-color: #f3f4f6;
+}

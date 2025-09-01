@@ -22,6 +22,7 @@ const QRCodeModal = ({ isOpen, onClose, transactionData, rewardName }) => {
           code: transactionData.transaction_code,
           user_id: transactionData.user_id,
           reward_id: transactionData.reward_id,
+          action_type: transactionData.action_type || "stamp",
           expires_at: transactionData.expires_at,
         });
 
@@ -44,6 +45,14 @@ const QRCodeModal = ({ isOpen, onClose, transactionData, rewardName }) => {
 
   if (!isOpen) return null;
 
+  // Determine if this is a redemption QR code
+  const isRedemption = transactionData?.action_type === "redemption";
+  const actionIcon = isRedemption ? "🎁" : "🏆";
+  const actionText = isRedemption ? "Redeem Reward" : "Collect Stamp";
+  const description = isRedemption 
+    ? "Show this QR code to staff to redeem your reward"
+    : "Show this QR code to staff to collect your stamp";
+
   return (
     <div className="qr-modal-overlay" onClick={onClose}>
       <div className="qr-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -55,7 +64,10 @@ const QRCodeModal = ({ isOpen, onClose, transactionData, rewardName }) => {
 
         <div className="qr-modal-body">
           <div className="qr-reward-info">
+            <div className="qr-action-icon">{actionIcon}</div>
+            <h3 className="qr-action-title">{actionText}</h3>
             <h4 className="qr-reward-name">{rewardName}</h4>
+            <p className="qr-description">{description}</p>
           </div>
 
           <div className="qr-code-container">
@@ -68,7 +80,7 @@ const QRCodeModal = ({ isOpen, onClose, transactionData, rewardName }) => {
               <div className="qr-code-wrapper">
                 <img src={qrCodeUrl} alt="QR Code" className="qr-code-image" />
                 <div className="qr-code-overlay">
-                  <div className="qr-code-logo">🏆</div>
+                  <div className="qr-code-logo">{actionIcon}</div>
                 </div>
               </div>
             )}

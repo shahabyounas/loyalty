@@ -55,9 +55,9 @@ const InProgressRewardsModal = ({
     }
   };
 
-  const handleRedeemReward = (rewardId) => {
+  const handleRedeemReward = (rewardId, rewardName) => {
     if (onRedeemReward) {
-      onRedeemReward(rewardId);
+      onRedeemReward(rewardId, rewardName);
     }
   };
 
@@ -219,7 +219,7 @@ const InProgressRewardsModal = ({
                         ) : rewardState === "ready" ? (
                           <button
                             className="in-progress-redeem-button"
-                            onClick={() => handleRedeemReward(reward.id)}
+                            onClick={() => handleRedeemReward(reward.id, reward.name)}
                           >
                             🎉 Redeem Now
                           </button>
@@ -233,7 +233,7 @@ const InProgressRewardsModal = ({
                         ) : modalType === "ready-to-redeem" ? (
                           <button
                             className="in-progress-redeem-button"
-                            onClick={() => handleRedeemReward(reward.id)}
+                            onClick={() => handleRedeemReward(reward.id, reward.name)}
                           >
                             🎉 Redeem Now
                           </button>

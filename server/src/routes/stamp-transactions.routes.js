@@ -698,4 +698,210 @@ router.post("/process-scan", async (req, res) => {
   }
 });
 
+// Process QR code scan for reward redemption (any authenticated staff member)
+router.post("/process-redemption", async (req, res) => {
+  try {
+    const { user_id, reward_id, scanned_by, store_id } = req.body;
+
+    // Validate required fields with type checking
+    if (!user_id || typeof user_id !== 'string' || user_id.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: "Valid user_id is required",
+      });
+    }
+
+    if (!reward_id || typeof reward_id !== 'string' || reward_id.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: "Valid reward_id is required",
+      });
+    }
+
+    if (!scanned_by || typeof scanned_by !== 'string' || scanned_by.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: "Valid scanned_by identifier is required",
+      });
+    }
+
+    const sanitizedUserId = user_id.trim();
+    const validRewardId = reward_id.trim();
+    const sanitizedScannedBy = scanned_by.trim();
+
+    // Get user by Supabase auth ID
+    let user;
+    try {
+      user = await User.findByAuthUserId(sanitizedUserId);
+      if (!user) {
+        logger.error(`User not found for auth ID: ${sanitizedUserId}`);
+        return res.status(404).json({
+          success: false,
+          message: "User not found in the system",
+        });
+      }
+    } catch (userError) {
+      logger.error(`Error finding user by auth ID ${sanitizedUserId}:`, userError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to verify user information",
+      });
+    }
+
+    // Get reward
+    let reward;
+    try {
+      reward = await Reward.findById(validRewardId);
+      if (!reward) {
+        logger.error(`Reward not found for ID: ${validRewardId}`);
+        return res.status(404).json({
+          success: false,
+          message: "Reward not found",
+        });
+      }
+    } catch (rewardError) {
+      logger.error(`Error finding reward ${validRewardId}:`, rewardError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to verify reward information",
+      });
+    }
+
+    const dbUserId = user.id;
+    logger.info(`Processing redemption for database user ID: ${dbUserId}, auth user ID: ${sanitizedUserId}`);
+
+    // Get user reward progress
+    let progress;
+    try {
+      progress = await UserRewardProgress.findByUserAndReward(dbUserId, validRewardId);
+    } catch (findError) {
+      logger.error(`Error finding user reward progress for user ${dbUserId}, reward ${validRewardId}:`, findError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to retrieve user reward progress",
+      });
+    }
+
+    if (!progress) {
+      return res.status(404).json({
+        success: false,
+        message: "No progress found for this reward",
+      });
+    }
+
+    // Check if reward is ready for redemption
+    if (!progress.is_completed || progress.status !== "ready_to_redeem") {
+      return res.status(400).json({
+        success: false,
+        message: "Reward is not ready for redemption",
+        data: {
+          customer_name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown Customer',
+          reward_name: reward.name || 'Unknown Reward',
+          stamps_collected: progress.stamps_collected,
+          stamps_required: progress.stamps_required,
+          is_completed: progress.is_completed,
+          status: progress.status,
+        },
+      });
+    }
+
+    // Check if already redeemed
+    if (progress.status === "redeemed") {
+      return res.status(400).json({
+        success: false,
+        message: "Reward has already been redeemed",
+        data: {
+          customer_name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown Customer',
+          reward_name: reward.name || 'Unknown Reward',
+          stamps_collected: progress.stamps_collected,
+          stamps_required: progress.stamps_required,
+          is_completed: progress.is_completed,
+          status: progress.status,
+        },
+      });
+    }
+
+    // Try to find staff user by the scanned_by identifier
+    let staffUserId = null;
+    if (sanitizedScannedBy) {
+      try {
+        const staffUser = await User.findByEmail(sanitizedScannedBy).catch(() => 
+          User.findByAuthUserId(sanitizedScannedBy).catch(() => null)
+        );
+        if (staffUser && (staffUser.role === 'staff' || staffUser.role === 'store_manager' || staffUser.role === 'tenant_admin')) {
+          staffUserId = staffUser.id;
+          logger.info(`Found staff user for redemption scan: ${staffUser.email} (${staffUser.role})`);
+        }
+      } catch (staffLookupError) {
+        logger.warn(`Could not find staff user for identifier: ${sanitizedScannedBy}`, staffLookupError);
+      }
+    }
+
+    // Update progress to redeemed status
+    try {
+      progress.status = "redeemed";
+      progress.redeemed_at = new Date();
+      await progress.save();
+      logger.info(`Reward ${validRewardId} redeemed for user ${dbUserId}`);
+    } catch (updateError) {
+      logger.error(`Error updating redemption status:`, updateError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to process redemption",
+      });
+    }
+
+    // Record scan history for redemption tracking
+    try {
+      const scanRecord = await ScanHistory.create(
+        progress.id, // user_reward_progress_id
+        dbUserId, // user_id
+        validRewardId, // reward_id
+        staffUserId, // scanned_by_user_id
+        store_id || null, // store_id
+        0, // stamps_added (0 for redemption)
+        progress.stamps_collected, // stamps_before_scan
+        progress.stamps_collected, // stamps_after_scan (no change for redemption)
+        "redemption" // action_type
+      );
+      
+      if (scanRecord) {
+        logger.info(`Redemption scan history recorded: ${scanRecord.id} for progress ${progress.id}`);
+      }
+    } catch (scanHistoryError) {
+      // Don't fail the main request if scan history fails
+      logger.error(`Failed to record redemption scan history:`, scanHistoryError);
+    }
+
+    logger.info(`Reward ${validRewardId} successfully redeemed for user ${dbUserId}`);
+
+    // Return success response
+    const customerName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown Customer';
+    const rewardName = reward.name || 'Unknown Reward';
+
+    res.status(200).json({
+      success: true,
+      message: "Reward redeemed successfully!",
+      data: {
+        customer_name: customerName,
+        reward_name: rewardName,
+        stamps_collected: progress.stamps_collected,
+        stamps_required: progress.stamps_required,
+        is_completed: true,
+        status: "redeemed",
+        redeemed_at: progress.redeemed_at,
+        transaction_id: `REDEEM_${Date.now()}_${dbUserId}_${validRewardId}`,
+      },
+    });
+
+  } catch (error) {
+    logger.error("Unexpected error processing reward redemption:", error);
+    res.status(500).json({
+      success: false,
+      message: "An unexpected error occurred while processing the redemption. Please try again.",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+});
+
 module.exports = router;

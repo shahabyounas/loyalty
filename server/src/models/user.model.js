@@ -110,6 +110,27 @@ class User {
     }
   }
 
+  static async findByPhone(phone, tenantId = null) {
+    try {
+      let query = `
+        SELECT * FROM users 
+        WHERE phone = $1 AND is_active = true
+      `;
+      const params = [phone];
+
+      if (tenantId) {
+        query += ` AND tenant_id = $2`;
+        params.push(tenantId);
+      }
+
+      const result = await db.getOne(query, params);
+      return result ? new User(result) : null;
+    } catch (error) {
+      logger.error("Error finding user by phone:", error);
+      throw error;
+    }
+  }
+
   static async update(id, updateData, tenantId = null) {
     try {
       const fields = [];

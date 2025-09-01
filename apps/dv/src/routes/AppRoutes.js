@@ -4,7 +4,14 @@ import { Routes, Route } from "react-router";
 // Import user types
 import * as EndUser from "../userUI";
 import * as Admin from "../adminUI";
-import { NotFoundPage, PublicLayout, RouteWrapper, MainRoute } from "../shared";
+import { PublicLayout, RouteWrapper, MainRoute } from "../shared";
+
+// Import password reset components
+import ForgotPassword from "../shared/forgot-password/forgot-password.js";
+import ResetPassword from "../shared/reset-password/reset-password.js";
+
+// Import 404 component
+import NotFound from "../shared/404/NotFound.js";
 
 // Import lazy components
 import {
@@ -44,6 +51,28 @@ export const AppRoutes = () => {
           }
         />
 
+        {/* ===== AUTHENTICATION ROUTES ===== */}
+
+        {/* Forgot Password - Public route */}
+        <Route
+          path="/auth/forgot-password"
+          element={
+            <PublicLayout>
+              <ForgotPassword />
+            </PublicLayout>
+          }
+        />
+
+        {/* Reset Password - Public route */}
+        <Route
+          path="/auth/reset-password"
+          element={
+            <PublicLayout>
+              <ResetPassword />
+            </PublicLayout>
+          }
+        />
+
         {/* ===== ADMIN FRONTEND ===== */}
 
         {/* Admin Dashboard - Protected route with admin permissions */}
@@ -74,8 +103,8 @@ export const AppRoutes = () => {
           }
         />
 
-        {/* Catch all route */}
-        <Route path="*" element={<NotFoundPage />} />
+        {/* Catch all route - 404 Page */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>
   );

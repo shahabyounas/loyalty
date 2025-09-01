@@ -11,11 +11,12 @@ class SupabaseAuthService {
         email,
         password,
         email_confirm: true, // Auto-confirm email for development
+        phone: userData.phone,
         user_metadata: {
           first_name: userData.firstName,
           last_name: userData.lastName,
-          role: userData.role || "user",
-          phone: userData.phone || "",
+          role: userData.role || "customer",
+          tenant_id: userData.tenant_id || null,
         },
       });
 
@@ -36,9 +37,39 @@ class SupabaseAuthService {
   }
 
   /**
-   * Get user by email
+   * Check if email exists efficiently (without fetching all users)
+   * This method attempts a password reset to check if email exists
+   */
+  static async emailExists(email) {
+    try {
+      // Use password reset to check if email exists - this is more efficient
+      // than fetching all users. If email doesn't exist, Supabase will return an error
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://example.com/reset', // dummy redirect URL
+      });
+
+      // If no error, email exists
+      // If error is "User not found", email doesn't exist
+      if (error && error.message.includes('User not found')) {
+        return false;
+      }
+      
+      // For any other error or success, assume email exists
+      return true;
+    } catch (error) {
+      // If any unexpected error occurs, fall back to assuming email doesn't exist
+      logger.warn("Email existence check failed, assuming email doesn't exist:", error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Get user by email (DEPRECATED - use User.findByEmail() instead for efficiency)
+   * This method fetches ALL users which is extremely inefficient
    */
   static async getUserByEmail(email) {
+    logger.warn("getUserByEmail is deprecated and inefficient. Use User.findByEmail() instead.");
+    
     try {
       const { data, error } = await supabase.auth.admin.listUsers();
 
@@ -249,6 +280,88 @@ class SupabaseAuthService {
       return user;
     } catch (error) {
       logger.error("Token verification failed:", error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Request password reset email
+   */
+  static async requestPasswordReset(email, redirectUrl) {
+    try {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      });
+
+      if (error) {
+        logger.error("Password reset request error:", error);
+        throw new Error(error.message);
+      }
+
+      logger.info(`Password reset email sent to: ${email}`);
+      return { message: "Password reset email sent successfully" };
+    } catch (error) {
+      logger.error("Password reset request failed:", error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Reset password with token
+   */
+  static async resetPassword(accessToken, newPassword) {
+    try {
+      // First, verify the token and get user info
+      const { data: { user }, error: verifyError } = await supabase.auth.getUser(accessToken);
+      
+      if (verifyError || !user) {
+        logger.error("Token verification error:", verifyError);
+        throw new Error("Invalid or expired reset token");
+      }
+
+      // Use Admin API to update the user's password
+      const { data, error } = await supabase.auth.admin.updateUserById(user.id, {
+        password: newPassword
+      });
+
+      if (error) {
+        logger.error("Password reset error:", error);
+        throw new Error(error.message);
+      }
+
+      logger.info(`Password reset successfully for user: ${user.id}`);
+      return { 
+        message: "Password reset successfully",
+        user: data.user 
+      };
+    } catch (error) {
+      logger.error("Password reset failed:", error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Verify reset token
+   */
+  static async verifyResetToken(accessToken) {
+    try {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser(accessToken);
+
+      if (error) {
+        logger.error("Reset token verification error:", error);
+        throw new Error(error.message);
+      }
+
+      if (!user) {
+        throw new Error("Invalid or expired reset token");
+      }
+
+      return user;
+    } catch (error) {
+      logger.error("Reset token verification failed:", error.message);
       throw error;
     }
   }
