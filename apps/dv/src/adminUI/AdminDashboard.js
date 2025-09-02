@@ -64,7 +64,7 @@ class AdminErrorBoundary extends React.Component {
 }
 
 const AdminDashboard = () => {
-  const { user, token } = useAuth();
+  const { user, token, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState("dashboard");
@@ -74,6 +74,7 @@ const AdminDashboard = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   // Extract menu from URL path or use default
   const getMenuFromPath = () => {
@@ -296,6 +297,31 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleLogout = () => {
+    try {
+      setShowLogoutDialog(true);
+    } catch (error) {
+      console.error('Error showing logout dialog:', error);
+    }
+  };
+
+  const confirmLogout = () => {
+    try {
+      setShowLogoutDialog(false);
+      logout();
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+  };
+
+  const cancelLogout = () => {
+    try {
+      setShowLogoutDialog(false);
+    } catch (error) {
+      console.error('Error canceling logout:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="admin-loading">
@@ -360,6 +386,34 @@ const AdminDashboard = () => {
           />
         )}
 
+        {/* Logout Confirmation Dialog */}
+        {showLogoutDialog && (
+          <dialog open className="logout-dialog">
+            <div className="dialog-content">
+              <div className="dialog-header">
+                <h3>Confirm Logout</h3>
+              </div>
+              <div className="dialog-body">
+                <p>Are you sure you want to logout? You will need to sign in again to access the admin dashboard.</p>
+              </div>
+              <div className="dialog-actions">
+                <button 
+                  className="btn-secondary"
+                  onClick={cancelLogout}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="btn-danger"
+                  onClick={confirmLogout}
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </dialog>
+        )}
+
         {/* Sidebar */}
         <div className={`admin-sidebar ${sidebarCollapsed ? "collapsed" : ""} ${mobileMenuOpen ? "mobile-open" : ""}`}>
           <div className="sidebar-header">
@@ -410,6 +464,19 @@ const AdminDashboard = () => {
                 <p>No menu items available</p>
               </div>
             )}
+
+            {/* Logout Menu Item - positioned after regular menu items */}
+            <div className="menu-group logout-menu-group">
+              <button
+                className="logout-menu-item"
+                onClick={handleLogout}
+                title={sidebarCollapsed ? "Logout" : ""}
+                aria-label="Logout"
+              >
+                <span className="menu-icon">🚪</span>
+                {!sidebarCollapsed && <span className="menu-label">Logout</span>}
+              </button>
+            </div>
           </nav>
 
           <div className="sidebar-footer">
