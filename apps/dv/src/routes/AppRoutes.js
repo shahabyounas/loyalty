@@ -4,7 +4,7 @@ import { Routes, Route } from "react-router";
 // Import user types
 import * as EndUser from "../userUI";
 import * as Admin from "../adminUI";
-import { PublicLayout, RouteWrapper, MainRoute } from "../shared";
+import { PublicLayout, RouteWrapper, AdminRoute, MainRoute } from "../shared";
 
 // Import password reset components
 import ForgotPassword from "../shared/forgot-password/forgot-password.js";
@@ -75,19 +75,27 @@ export const AppRoutes = () => {
 
         {/* ===== ADMIN FRONTEND ===== */}
 
-        {/* Admin Dashboard - Protected route with admin permissions */}
+        {/* Admin Dashboard - Protected route with strict admin permissions */}
         <Route
           path="/admin"
           element={
-            <RouteWrapper
-              // requireAuth={true}
-              redirectTo="/"
-              // allowedRoles={["super_admin", "tenant_admin", "store_manager"]}
-            >
+            <AdminRoute>
               <Suspense fallback={<RouteLoading />}>
                 <LazyAdminDashboard />
               </Suspense>
-            </RouteWrapper>
+            </AdminRoute>
+          }
+        />
+
+        {/* Admin sub-routes - All protected with admin permissions */}
+        <Route
+          path="/admin/*"
+          element={
+            <AdminRoute>
+              <Suspense fallback={<RouteLoading />}>
+                <LazyAdminDashboard />
+              </Suspense>
+            </AdminRoute>
           }
         />
 

@@ -172,13 +172,38 @@ export const AuthProvider = ({ children }) => {
       // Call API for authentication
       const response = await authAPI.login(email, password);
 
+      // Merge auth user and db profile if available (same as signup)
+      const mergedUser = {
+        ...response.user,
+        // Flatten important DB profile fields onto the user object
+        internalUserId: response.dbUser?.id,
+        tenantId: response.dbUser?.tenant_id ?? null,
+        phone: response.dbUser?.phone ?? response.user.phone,
+        avatarUrl: response.dbUser?.avatar_url ?? null,
+        isActive: response.dbUser?.is_active ?? true,
+        emailVerified:
+          response.user?.emailVerified ??
+          response.dbUser?.email_verified ??
+          false,
+        createdAt: response.user?.createdAt || response.dbUser?.created_at,
+        updatedAt: response.dbUser?.updated_at || null,
+        permissions: response.dbUser?.permissions || {},
+      };
+
       // Update state
-      setUser(response.user);
+      setUser(mergedUser);
       setIsAuthenticated(true);
       clearLockout(); // Clear any previous lockout state
 
-      console.log('Login successful for user:', response.user?.email);
-      return { success: true, user: response.user };
+      console.log('Login successful for user:', mergedUser.email);
+      
+      // Role-based redirection
+      if (isAdmin(mergedUser)) {
+        console.log('Redirecting admin user to admin dashboard');
+        navigate('/admin');
+      }
+      
+      return { success: true, user: mergedUser };
     } catch (error) {
       // Handle login failures
       const newAttempts = loginAttempts + 1;
@@ -265,6 +290,13 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
 
       console.log('Signup successful for user:', mergedUser.email);
+      
+      // Role-based redirection
+      if (isAdmin(mergedUser)) {
+        console.log('Redirecting admin user to admin dashboard');
+        navigate('/admin');
+      }
+      
       return { success: true, user: mergedUser };
     } catch (error) {
       const errorMessage = apiErrorHandler.handleError(error) || "Account creation failed. Please try again.";
@@ -395,6 +427,50 @@ export const AuthProvider = ({ children }) => {
     return Math.max(0, MAX_LOGIN_ATTEMPTS - loginAttempts);
   }, [loginAttempts]);
 
+  // Check if user is admin
+  const isAdmin = useCallback((userObj = user) => {
+    if (!userObj) return false;
+    return ['super_admin', 'admin', 'tenant_admin', 'store_manager'].includes(userObj.role);
+  }, [user]);
+
+  // Check if user is super admin
+  const isSuperAdmin = useCallback((userObj = user) => {
+    if (!userObj) return false;
+    return userObj.role === 'super_admin';
+  }, [user]);
+
+  // Check if user has specific permission
+  const hasPermission = useCallback((permission, userObj = user) => {
+    if (!userObj) return false;
+    
+    // Super admin has all permissions
+    if (userObj.role === 'super_admin') return true;
+    
+    // Check if user has wildcard permission
+    if (userObj.permissions && userObj.permissions.includes('*')) return true;
+    
+    // Check specific permission
+    return userObj.permissions && userObj.permissions.includes(permission);
+  }, [user]);
+
+  // Log security events
+  const logSecurityEvent = useCallback((event, details = {}) => {
+    const securityLog = {
+      event,
+      timestamp: new Date().toISOString(),
+      userId: user?.id || 'anonymous',
+      userEmail: user?.email || 'anonymous', 
+      userRole: user?.role || 'none',
+      ...details
+    };
+    
+    // Log to console for development (remove in production)
+    console.warn('🚨 Security Event:', securityLog);
+    
+    // In production, send to security monitoring service
+    // Example: sendToSecurityService(securityLog);
+  }, [user]);
+
   const value = {
     // Core state
     user,
@@ -433,6 +509,10 @@ export const AuthProvider = ({ children }) => {
     // Helper methods
     getRemainingLockoutTime,
     getRemainingAttempts,
+    isAdmin,
+    isSuperAdmin,
+    hasPermission,
+    logSecurityEvent,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

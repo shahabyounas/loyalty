@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { userAPI } from "../../utils/api";
 import { apiErrorHandler } from "../../utils/api";
+import PhoneInput from "../../shared/components/PhoneInput";
 import "./Users.css";
 
 const Users = () => {
@@ -23,6 +24,8 @@ const Users = () => {
   const deleteModalRef = useRef(null);
   const [editingUser, setEditingUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
+  const [createFormPhone, setCreateFormPhone] = useState("");
+  const [editFormPhone, setEditFormPhone] = useState("");
 
   const roles = [
     { value: "super_admin", label: "Super Admin" },
@@ -133,6 +136,7 @@ const Users = () => {
             ? roleSelectRef.current?.value
             : "",
       });
+      console.log("Fetched users:", response.data);
       lastFetchedUsersRef.current = Array.isArray(response.data)
         ? response.data
         : [];
@@ -163,6 +167,7 @@ const Users = () => {
     // Ensure other modals are closed
     setShowEditForm(false);
     setShowDeleteConfirm(false);
+    setCreateFormPhone(""); // Reset phone input
     setShowCreateForm(true);
   };
 
@@ -172,6 +177,7 @@ const Users = () => {
 
   const openEditModal = (u) => {
     setEditingUser(u);
+    setEditFormPhone(u.phone || ""); // Set phone value for editing
     setShowEditForm(true);
   };
 
@@ -203,6 +209,10 @@ const Users = () => {
       alert("Email is required.");
       return;
     }
+    if (!createFormPhone || createFormPhone.trim() === "") {
+      alert("Phone number is required.");
+      return;
+    }
     if (!data.password) {
       alert("Password is required.");
       return;
@@ -217,7 +227,7 @@ const Users = () => {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
-        phone: data.phone,
+        phone: createFormPhone,
         role: data.role || "customer",
         password: data.password,
       });
@@ -243,6 +253,10 @@ const Users = () => {
       alert("First name and last name are required.");
       return;
     }
+    if (!editFormPhone || editFormPhone.trim() === "") {
+      alert("Phone number is required.");
+      return;
+    }
     const submitBtn = e.nativeEvent && e.nativeEvent.submitter;
     const originalText = submitBtn ? submitBtn.textContent : null;
     if (submitBtn) submitBtn.disabled = true;
@@ -252,7 +266,7 @@ const Users = () => {
         firstName: data.firstName,
         lastName: data.lastName,
         role: data.role,
-        phone: data.phone,
+        phone: editFormPhone,
       });
       await fetchUsers();
       closeEditModal();
@@ -411,16 +425,10 @@ const Users = () => {
                 />
               </div>
               <div className="users-form-field">
-                <label className="users-form-label" htmlFor="phone">
-                  Phone
-                </label>
-                <input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  className="users-form-input"
-                  autoComplete="off"
-                  placeholder="+1234567890"
+                <PhoneInput
+                  value={createFormPhone}
+                  onChange={setCreateFormPhone}
+                  required={true}
                 />
               </div>
               <div className="users-form-field">
@@ -535,15 +543,10 @@ const Users = () => {
                 />
               </div>
               <div className="users-form-field">
-                <label className="users-form-label" htmlFor="edit-phone">
-                  Phone
-                </label>
-                <input
-                  id="edit-phone"
-                  name="phone"
-                  type="tel"
-                  className="users-form-input"
-                  defaultValue={editingUser?.phone || ""}
+                <PhoneInput
+                  value={editFormPhone}
+                  onChange={setEditFormPhone}
+                  required={true}
                 />
               </div>
               <div className="users-form-field">

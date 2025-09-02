@@ -277,16 +277,12 @@ export default function Home() {
                   {loyaltyStatus.icon} {loyaltyStatus.title}
                 </span>
                 {" • "}
-                Member since{" "}
-                {new Date(user.createdAt).toLocaleString("en-US", {
-                  month: "long",
-                  year: "numeric",
-                })}
+   
               </div>
             )}
             <div className="home-user-tags">
               <span className="home-tag date">
-                📅 Since{" "}
+                📅 Joined{" "}
                 {new Date(user.createdAt).toLocaleString("en-US", {
                   month: "short",
                   year: "numeric",

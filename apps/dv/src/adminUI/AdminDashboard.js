@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import "./AdminDashboard.css";
 
@@ -63,13 +64,68 @@ class AdminErrorBoundary extends React.Component {
 }
 
 const AdminDashboard = () => {
-  const { user, token } = useAuth();
+  const { user, token, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [userPermissions, setUserPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+
+  // Extract menu from URL path or use default
+  const getMenuFromPath = () => {
+    const path = location.pathname;
+    if (path === '/admin' || path === '/admin/') {
+      return 'dashboard';
+    }
+    // Extract menu from /admin/menuname
+    const menuMatch = path.match(/^\/admin\/([^\/]+)/);
+    return menuMatch ? menuMatch[1] : 'dashboard';
+  };
+
+  // Load sidebar state from localStorage
+  const loadSidebarState = () => {
+    try {
+      const saved = localStorage.getItem('adminSidebarCollapsed');
+      return saved ? JSON.parse(saved) : false;
+    } catch (error) {
+      console.warn('Failed to load sidebar state:', error);
+      return false;
+    }
+  };
+
+  // Save sidebar state to localStorage
+  const saveSidebarState = (collapsed) => {
+    try {
+      localStorage.setItem('adminSidebarCollapsed', JSON.stringify(collapsed));
+    } catch (error) {
+      console.warn('Failed to save sidebar state:', error);
+    }
+  };
+
+  useEffect(() => {
+    // Set active menu based on URL
+    const menuFromUrl = getMenuFromPath();
+    
+    // Validate menu exists, fallback to dashboard if invalid
+    const menuItem = getMenuItemById(menuFromUrl);
+    const validMenu = menuItem ? menuFromUrl : 'dashboard';
+    
+    setActiveMenu(validMenu);
+    
+    // If URL had invalid menu, redirect to dashboard
+    if (!menuItem && menuFromUrl !== 'dashboard') {
+      navigate('/admin', { replace: true });
+    }
+    
+    // Load sidebar state
+    const savedSidebarState = loadSidebarState();
+    setSidebarCollapsed(savedSidebarState);
+  }, [location.pathname, navigate]);
 
   useEffect(() => {
     // Safety check for auth context
@@ -200,8 +256,15 @@ const AdminDashboard = () => {
         return;
       }
       
+      // Update URL to persist menu selection
+      const newPath = menuId === 'dashboard' ? '/admin' : `/admin/${menuId}`;
+      navigate(newPath, { replace: true });
+      
       setActiveMenu(menuId);
       setError(null); // Clear any previous errors
+      
+      // Close mobile menu when item is selected
+      handleMobileMenuClose();
     } catch (error) {
       console.error('Error handling menu click:', error);
       setError(`Failed to navigate to ${menuId}`);
@@ -210,9 +273,52 @@ const AdminDashboard = () => {
 
   const handleSidebarToggle = () => {
     try {
-      setSidebarCollapsed(prev => !prev);
+      const newCollapsedState = !sidebarCollapsed;
+      setSidebarCollapsed(newCollapsedState);
+      saveSidebarState(newCollapsedState);
     } catch (error) {
       console.error('Error toggling sidebar:', error);
+    }
+  };
+
+  const handleMobileMenuToggle = () => {
+    try {
+      setMobileMenuOpen(prev => !prev);
+    } catch (error) {
+      console.error('Error toggling mobile menu:', error);
+    }
+  };
+
+  const handleMobileMenuClose = () => {
+    try {
+      setMobileMenuOpen(false);
+    } catch (error) {
+      console.error('Error closing mobile menu:', error);
+    }
+  };
+
+  const handleLogout = () => {
+    try {
+      setShowLogoutDialog(true);
+    } catch (error) {
+      console.error('Error showing logout dialog:', error);
+    }
+  };
+
+  const confirmLogout = () => {
+    try {
+      setShowLogoutDialog(false);
+      logout();
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+  };
+
+  const cancelLogout = () => {
+    try {
+      setShowLogoutDialog(false);
+    } catch (error) {
+      console.error('Error canceling logout:', error);
     }
   };
 
@@ -272,8 +378,44 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Mobile Menu Overlay */}
+        {mobileMenuOpen && (
+          <div 
+            className="mobile-menu-overlay" 
+            onClick={handleMobileMenuClose}
+          />
+        )}
+
+        {/* Logout Confirmation Dialog */}
+        {showLogoutDialog && (
+          <dialog open className="logout-dialog">
+            <div className="dialog-content">
+              <div className="dialog-header">
+                <h3>Confirm Logout</h3>
+              </div>
+              <div className="dialog-body">
+                <p>Are you sure you want to logout? You will need to sign in again to access the admin dashboard.</p>
+              </div>
+              <div className="dialog-actions">
+                <button 
+                  className="btn-secondary"
+                  onClick={cancelLogout}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="btn-danger"
+                  onClick={confirmLogout}
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </dialog>
+        )}
+
         {/* Sidebar */}
-        <div className={`admin-sidebar ${sidebarCollapsed ? "collapsed" : ""}`}>
+        <div className={`admin-sidebar ${sidebarCollapsed ? "collapsed" : ""} ${mobileMenuOpen ? "mobile-open" : ""}`}>
           <div className="sidebar-header">
             <div className="logo">
               <span className="logo-icon">💎</span>
@@ -322,6 +464,19 @@ const AdminDashboard = () => {
                 <p>No menu items available</p>
               </div>
             )}
+
+            {/* Logout Menu Item - positioned after regular menu items */}
+            <div className="menu-group logout-menu-group">
+              <button
+                className="logout-menu-item"
+                onClick={handleLogout}
+                title={sidebarCollapsed ? "Logout" : ""}
+                aria-label="Logout"
+              >
+                <span className="menu-icon">🚪</span>
+                {!sidebarCollapsed && <span className="menu-label">Logout</span>}
+              </button>
+            </div>
           </nav>
 
           <div className="sidebar-footer">
@@ -348,8 +503,22 @@ const AdminDashboard = () => {
         <div className="admin-main">
           <header className="admin-header">
             <div className="header-left">
-              <h1>{getMenuItemById(activeMenu)?.label || "Dashboard"}</h1>
-              <p>{getMenuItemById(activeMenu)?.description || ""}</p>
+              {/* Mobile Menu Button */}
+              <button 
+                className="mobile-menu-btn"
+                onClick={handleMobileMenuToggle}
+                aria-label="Toggle mobile menu"
+              >
+                <span className="hamburger-icon">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </span>
+              </button>
+              <div className="header-title">
+                <h1>{getMenuItemById(activeMenu)?.label || "Dashboard"}</h1>
+                <p>{getMenuItemById(activeMenu)?.description || ""}</p>
+              </div>
             </div>
             <div className="header-right">
               <div className="header-actions">

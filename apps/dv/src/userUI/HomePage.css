@@ -838,6 +838,29 @@
         text-align: center;
     }
 
+    .home-user-details {
+        align-items: center;
+        text-align: center;
+        width: 100%;
+    }
+
+    .home-user-name {
+        text-align: center;
+    }
+
+    .home-member-since {
+        justify-content: center;
+        text-align: center;
+    }
+
+    .home-user-tags {
+        justify-content: center;
+    }
+
+    .home-visits-info {
+        justify-content: center;
+    }
+
     .home-stats-grid {
         grid-template-columns: repeat(3, 1fr);
         gap: 0.75em;
@@ -878,5 +901,24 @@
 
     .home-user-name {
         font-size: 1.1em;
+    }
+
+    .home-member-since {
+        font-size: 0.8em;
+        flex-direction: column;
+        gap: 0.25em;
+    }
+
+    .home-loyalty-status {
+        font-size: 0.7em;
+        padding: 0.2em 0.4em;
+    }
+
+    .home-user-tags {
+        margin-top: 0.5em;
+    }
+
+    .home-visits-info {
+        font-size: 0.8em;
     }
 }

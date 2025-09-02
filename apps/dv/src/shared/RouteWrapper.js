@@ -21,7 +21,7 @@ export const RouteWrapper = ({
   preventAuth = false,
   authRedirectTo = "/",
 }) => {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading, user, logSecurityEvent } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -53,15 +53,23 @@ export const RouteWrapper = ({
 
   // Check role-based access if roles are specified and user is authenticated
   if (requireAuth && allowedRoles.length > 0 && user) {
-    const userRole = user.role || "user";
+    const userRole = user.role || "customer";
     if (!allowedRoles.includes(userRole)) {
-      return (
-        <div className="access-denied">
-          <h2>Access Denied</h2>
-          <p>You don't have permission to access this page.</p>
-          <button onClick={() => navigate(-1)}>Go Back</button>
-        </div>
-      );
+      // Log unauthorized access attempt (security logging only)
+      if (logSecurityEvent) {
+        logSecurityEvent('unauthorized_access_attempt', {
+          attemptedRoute: location.pathname,
+          userRole,
+          requiredRoles: allowedRoles,
+          userAgent: navigator.userAgent,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      console.warn(`Security Alert: Unauthorized access attempt by ${user.email} (${userRole}) to ${location.pathname}`);
+      
+      // Silently redirect to main page without revealing any system information
+      return <Navigate to="/" replace />;
     }
   }
 
@@ -96,7 +104,17 @@ export const AdminRoute = ({ children }) => (
   <RouteWrapper
     requireAuth={true}
     redirectTo="/"
-    allowedRoles={["admin", "superadmin"]}
+    allowedRoles={["super_admin", "admin", "tenant_admin", "store_manager"]}
+  >
+    {children}
+  </RouteWrapper>
+);
+
+export const SuperAdminRoute = ({ children }) => (
+  <RouteWrapper
+    requireAuth={true}
+    redirectTo="/"
+    allowedRoles={["super_admin"]}
   >
     {children}
   </RouteWrapper>
@@ -106,7 +124,7 @@ export const UserRoute = ({ children }) => (
   <RouteWrapper
     requireAuth={true}
     redirectTo="/"
-    allowedRoles={["user", "admin", "superadmin"]}
+    allowedRoles={["customer", "staff", "store_manager", "admin", "tenant_admin", "super_admin"]}
   >
     {children}
   </RouteWrapper>
