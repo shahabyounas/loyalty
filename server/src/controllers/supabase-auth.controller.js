@@ -34,10 +34,16 @@ class SupabaseAuthController {
         return ApiResponse.badRequest(res, "Invalid email format");
       }
 
-      // Validate phone number format (basic validation for international numbers)
-      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-      if (!phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))) {
-        return ApiResponse.badRequest(res, "Invalid phone number format");
+      // Validate phone number format (flexible validation for international numbers)
+      // Remove common formatting characters for validation
+      const cleanPhone = phone.replace(/[\s\-\(\)\+]/g, '');
+      const phoneRegex = /^[1-9]\d{6,14}$/; // 7-15 digits, not starting with 0
+      
+      if (!phoneRegex.test(cleanPhone)) {
+        return ApiResponse.badRequest(
+          res, 
+          "Invalid phone number format. Please enter a valid phone number with country code (e.g., +1 234 567 8900 or +44 20 7946 0958)"
+        );
       }
 
       // Check if user already exists in our database (efficient check)
@@ -179,10 +185,16 @@ class SupabaseAuthController {
         return ApiResponse.badRequest(res, "Invalid email format");
       }
 
-      // Validate phone number format (basic validation for international numbers)
-      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-      if (!phoneRegex.test(phone.replace(/[\s\-\(\)]/g, ''))) {
-        return ApiResponse.badRequest(res, "Invalid phone number format");
+      // Validate phone number format (flexible validation for international numbers)
+      // Remove common formatting characters for validation
+      const cleanPhone = phone.replace(/[\s\-\(\)\+]/g, '');
+      const phoneRegex = /^[1-9]\d{6,14}$/; // 7-15 digits, not starting with 0
+      
+      if (!phoneRegex.test(cleanPhone)) {
+        return ApiResponse.badRequest(
+          res, 
+          "Invalid phone number format. Please enter a valid phone number with country code (e.g., +1 234 567 8900 or +44 20 7946 0958)"
+        );
       }
 
       // Check if user already exists in our database (efficient check)
@@ -201,12 +213,41 @@ class SupabaseAuthController {
         );
       }
 
+      // Determine tenant from request domain (same logic as signup)
+      let tenantId = null;
+      try {
+        const origin = req.headers.origin || req.headers.referer;
+        if (origin) {
+          // Extract and normalize domain from origin/referer
+          const url = new URL(origin);
+          const cleanDomain = url.host; // Just the hostname without protocol or path
+          
+          logger.info(`Admin user creation request from domain: ${cleanDomain}`);
+          
+          // Find tenant by normalized domain
+          const tenant = await Tenant.findByDomain(cleanDomain);
+          
+          if (tenant) {
+            tenantId = tenant.id;
+            logger.info(`Assigned tenant ${tenant.business_name} (${tenantId}) for domain ${cleanDomain}`);
+          } else {
+            logger.warn(`No tenant found for domain: ${cleanDomain}`);
+          }
+        } else {
+          logger.warn("No origin/referer header found in admin user creation request");
+        }
+      } catch (domainErr) {
+        logger.error("Error determining tenant from domain:", domainErr.message);
+        // Continue without tenant assignment - don't fail user creation
+      }
+
       // First create the user in Supabase Auth
       const authResult = await SupabaseAuthService.signUp(email, password, {
         firstName,
         lastName,
         role: role || "staff",
         phone: phone,
+        tenant_id: tenantId, // Custom field to track tenant association
       });
 
       if (!authResult?.user?.id) {
@@ -214,17 +255,30 @@ class SupabaseAuthController {
       }
 
       // Then create the user record in our database
-      const userRecord = await User.create({
-        auth_user_id: authResult.user.id,
-        email: email,
-        first_name: firstName,
-        last_name: lastName,
-        role: role || "staff",
-        phone: phone,
-        email_verified: authResult.user.email_confirmed_at ? true : false,
-      });
+      let dbUserRecord = null;
+      try {
+        dbUserRecord = await User.create({
+          auth_user_id: authResult.user.id,
+          tenant_id: tenantId,
+          email: email,
+          first_name: firstName,
+          last_name: lastName,
+          role: role || "staff",
+          phone: phone,
+          email_verified: authResult.user.email_confirmed_at ? true : false,
+        });
+      } catch (dbErr) {
+        // If user record creation fails, attempt to delete the auth user
+        try {
+          await SupabaseAuthService.deleteUser(authResult.user.id);
+        } catch (deleteErr) {
+          logger.error("Failed to cleanup auth user after DB error:", deleteErr.message);
+        }
+        logger.error("User profile creation failed during admin user creation:", dbErr.message);
+        throw new Error("Failed to create user profile. Please try again.");
+      }
 
-      if (!userRecord) {
+      if (!dbUserRecord) {
         // If user record creation fails, attempt to delete the auth user
         await SupabaseAuthService.deleteUser(authResult.user.id);
         throw new Error("Failed to create user record in database");
@@ -244,7 +298,7 @@ class SupabaseAuthController {
             emailVerified: authResult.user.email_confirmed_at ? true : false,
             createdAt: authResult.user.created_at,
           },
-          dbUser: userRecord.toJSON(),
+          dbUser: dbUserRecord.toJSON(),
         },
         "User created successfully"
       );
@@ -447,7 +501,7 @@ class SupabaseAuthController {
         firstName: user.user_metadata?.first_name,
         lastName: user.user_metadata?.last_name,
         role: user.user_metadata?.role,
-        phone: user.user_metadata?.phone,
+        phone: user.phone,
         emailVerified: user.email_confirmed_at ? true : false,
         createdAt: user.created_at,
         lastSignIn: user.last_sign_in_at,
@@ -473,24 +527,70 @@ class SupabaseAuthController {
       const { userId } = req.params;
       const { firstName, lastName, role, phone } = req.body;
 
-      const updatedUser = await SupabaseAuthService.updateUser(userId, {
+      // Validate phone number format if provided
+      if (phone) {
+        const cleanPhone = phone.replace(/[\s\-\(\)\+]/g, '');
+        const phoneRegex = /^[1-9]\d{6,14}$/; // 7-15 digits, not starting with 0
+        
+        if (!phoneRegex.test(cleanPhone)) {
+          return ApiResponse.badRequest(
+            res, 
+            "Invalid phone number format. Please enter a valid phone number with country code (e.g., +1 234 567 8900 or +44 20 7946 0958)"
+          );
+        }
+
+        // Check if phone number already exists for a different user
+        const existingPhoneUser = await User.findByPhone(phone);
+        if (existingPhoneUser && existingPhoneUser.auth_user_id !== userId) {
+          return ApiResponse.conflict(
+            res,
+            "User with this phone number already exists"
+          );
+        }
+      }
+
+      // Update user in Supabase Auth
+      const updatedAuthUser = await SupabaseAuthService.updateUser(userId, {
         first_name: firstName,
         last_name: lastName,
         role: role,
         phone: phone,
       });
 
+      // Update user in local database
+      let updatedDbUser = null;
+      try {
+        // Find the user in local database first
+        const dbUser = await User.findByAuthUserId(userId);
+        if (dbUser) {
+          updatedDbUser = await User.update(dbUser.id, {
+            first_name: firstName,
+            last_name: lastName,
+            role: role,
+            phone: phone,
+          }, dbUser.tenant_id);
+        } else {
+          logger.warn(`No local database record found for auth user ID: ${userId}`);
+        }
+      } catch (dbErr) {
+        logger.error("Error updating user in local database:", dbErr.message);
+        // Continue with success since Supabase Auth was updated successfully
+      }
+
       logger.info(`User updated successfully: ${userId}`);
       return ApiResponse.success(
         res,
         {
-          id: updatedUser.id,
-          email: updatedUser.email,
-          firstName: updatedUser.user_metadata?.first_name,
-          lastName: updatedUser.user_metadata?.last_name,
-          role: updatedUser.user_metadata?.role,
-          phone: updatedUser.user_metadata?.phone,
-          emailVerified: updatedUser.email_confirmed_at ? true : false,
+          user: {
+            id: updatedAuthUser.id,
+            email: updatedAuthUser.email,
+            firstName: updatedAuthUser.user_metadata?.first_name,
+            lastName: updatedAuthUser.user_metadata?.last_name,
+            role: updatedAuthUser.user_metadata?.role,
+            phone: updatedAuthUser.user_metadata?.phone,
+            emailVerified: updatedAuthUser.email_confirmed_at ? true : false,
+          },
+          dbUser: updatedDbUser ? updatedDbUser.toJSON() : null,
         },
         "User updated successfully"
       );
@@ -632,11 +732,36 @@ class SupabaseAuthController {
   /**
    * Delete user (admin only)
    */
+  /**
+   * Delete user (admin only)
+   */
   static async deleteUser(req, res, next) {
     try {
       const { userId } = req.params;
 
+      // First find the user in local database to get the database ID
+      let dbUser = null;
+      try {
+        dbUser = await User.findByAuthUserId(userId);
+      } catch (dbErr) {
+        logger.warn(`Could not find user in local database: ${userId}`, dbErr.message);
+      }
+
+      // Delete user from Supabase Auth
       await SupabaseAuthService.deleteUser(userId);
+
+      // Delete user from local database (soft delete)
+      if (dbUser) {
+        try {
+          await User.delete(dbUser.id, dbUser.tenant_id);
+          logger.info(`User deleted from local database: ${dbUser.id}`);
+        } catch (dbErr) {
+          logger.error("Error deleting user from local database:", dbErr.message);
+          // Continue with success since Supabase Auth deletion was successful
+        }
+      } else {
+        logger.warn(`No local database record found for auth user ID: ${userId}`);
+      }
 
       logger.info(`User deleted successfully: ${userId}`);
       return ApiResponse.success(res, null, "User deleted successfully");

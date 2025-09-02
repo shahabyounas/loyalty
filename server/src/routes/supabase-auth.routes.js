@@ -54,7 +54,8 @@ const createUserValidation = [
     .isIn(["super_admin", "admin", "manager", "staff", "customer"])
     .withMessage("Invalid role specified"),
   body("phone")
-    .optional()
+    .notEmpty()
+    .withMessage("Phone number is required")
     .isMobilePhone()
     .withMessage("Please provide a valid phone number"),
 ];
@@ -72,7 +73,8 @@ const updateUserValidation = [
     .isIn(["super_admin", "admin", "manager", "staff", "customer"])
     .withMessage("Invalid role specified"),
   body("phone")
-    .optional()
+    .notEmpty()
+    .withMessage("Phone number is required")
     .isMobilePhone()
     .withMessage("Please provide a valid phone number"),
 ];

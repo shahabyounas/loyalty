@@ -430,13 +430,45 @@ export const AuthProvider = ({ children }) => {
   // Check if user is admin
   const isAdmin = useCallback((userObj = user) => {
     if (!userObj) return false;
-    return ['super_admin', 'admin', 'tenant_admin'].includes(userObj.role);
+    return ['super_admin', 'admin', 'tenant_admin', 'store_manager'].includes(userObj.role);
   }, [user]);
 
   // Check if user is super admin
   const isSuperAdmin = useCallback((userObj = user) => {
     if (!userObj) return false;
     return userObj.role === 'super_admin';
+  }, [user]);
+
+  // Check if user has specific permission
+  const hasPermission = useCallback((permission, userObj = user) => {
+    if (!userObj) return false;
+    
+    // Super admin has all permissions
+    if (userObj.role === 'super_admin') return true;
+    
+    // Check if user has wildcard permission
+    if (userObj.permissions && userObj.permissions.includes('*')) return true;
+    
+    // Check specific permission
+    return userObj.permissions && userObj.permissions.includes(permission);
+  }, [user]);
+
+  // Log security events
+  const logSecurityEvent = useCallback((event, details = {}) => {
+    const securityLog = {
+      event,
+      timestamp: new Date().toISOString(),
+      userId: user?.id || 'anonymous',
+      userEmail: user?.email || 'anonymous', 
+      userRole: user?.role || 'none',
+      ...details
+    };
+    
+    // Log to console for development (remove in production)
+    console.warn('🚨 Security Event:', securityLog);
+    
+    // In production, send to security monitoring service
+    // Example: sendToSecurityService(securityLog);
   }, [user]);
 
   const value = {
@@ -479,6 +511,8 @@ export const AuthProvider = ({ children }) => {
     getRemainingAttempts,
     isAdmin,
     isSuperAdmin,
+    hasPermission,
+    logSecurityEvent,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

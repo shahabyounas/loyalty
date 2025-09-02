@@ -1,4 +1,4 @@
-/* Phone Input Styles - Matching Signup Form Design */
+/* Phone Input Styles - Matching Users Form Design */
 .phone-input-container {
     display: flex;
     flex-direction: column;
@@ -6,14 +6,13 @@
 }
 
 .phone-label {
-    display: block;
-    margin-bottom: 0.5em;
-    color: var(--text-color);
     font-weight: 500;
+    color: var(--text);
     font-size: 0.875em;
     display: flex;
     align-items: center;
     gap: 0.25em;
+    margin-bottom: 0;
 }
 
 .required {
@@ -24,18 +23,19 @@
 .phone-input-wrapper {
     display: flex;
     align-items: stretch;
-    border: 0.0625em solid var(--ai-border-medium);
-    border-radius: var(--m-border-radius);
+    border: 1px solid var(--border);
+    border-radius: 0.5em;
     overflow: visible;
-    transition: all 0.2s ease;
-    background: var(--console-surface);
+    transition: all 0.15s ease;
+    background: var(--background);
     position: relative;
+    box-sizing: border-box;
 }
 
 .phone-input-wrapper:focus-within {
     outline: none;
-    border-color: var(--focus-border-color);
-    box-shadow: 0 0 0 0.1875em rgba(32, 146, 234, 0.1);
+    border-color: var(--primary);
+    box-shadow: var(--shadow-focus);
 }
 
 .phone-input-wrapper.error {
@@ -44,7 +44,7 @@
 
 .phone-input-wrapper.error:focus-within {
     border-color: var(--error-400);
-    box-shadow: 0 0 0 0.1875em rgba(239, 68, 68, 0.1);
+    box-shadow: var(--shadow-focus);
 }
 
 /* Country Selector */
@@ -58,24 +58,26 @@
     display: flex;
     align-items: center;
     gap: 0.5em;
-    padding: 0.75em;
-    background: var(--console-surface-hover);
+    padding: 0.75em 1em;
+    background: var(--background);
     border: none;
-    border-right: 0.0625em solid var(--ai-border-medium);
+    border-right: 1px solid var(--border);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     min-width: 6em;
-    font-size: 0.875em;
-    color: var(--text-color);
+    font-size: 1em;
+    color: var(--text);
+    font-family: inherit;
+    box-sizing: border-box;
 }
 
 .country-button:hover:not(:disabled) {
-    background: var(--console-surface-active);
+    background: var(--hover);
 }
 
 .country-button:focus {
     outline: none;
-    background: var(--console-surface-active);
+    background: var(--hover);
 }
 
 .country-button:disabled {
@@ -90,14 +92,14 @@
 
 .country-code {
     font-weight: 500;
-    color: var(--text-color);
+    color: var(--text);
 }
 
 .dropdown-arrow {
     width: 1em;
     height: 1em;
     color: var(--text-muted);
-    transition: transform 0.2s ease;
+    transition: transform 0.15s ease;
 }
 
 .country-selector.open .dropdown-arrow {
@@ -110,10 +112,10 @@
     top: 100%;
     left: 0;
     right: 0;
-    background: #ffffff;
-    border: 0.0625em solid var(--ai-border-medium);
-    border-radius: var(--m-border-radius);
-    box-shadow: var(--component-box-shadow);
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: 0.5em;
+    box-shadow: var(--shadow);
     z-index: 99999;
     max-height: 20em;
     overflow: hidden;
@@ -137,28 +139,30 @@
 /* Search Container */
 .search-container {
     padding: 0.75em;
-    border-bottom: 0.0625em solid var(--ai-border-subtle);
+    border-bottom: 1px solid var(--border);
 }
 
 .country-search {
     width: 100%;
     padding: 0.5em;
-    border: 0.0625em solid var(--ai-border-medium);
-    border-radius: var(--sm-border-radius);
+    border: 1px solid var(--border);
+    border-radius: 0.5em;
     font-size: 0.875em;
-    background: #ffffff;
-    transition: border-color 0.2s ease;
-    color: #111827;
+    background: var(--background);
+    transition: border-color 0.15s ease;
+    color: var(--text);
+    font-family: inherit;
+    box-sizing: border-box;
 }
 
 .country-search:focus {
     outline: none;
-    border-color: var(--focus-border-color);
-    box-shadow: 0 0 0 0.1875em rgba(32, 146, 234, 0.1);
+    border-color: var(--primary);
+    box-shadow: var(--shadow-focus);
 }
 
 .country-search::placeholder {
-    color: #9ca3af;
+    color: var(--text-muted);
 }
 
 /* Country List */
@@ -176,19 +180,20 @@
     background: transparent;
     border: none;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.15s ease;
     text-align: left;
     font-size: 0.875em;
-    color: #111827;
+    color: var(--text);
+    font-family: inherit;
 }
 
 .country-option:hover {
-    background: #f3f4f6;
+    background: var(--hover);
 }
 
 .country-option.selected {
-    background: #eff6ff;
-    color: #1d4ed8;
+    background: var(--primary-light);
+    color: var(--primary);
     font-weight: 500;
 }
 
@@ -203,7 +208,7 @@
 }
 
 .country-option .country-dial-code {
-    color: #6b7280;
+    color: var(--text-muted);
     font-weight: 500;
     flex-shrink: 0;
 }
@@ -211,12 +216,14 @@
 /* Phone Input */
 .phone-input {
     flex: 1;
-    padding: 0.75em;
+    padding: 0.75em 1em;
     border: none;
     outline: none;
-    font-size: 0.875em;
-    color: var(--text-color);
-    background: var(--console-surface);
+    font-size: 1em;
+    color: var(--text);
+    background: var(--background);
+    font-family: inherit;
+    box-sizing: border-box;
 }
 
 .phone-input::placeholder {
@@ -224,7 +231,7 @@
 }
 
 .phone-input:disabled {
-    background: var(--interactive-disabled);
+    background: var(--background-disabled);
     color: var(--text-disabled);
     cursor: not-allowed;
 }

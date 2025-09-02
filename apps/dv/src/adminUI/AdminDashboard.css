@@ -61,12 +61,43 @@
     align-items: center;
     justify-content: space-between;
     background: #ffffff;
+    position: relative;
+}
+
+/* Collapsed state adjustments for header */
+.admin-sidebar.collapsed .sidebar-header {
+    padding: 1.25em 0.5em;
+    justify-content: center;
+}
+
+.admin-sidebar.collapsed .logo {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.admin-sidebar.collapsed .collapse-btn {
+    position: absolute;
+    top: 0.25em;
+    right: 0.25em;
+    width: 1.5em;
+    height: 1.5em;
+    font-size: 0.875em;
+    padding: 0.25em;
 }
 
 .logo {
     display: flex;
     align-items: center;
     gap: 0.75em;
+    transition: all 0.2s ease;
+}
+
+/* Collapsed logo adjustments */
+.admin-sidebar.collapsed .logo {
+    gap: 0;
 }
 
 .logo-icon {
@@ -76,6 +107,12 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    transition: all 0.2s ease;
+}
+
+/* Collapsed logo icon adjustments */
+.admin-sidebar.collapsed .logo-icon {
+    font-size: 1.25em;
 }
 
 .logo-text {
@@ -100,9 +137,16 @@
     justify-content: center;
     width: 2em;
     height: 2em;
+    flex-shrink: 0;
 }
 
 .collapse-btn:hover {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+/* Ensure collapse button is always accessible */
+.admin-sidebar.collapsed .collapse-btn:hover {
     background: #f1f5f9;
     color: #475569;
 }
@@ -316,33 +360,274 @@
     background: #f8fafc;
 }
 
-/* Responsive Design */
+/* Tablet Design */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .admin-sidebar {
+        width: 200px;
+    }
+
+    .admin-sidebar.collapsed {
+        width: 56px;
+    }
+
+    .admin-header {
+        padding: 1.125em 1.25em;
+    }
+
+    .header-left h1 {
+        font-size: 1.375em;
+    }
+
+    .admin-content {
+        padding: 1.25em;
+    }
+
+    .mobile-menu-btn {
+        display: none;
+    }
+}
+
+/* Mobile Design */
 @media (max-width: 768px) {
     .admin-sidebar {
         position: fixed;
         left: -260px;
         z-index: 1000;
         height: 100vh;
+        transition: left 0.3s ease;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.15);
     }
 
     .admin-sidebar.collapsed {
         left: -64px;
+        width: 64px;
     }
 
-    .admin-sidebar.open {
+    .admin-sidebar.mobile-open {
         left: 0;
     }
 
     .admin-main {
         margin-left: 0;
+        width: 100%;
     }
 
     .admin-header {
-        padding: 1em;
+        padding: 0.875em 1em;
+        border-bottom: 1px solid #e2e8f0;
     }
 
     .admin-content {
         padding: 1em;
+    }
+
+    .mobile-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        cursor: pointer;
+        margin-right: 1em;
+        padding: 0.5em;
+        border-radius: 0.375em;
+        transition: background-color 0.15s ease;
+        flex-shrink: 0;
+    }
+
+    .mobile-menu-btn:hover {
+        background: #f1f5f9;
+    }
+
+    .mobile-menu-btn:active {
+        background: #e2e8f0;
+    }
+
+    .hamburger-icon {
+        width: 20px;
+        height: 16px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .hamburger-icon span {
+        display: block;
+        height: 2px;
+        width: 100%;
+        background: #475569;
+        border-radius: 1px;
+        transition: all 0.3s ease;
+    }
+
+    .mobile-menu-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        backdrop-filter: blur(2px);
+        animation: fadeIn 0.3s ease;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .header-title {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .header-title h1 {
+        font-size: 1.25em;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .header-title p {
+        font-size: 0.8em;
+        margin: 0.125em 0 0 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: #64748b;
+    }
+
+    .header-actions {
+        gap: 0.25em;
+    }
+
+    .notification-btn,
+    .profile-btn {
+        width: 2.25em;
+        height: 2.25em;
+        font-size: 1em;
+    }
+
+    /* Enhanced mobile sidebar */
+    .admin-sidebar .sidebar-header {
+        padding: 1em;
+        border-bottom: 1px solid #f1f5f9;
+        position: sticky;
+        top: 0;
+        background: #ffffff;
+        z-index: 10;
+    }
+
+    .admin-sidebar .sidebar-nav {
+        padding: 0.5em 0;
+    }
+
+    .admin-sidebar .menu-item {
+        padding: 1em;
+        margin: 0 0.5em 0.25em 0.5em;
+        border-radius: 0.5em;
+        font-size: 0.9em;
+        min-height: 48px;
+        /* Better touch target */
+    }
+
+    .admin-sidebar .menu-icon {
+        font-size: 1.25em;
+        min-width: 1.5em;
+    }
+
+    .admin-sidebar .sidebar-footer {
+        padding: 1em;
+        border-top: 1px solid #f1f5f9;
+        background: #ffffff;
+        position: sticky;
+        bottom: 0;
+    }
+
+    /* Mobile menu animation */
+    .admin-sidebar.mobile-open {
+        animation: slideInLeft 0.3s ease;
+    }
+
+    @keyframes slideInLeft {
+        from {
+            left: -260px;
+        }
+
+        to {
+            left: 0;
+        }
+    }
+}
+
+/* Small mobile phones */
+@media (max-width: 480px) {
+    .admin-header {
+        padding: 0.75em;
+    }
+
+    .admin-content {
+        padding: 0.75em;
+    }
+
+    .header-title h1 {
+        font-size: 1.125em;
+    }
+
+    .header-title p {
+        font-size: 0.75em;
+    }
+
+    .header-actions {
+        gap: 0.125em;
+    }
+
+    .notification-btn,
+    .profile-btn {
+        width: 2em;
+        height: 2em;
+        font-size: 0.9em;
+    }
+
+    .admin-sidebar {
+        width: 280px;
+        /* Slightly wider for easier touch targets */
+        left: -280px;
+    }
+
+    .admin-sidebar.mobile-open {
+        left: 0;
+    }
+
+    .admin-sidebar .menu-item {
+        padding: 1.125em 1em;
+        font-size: 0.95em;
+        min-height: 52px;
+        /* Larger touch targets */
+    }
+}
+
+/* Hide mobile menu button on larger screens */
+@media (min-width: 769px) {
+    .mobile-menu-btn {
+        display: none;
+    }
+
+    .mobile-menu-overlay {
+        display: none;
+    }
+
+    .header-left {
+        display: block;
+    }
+
+    .header-title {
+        display: contents;
     }
 }
 

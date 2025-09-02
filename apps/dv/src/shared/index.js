@@ -1,6 +1,7 @@
 // Shared Components
 export { default as NotFoundPage } from "./NotFoundPage";
 export { default as RouteWrapper } from "./RouteWrapper";
+export { AdminRoute, ProtectedRoute, PublicRoute, SuperAdminRoute, UserRoute } from "./RouteWrapper";
 export { default as MainRoute } from "./MainRoute";
 export { default as LandingPage } from "./landing/LandingPage";
 export { default as PublicLayout } from "./layout/PublicLayout";
