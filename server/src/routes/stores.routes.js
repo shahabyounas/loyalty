@@ -4,6 +4,7 @@ const Store = require("../models/store.model");
 const {
   authenticateUser,
   requireAdmin,
+  mergeUserTenant,
 } = require("../middleware/supabase-auth.middleware");
 const { validateRequest } = require("../middleware/validation.middleware");
 const Joi = require("joi");
@@ -84,13 +85,13 @@ router.post(
   "/",
   authenticateUser,
   requireAdmin,
+  mergeUserTenant,
   validateRequest(createStoreValidation),
   async (req, res) => {
     try {
-      console.log("req.user--", req.user);
       const storeData = {
         ...req.body,
-        tenant_id: req.user.tenant_id || req.user.id, // Default tenant for now
+        tenant_id: req.user.tenant_id
       };
 
       const store = await Store.create(storeData);

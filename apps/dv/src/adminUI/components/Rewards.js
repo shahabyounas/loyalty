@@ -163,44 +163,6 @@ const Rewards = () => {
       console.error("Error fetching rewards:", error);
       alert(apiErrorHandler.handleError(error));
 
-      // Set mock data for development
-      const mockRewards = [
-        {
-          id: -1, // Use negative IDs for mock data
-          name: "Free Coffee",
-          description: "Get a free coffee with any purchase",
-          type: "free_item",
-          value: "1",
-          points_required: 100,
-          is_active: true,
-          expiry_date: "2024-12-31",
-          created_at: "2024-01-15",
-        },
-        {
-          id: -2, // Use negative IDs for mock data
-          name: "20% Off",
-          description: "20% discount on all items",
-          type: "discount",
-          value: "20",
-          points_required: 200,
-          is_active: true,
-          expiry_date: "2024-11-30",
-          created_at: "2024-01-10",
-        },
-        {
-          id: -3, // Use negative IDs for mock data
-          name: "Double Points",
-          description: "Earn double points on your next purchase",
-          type: "points",
-          value: "2x",
-          points_required: 50,
-          is_active: false,
-          expiry_date: "2024-10-15",
-          created_at: "2024-01-05",
-        },
-      ];
-      lastFetchedRewardsRef.current = mockRewards;
-      setRewards(applyFilters(lastFetchedRewardsRef.current));
     } finally {
       setLoading(false);
     }

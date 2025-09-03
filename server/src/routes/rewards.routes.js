@@ -4,6 +4,7 @@ const Reward = require("../models/reward.model");
 const {
   authenticateUser,
   requireAdmin,
+  mergeUserTenant,
 } = require("../middleware/supabase-auth.middleware");
 const { validateRequest } = require("../middleware/validation.middleware");
 const Joi = require("joi");
@@ -97,7 +98,7 @@ const convertToFrontendFormat = (modelData) => {
 };
 
 // Get all rewards (admin only)
-router.get("/", authenticateUser, requireAdmin, async (req, res) => {
+router.get("/", authenticateUser, async (req, res) => {
   try {
     const { page = 1, limit = 10, search, type, status } = req.query;
     const offset = (page - 1) * limit;
@@ -158,11 +159,11 @@ router.post(
   "/",
   authenticateUser,
   requireAdmin,
+  mergeUserTenant,
   validateRequest(createRewardValidation),
   async (req, res) => {
     try {
-      const tenantId = req.user.tenant_id || req.user.id;
-
+      const tenantId = req.user.tenant_id
       const modelData = convertToModelFormat({
         ...req.body,
         tenant_id: tenantId,
