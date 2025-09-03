@@ -76,6 +76,10 @@ class UserRewardProgress {
               WHEN stamps_collected + 1 >= stamps_required THEN TRUE 
               ELSE FALSE 
             END,
+            status = CASE 
+              WHEN stamps_collected + 1 >= stamps_required AND status = 'in_progress' THEN 'ready_to_redeem'
+              ELSE status 
+            END,
             completed_at = CASE 
               WHEN stamps_collected + 1 >= stamps_required THEN CURRENT_TIMESTAMP 
               ELSE completed_at 

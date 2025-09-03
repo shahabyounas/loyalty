@@ -564,20 +564,52 @@ router.post("/process-scan", async (req, res) => {
       });
     }
 
-    // Check if already completed
+    // Check if already completed and handle reset logic
     if (progress.stamps_collected >= progress.stamps_required) {
-      return res.status(400).json({
-        success: false,
-        message: "Reward already completed",
-        data: {
-          customer_name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown Customer',
-          reward_name: reward.name || 'Unknown Reward',
-          stamps_collected: progress.stamps_collected,
-          stamps_required: progress.stamps_required,
-          is_completed: true,
-          status: progress.status || 'completed',
-        },
-      });
+      // Check if this is a reset request
+      const shouldReset = req.body.reset_progress || false;
+      
+      if (shouldReset && (progress.status === "ready_to_redeem" || progress.status === "redeemed" || progress.status === "availed")) {
+        // Reset the progress to start a new cycle
+        try {
+          const resetQuery = `
+            UPDATE user_reward_progress 
+            SET stamps_collected = 0,
+                is_completed = FALSE,
+                status = 'in_progress',
+                completed_at = NULL,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = $1 AND reward_id = $2
+            RETURNING *
+          `;
+          
+          const resetProgress = await db.getOne(resetQuery, [dbUserId, validRewardId]);
+          if (resetProgress) {
+            progress = new UserRewardProgress(resetProgress);
+            logger.info(`Reset progress for user ${dbUserId}, reward ${validRewardId} to start new cycle`);
+          }
+        } catch (resetError) {
+          logger.error(`Error resetting progress:`, resetError);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to reset reward progress",
+          });
+        }
+      } else {
+        // Not a reset request and already completed
+        return res.status(400).json({
+          success: false,
+          message: "Reward already completed",
+          data: {
+            customer_name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown Customer',
+            reward_name: reward.name || 'Unknown Reward',
+            stamps_collected: progress.stamps_collected,
+            stamps_required: progress.stamps_required,
+            is_completed: true,
+            status: progress.status || 'completed',
+          },
+        });
+      }
     }
 
     // Add stamp to progress with rollback capability
@@ -649,35 +681,9 @@ router.post("/process-scan", async (req, res) => {
       logger.error(`Failed to record scan history for user ${dbUserId}, reward ${validRewardId}:`, scanHistoryError);
     }
 
-    // Update completion status if completed with error handling
-    if (updatedProgress.stamps_collected >= updatedProgress.stamps_required) {
-      try {
-        // Check if status needs to be updated to ready_to_redeem
-        if (updatedProgress.status !== "ready_to_redeem" && updatedProgress.status !== "redeemed" && updatedProgress.status !== "availed") {
-          const updateQuery = `
-            UPDATE user_reward_progress 
-            SET status = 'ready_to_redeem', 
-                is_completed = TRUE,
-                completed_at = CURRENT_TIMESTAMP,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE user_id = $1 AND reward_id = $2
-            RETURNING *
-          `;
-          
-          const updated = await db.getOne(updateQuery, [dbUserId, validRewardId]);
-          if (updated) {
-            updatedProgress = new UserRewardProgress(updated);
-            logger.info(`Reward ${validRewardId} status updated to ready_to_redeem for user ${dbUserId}`);
-          }
-        }
-      } catch (completionError) {
-        logger.error(`Error updating completion status:`, completionError);
-        // Don't fail the request for this, just log it and continue
-      }
-    }
-
+    // Status is now automatically updated in the addStamp method
     logger.info(
-      `Stamp added for auth user ${sanitizedUserId} (db user ${dbUserId}), reward ${validRewardId}. Progress: ${updatedProgress.stamps_collected}/${updatedProgress.stamps_required}`
+      `Stamp added for auth user ${sanitizedUserId} (db user ${dbUserId}), reward ${validRewardId}. Progress: ${updatedProgress.stamps_collected}/${updatedProgress.stamps_required}, Status: ${updatedProgress.status}`
     );
 
     // Return success response with validated data

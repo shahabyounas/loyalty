@@ -42,6 +42,7 @@ const QRCodeScanner = () => {
         reward_id: qrData.reward_id,
         scanned_by: user.id,
         store_id: user.store_id || null,
+        reset_progress: qrData.reset_progress || false, // Pass the reset flag
       });
 
       setScanResult({
