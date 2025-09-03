@@ -76,12 +76,25 @@ export default function Home() {
         progressMap[progress.reward_id] = progress;
         totalStamps += progress.stamps_collected || 0;
 
+        // Debug logging for progress counting
+        console.log(`Progress item:`, {
+          reward_id: progress.reward_id,
+          stamps_collected: progress.stamps_collected,
+          stamps_required: progress.stamps_required,
+          is_completed: progress.is_completed,
+          status: progress.status
+        });
+
         if (progress.is_completed && progress.status === "ready_to_redeem") {
           rewardsReadyToRedeem++;
-        } else if (progress.is_completed && progress.status === "redeemed") {
+          console.log(`Counting as Ready to Redeem: ${progress.reward_id}`);
+        } else if (progress.is_completed && (progress.status === "redeemed" || progress.status === "availed")) {
           totalRewards++;
-        } else if (progress.stamps_collected > 0) {
+          console.log(`Counting as Availed: ${progress.reward_id}`);
+        } else if (progress.stamps_collected > 0 && !progress.is_completed) {
+          // Only count as in progress if stamps collected but NOT completed
           rewardsInProgress++;
+          console.log(`Counting as In Progress: ${progress.reward_id}`);
         }
       });
 
