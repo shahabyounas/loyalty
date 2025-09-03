@@ -1,6 +1,7 @@
 const SupabaseAuthService = require("../services/supabase-auth.service");
 const ApiResponse = require("../utils/response");
 const { logger } = require("../utils/logger");
+const { User } = require("../models");
 
 /**
  * Middleware to authenticate user using Supabase JWT token
@@ -91,9 +92,29 @@ const optionalAuth = async (req, res, next) => {
   }
 };
 
+
+const mergeUserTenant = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next();
+    }
+
+    const user = await User.findByAuthUserId(req.user.id);
+    if (user) {
+      req.user.tenant_id = user.tenant_id;
+    }
+
+    next();
+  } catch (error) {
+    logger.error("Error merging user tenant:", error.message);
+    next();
+  }
+};
+
 module.exports = {
   authenticateUser,
   requireRole,
   requireAdmin,
   optionalAuth,
+  mergeUserTenant,
 };
