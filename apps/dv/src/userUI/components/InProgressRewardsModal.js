@@ -9,6 +9,7 @@ const InProgressRewardsModal = ({
   inProgressRewards = [],
   userProgress = {},
   userProgressByReward = {}, // New: multiple records per reward
+  showProgressRecords = false, // New: flag to indicate if we're showing progress records directly
   onAddStamp,
   onRedeemReward,
 }) => {
@@ -86,24 +87,44 @@ const InProgressRewardsModal = ({
             </div>
           ) : (
             <div className="in-progress-rewards-list">
-              {inProgressRewards.map((reward) => {
-                if (!reward || !reward.id) {
-                  return null; // Skip invalid reward objects
+              {inProgressRewards.map((item, index) => {
+                // Handle both reward objects and progress records
+                let reward, progress, stampsCollected, stampsRequired, status, rewardState;
+                
+                if (showProgressRecords) {
+                  // Item is a progress record with reward info attached
+                  progress = item;
+                  reward = item.reward || {
+                    id: item.reward_id,
+                    name: item.reward_name,
+                    description: item.reward_description,
+                    points_required: item.reward_points_required,
+                    type: item.reward_type,
+                    discount_percentage: item.reward_discount_percentage,
+                    discount_amount: item.reward_discount_amount,
+                  };
+                  stampsCollected = progress.stamps_collected || 0;
+                  stampsRequired = progress.stamps_required || reward.points_required || 10;
+                  status = progress.status || "in_progress";
+                } else {
+                  // Item is a reward object (legacy mode)
+                  reward = item;
+                  if (!reward || !reward.id) {
+                    return null; // Skip invalid reward objects
+                  }
+                  
+                  progress = userProgress[reward.id];
+                  stampsCollected = progress?.stamps_collected || 0;
+                  stampsRequired = reward.points_required || 10;
+                  status = progress?.status || "in_progress";
                 }
-                
-                const progress = userProgress[reward.id];
-                const stampsCollected = progress?.stamps_collected || 0;
-                
-                // Get required stamps from points_required field (this is the actual stamps requirement)
-                const stampsRequired = reward.points_required || 10; // points_required contains the required stamps count
-                
-                const status = progress?.status || "in_progress";
+
                 const completionPercentage = progress
                   ? (stampsCollected / stampsRequired) * 100
                   : 0;
 
-                // Determine reward state based on UserRewardProgress - stamps collected vs required
-                let rewardState = "in_progress";
+                // Determine reward state based on UserRewardProgress
+                rewardState = "in_progress";
                 if (stampsCollected >= stampsRequired) {
                   if (status === "redeemed" || status === "availed") {
                     rewardState = "redeemed";
@@ -112,18 +133,22 @@ const InProgressRewardsModal = ({
                   }
                 }
 
-                // Debug logging for UserRewardProgress state
-                console.log(`UserRewardProgress - ${reward.name}:`, {
+                // Debug logging
+                console.log(`${showProgressRecords ? 'Progress Record' : 'Reward'} - ${reward.name}:`, {
                   stampsCollected,
                   stampsRequired,
                   status,
                   calculatedState: rewardState,
-                  completionPercentage: Math.round(completionPercentage)
+                  completionPercentage: Math.round(completionPercentage),
+                  progressId: progress?.id
                 });
+
+                // Use unique key for progress records, reward id for rewards
+                const uniqueKey = showProgressRecords ? `progress-${progress.id}` : `reward-${reward.id}`;
 
                 return (
                   <div
-                    key={reward.id}
+                    key={uniqueKey}
                     className={`in-progress-reward-card in-progress-reward-${rewardState}`}
                   >
                     <div className="in-progress-reward-header">
@@ -227,28 +252,56 @@ const InProgressRewardsModal = ({
                             <span className="in-progress-redeemed-icon">✅</span>
                             <span className="in-progress-redeemed-text">
                               Reward Redeemed
+                              {showProgressRecords && progress.id && (
+                                <small className="in-progress-record-id">
+                                  (ID: {progress.id})
+                                </small>
+                              )}
                             </span>
                           </div>
                         ) : rewardState === "ready" ? (
                           <button
                             className="in-progress-redeem-button"
-                            onClick={() => handleRedeemReward(reward.id, reward.name)}
+                            onClick={() => handleRedeemReward(
+                              showProgressRecords ? progress.id : reward.id, 
+                              reward.name,
+                              showProgressRecords ? 'progress' : 'reward'
+                            )}
                           >
                             🎉 Redeem Now
+                            {showProgressRecords && progress.id && (
+                              <small className="in-progress-button-id">
+                                (Card #{progress.id})
+                              </small>
+                            )}
                           </button>
                         ) : rewardState === "redeemed" ? (
                           <div className="in-progress-redeemed-badge">
                             <span className="in-progress-redeemed-icon">✅</span>
                             <span className="in-progress-redeemed-text">
                               Reward Redeemed
+                              {showProgressRecords && progress.id && (
+                                <small className="in-progress-record-id">
+                                  (ID: {progress.id})
+                                </small>
+                              )}
                             </span>
                           </div>
                         ) : modalType === "ready-to-redeem" ? (
                           <button
                             className="in-progress-redeem-button"
-                            onClick={() => handleRedeemReward(reward.id, reward.name)}
+                            onClick={() => handleRedeemReward(
+                              showProgressRecords ? progress.id : reward.id, 
+                              reward.name,
+                              showProgressRecords ? 'progress' : 'reward'
+                            )}
                           >
                             🎉 Redeem Now
+                            {showProgressRecords && progress.id && (
+                              <small className="in-progress-button-id">
+                                (Card #{progress.id})
+                              </small>
+                            )}
                           </button>
                         ) : (
                           <button
