@@ -22,7 +22,7 @@ const createProgressValidation = [
 
 /**
  * @route GET /api/user-reward-progress
- * @desc Get all user reward progress
+ * @desc Get all user reward progress with statistics
  * @access Private
  */
 router.get("/", authenticateUser, async (req, res) => {
@@ -38,11 +38,15 @@ router.get("/", authenticateUser, async (req, res) => {
       });
     }
 
-    const progress = await UserRewardProgress.findByUserId(dbUser.id);
+    const [progress, statistics] = await Promise.all([
+      UserRewardProgress.findByUserId(dbUser.id),
+      UserRewardProgress.getUserStatistics(dbUser.id)
+    ]);
 
     res.status(200).json({
       success: true,
       data: progress,
+      statistics: statistics,
       message: "User reward progress retrieved successfully",
     });
   } catch (error) {

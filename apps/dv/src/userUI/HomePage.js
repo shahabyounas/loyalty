@@ -67,44 +67,65 @@ export default function Home() {
     try {
       const response = await userRewardProgressAPI.getUserProgress();
       const progressMap = {};
-      let totalStamps = 0;
-      let totalRewards = 0;
-      let rewardsInProgress = 0;
-      let rewardsReadyToRedeem = 0;
 
+      // Build progress map from the data
       (response.data || []).forEach((progress) => {
         progressMap[progress.reward_id] = progress;
-        totalStamps += progress.stamps_collected || 0;
+      });
 
-        // Debug logging for progress counting
-        console.log(`Progress item:`, {
-          reward_id: progress.reward_id,
-          stamps_collected: progress.stamps_collected,
-          stamps_required: progress.stamps_required,
-          is_completed: progress.is_completed,
-          status: progress.status
+      // Use backend-calculated statistics if available, otherwise calculate manually
+      let stats;
+      if (response.statistics) {
+        stats = {
+          totalStamps: response.statistics.total_stamps_collected,
+          totalRewards: response.statistics.total_rewards_completed,
+          rewardsInProgress: response.statistics.rewards_in_progress,
+          rewardsReadyToRedeem: response.statistics.rewards_ready_to_redeem,
+        };
+        console.log("Using backend statistics:", stats);
+      } else {
+        // Fallback to manual calculation (for backwards compatibility)
+        let totalStamps = 0;
+        let totalRewards = 0;
+        let rewardsInProgress = 0;
+        let rewardsReadyToRedeem = 0;
+
+        (response.data || []).forEach((progress) => {
+          totalStamps += progress.stamps_collected || 0;
+
+          // Debug logging for progress counting
+          console.log(`Progress item:`, {
+            reward_id: progress.reward_id,
+            stamps_collected: progress.stamps_collected,
+            stamps_required: progress.stamps_required,
+            is_completed: progress.is_completed,
+            status: progress.status
+          });
+
+          if (progress.is_completed && progress.status === "ready_to_redeem") {
+            rewardsReadyToRedeem++;
+            console.log(`Counting as Ready to Redeem: ${progress.reward_id}`);
+          } else if (progress.is_completed && (progress.status === "redeemed" || progress.status === "availed")) {
+            totalRewards++;
+            console.log(`Counting as Availed: ${progress.reward_id}`);
+          } else if (progress.stamps_collected > 0 && !progress.is_completed) {
+            // Only count as in progress if stamps collected but NOT completed
+            rewardsInProgress++;
+            console.log(`Counting as In Progress: ${progress.reward_id}`);
+          }
         });
 
-        if (progress.is_completed && progress.status === "ready_to_redeem") {
-          rewardsReadyToRedeem++;
-          console.log(`Counting as Ready to Redeem: ${progress.reward_id}`);
-        } else if (progress.is_completed && (progress.status === "redeemed" || progress.status === "availed")) {
-          totalRewards++;
-          console.log(`Counting as Availed: ${progress.reward_id}`);
-        } else if (progress.stamps_collected > 0 && !progress.is_completed) {
-          // Only count as in progress if stamps collected but NOT completed
-          rewardsInProgress++;
-          console.log(`Counting as In Progress: ${progress.reward_id}`);
-        }
-      });
+        stats = {
+          totalStamps,
+          totalRewards,
+          rewardsInProgress,
+          rewardsReadyToRedeem,
+        };
+        console.log("Using manual calculation:", stats);
+      }
 
       setUserProgress(progressMap);
-      setLifetimeStats({
-        totalStamps,
-        totalRewards,
-        rewardsInProgress,
-        rewardsReadyToRedeem,
-      });
+      setLifetimeStats(stats);
     } catch (error) {
       console.error("Failed to fetch user progress:", error);
       setUserProgress({});
