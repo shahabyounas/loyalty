@@ -570,29 +570,26 @@ router.post("/process-scan", async (req, res) => {
       const shouldReset = req.body.reset_progress || false;
       
       if (shouldReset && (progress.status === "ready_to_redeem" || progress.status === "redeemed" || progress.status === "availed")) {
-        // Reset the progress to start a new cycle
+        // Create a new progress record to start a new cycle instead of resetting existing one
         try {
-          const resetQuery = `
-            UPDATE user_reward_progress 
-            SET stamps_collected = 0,
-                is_completed = FALSE,
-                status = 'in_progress',
-                completed_at = NULL,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE user_id = $1 AND reward_id = $2
-            RETURNING *
-          `;
+          const requiredStamps = reward.points_cost || 10;
           
-          const resetProgress = await db.getOne(resetQuery, [dbUserId, validRewardId]);
-          if (resetProgress) {
-            progress = new UserRewardProgress(resetProgress);
-            logger.info(`Reset progress for user ${dbUserId}, reward ${validRewardId} to start new cycle`);
+          const newProgress = await UserRewardProgress.create(dbUserId, validRewardId, requiredStamps);
+          if (newProgress) {
+            progress = newProgress;
+            logger.info(`Created new progress cycle for user ${dbUserId}, reward ${validRewardId}`);
+          } else {
+            logger.error(`Failed to create new progress cycle for user ${dbUserId}, reward ${validRewardId}`);
+            return res.status(500).json({
+              success: false,
+              message: "Failed to create new reward cycle",
+            });
           }
-        } catch (resetError) {
-          logger.error(`Error resetting progress:`, resetError);
+        } catch (createError) {
+          logger.error(`Error creating new progress cycle:`, createError);
           return res.status(500).json({
             success: false,
-            message: "Failed to reset reward progress",
+            message: "Failed to create new reward cycle",
           });
         }
       } else {

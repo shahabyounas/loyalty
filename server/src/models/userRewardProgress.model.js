@@ -23,9 +23,6 @@ class UserRewardProgress {
           user_id, reward_id, stamps_required, stamps_collected, is_completed, status
         )
         VALUES ($1, $2, $3, 0, FALSE, 'in_progress')
-        ON CONFLICT (user_id, reward_id) DO UPDATE SET
-          stamps_required = EXCLUDED.stamps_required,
-          updated_at = CURRENT_TIMESTAMP
         RETURNING *
       `;
       const params = [userId, rewardId, stampsRequired];
@@ -42,7 +39,9 @@ class UserRewardProgress {
     try {
       const query = `
         SELECT * FROM user_reward_progress 
-        WHERE user_id = $1 AND reward_id = $2
+        WHERE user_id = $1 AND reward_id = $2 AND status = 'in_progress'
+        ORDER BY created_at DESC
+        LIMIT 1
       `;
       const result = await db.getOne(query, [userId, rewardId]);
       return result ? new UserRewardProgress(result) : null;
@@ -54,9 +53,23 @@ class UserRewardProgress {
 
   static async findByUserId(userId) {
     try {
+      // Get the most relevant record for each reward:
+      // 1. Latest in_progress record if exists
+      // 2. Otherwise, the latest completed record
       const query = `
-        SELECT * FROM user_reward_progress 
-        WHERE user_id = $1 
+        WITH latest_progress AS (
+          SELECT DISTINCT ON (reward_id) *
+          FROM user_reward_progress 
+          WHERE user_id = $1 
+          ORDER BY reward_id, 
+                   CASE 
+                     WHEN status = 'in_progress' THEN 1
+                     WHEN status = 'ready_to_redeem' THEN 2
+                     ELSE 3
+                   END,
+                   created_at DESC
+        )
+        SELECT * FROM latest_progress
         ORDER BY updated_at DESC
       `;
       const results = await db.getMany(query, [userId]);
@@ -67,8 +80,49 @@ class UserRewardProgress {
     }
   }
 
+  static async findAllByUserAndReward(userId, rewardId) {
+    try {
+      const query = `
+        SELECT * FROM user_reward_progress 
+        WHERE user_id = $1 AND reward_id = $2
+        ORDER BY created_at DESC
+      `;
+      const results = await db.getMany(query, [userId, rewardId]);
+      return results.map((result) => new UserRewardProgress(result));
+    } catch (error) {
+      logger.error("Error finding all user reward progress:", error);
+      throw error;
+    }
+  }
+
+  static async getUserStatistics(userId) {
+    try {
+      // Get comprehensive statistics including all historical data
+      const query = `
+        SELECT 
+          COUNT(CASE WHEN status = 'in_progress' AND stamps_collected > 0 THEN 1 END) as rewards_in_progress,
+          COUNT(CASE WHEN status = 'ready_to_redeem' THEN 1 END) as rewards_ready_to_redeem,
+          COUNT(CASE WHEN status IN ('redeemed', 'availed') THEN 1 END) as total_rewards_completed,
+          SUM(COALESCE(stamps_collected, 0)) as total_stamps_collected
+        FROM user_reward_progress 
+        WHERE user_id = $1
+      `;
+      const result = await db.getOne(query, [userId]);
+      return {
+        rewards_in_progress: parseInt(result?.rewards_in_progress || 0),
+        rewards_ready_to_redeem: parseInt(result?.rewards_ready_to_redeem || 0),
+        total_rewards_completed: parseInt(result?.total_rewards_completed || 0),
+        total_stamps_collected: parseInt(result?.total_stamps_collected || 0),
+      };
+    } catch (error) {
+      logger.error("Error getting user statistics:", error);
+      throw error;
+    }
+  }
+
   static async addStamp(userId, rewardId) {
     try {
+      // Only update the latest in_progress record for this user and reward
       const query = `
         UPDATE user_reward_progress 
         SET stamps_collected = stamps_collected + 1,
@@ -85,7 +139,7 @@ class UserRewardProgress {
               ELSE completed_at 
             END,
             updated_at = CURRENT_TIMESTAMP
-        WHERE user_id = $1 AND reward_id = $2
+        WHERE user_id = $1 AND reward_id = $2 AND status = 'in_progress'
         RETURNING *
       `;
       const result = await db.getOne(query, [userId, rewardId]);
