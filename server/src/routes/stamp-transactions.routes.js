@@ -547,7 +547,7 @@ router.post("/process-scan", async (req, res) => {
         
         logger.info(`Created new progress record for user ${dbUserId}, reward ${validRewardId}`);
       } catch (createError) {
-        logger.error(`Error creating user reward progress:`, createError);
+        console.error(`Error creating user reward progress:`, createError);
         return res.status(500).json({
           success: false,
           message: "Failed to initialize user reward progress",

@@ -675,7 +675,7 @@ export default function Home() {
     }
   }
 
-  // Get rewards by status for the modal
+  // Get rewards by status for the modal (legacy - for in-progress type modals)
   function getRewardsByStatus(status) {
     if (!Array.isArray(availableRewards)) {
       return [];
@@ -715,6 +715,55 @@ export default function Home() {
           return false;
       }
     });
+  }
+
+  // Get UserRewardProgress records by status (new - shows individual records)
+  function getProgressRecordsByStatus(status) {
+    if (!Array.isArray(availableRewards)) {
+      return [];
+    }
+    
+    const progressRecords = [];
+    
+    // Go through each reward and find matching progress records
+    availableRewards.forEach((reward) => {
+      if (!reward || !reward.id) return;
+      
+      const rewardProgressRecords = userProgressByReward[reward.id] || [];
+      
+      rewardProgressRecords.forEach((progress) => {
+        let shouldInclude = false;
+        
+        switch (status) {
+          case "in-progress":
+            shouldInclude = progress.status === 'in_progress' && progress.stamps_collected > 0;
+            break;
+          case "ready-to-redeem":
+            shouldInclude = progress.status === 'ready_to_redeem';
+            break;
+          case "availed":
+            shouldInclude = progress.status === 'redeemed' || progress.status === 'availed';
+            break;
+        }
+        
+        if (shouldInclude) {
+          // Combine progress record with reward info
+          progressRecords.push({
+            ...progress,
+            reward: reward, // Include full reward object
+            reward_name: reward.name,
+            reward_description: reward.description,
+            reward_points_required: reward.points_required,
+            reward_type: reward.type,
+            reward_discount_percentage: reward.discount_percentage,
+            reward_discount_amount: reward.discount_amount,
+          });
+        }
+      });
+    });
+    
+    console.log(`Found ${progressRecords.length} progress records for status: ${status}`, progressRecords);
+    return progressRecords;
   }
 
   return (
@@ -761,11 +810,12 @@ export default function Home() {
         onClose={() => setInProgressModalOpen(false)}
         modalType={modalType}
         modalTitle={modalTitle}
-        inProgressRewards={getRewardsByStatus(modalType)}
+        inProgressRewards={modalType === 'in-progress' ? getRewardsByStatus(modalType) : getProgressRecordsByStatus(modalType)}
         userProgress={userProgress}
         userProgressByReward={userProgressByReward}
         onAddStamp={handleInProgressAddStamp}
         onRedeemReward={handleInProgressRedeemReward}
+        showProgressRecords={modalType !== 'in-progress'} // Flag to indicate we're showing progress records, not rewards
       />
     </div>
   );
