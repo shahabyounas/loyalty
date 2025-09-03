@@ -25,6 +25,7 @@ export default function Home() {
   const [availableRewards, setAvailableRewards] = useState([]);
   const [rewardsLoading, setRewardsLoading] = useState(false);
   const [userProgress, setUserProgress] = useState({});
+  const [userProgressByReward, setUserProgressByReward] = useState({}); // New: grouped by reward_id
   const [progressLoading, setProgressLoading] = useState(false);
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState(null);
@@ -66,11 +67,22 @@ export default function Home() {
     setProgressLoading(true);
     try {
       const response = await userRewardProgressAPI.getUserProgress();
-      const progressMap = {};
-
-      // Build progress map from the data
+      
+      // Group progress records by reward_id, allowing multiple records per reward
+      const progressByReward = {};
+      const progressMap = {}; // Keep this for backward compatibility
+      
       (response.data || []).forEach((progress) => {
-        progressMap[progress.reward_id] = progress;
+        if (!progressByReward[progress.reward_id]) {
+          progressByReward[progress.reward_id] = [];
+        }
+        progressByReward[progress.reward_id].push(progress);
+        
+        // For backward compatibility, keep the latest in_progress or latest record
+        if (!progressMap[progress.reward_id] || 
+            (progress.status === 'in_progress' && progressMap[progress.reward_id].status !== 'in_progress')) {
+          progressMap[progress.reward_id] = progress;
+        }
       });
 
       // Use backend-calculated statistics if available, otherwise calculate manually
@@ -93,25 +105,12 @@ export default function Home() {
         (response.data || []).forEach((progress) => {
           totalStamps += progress.stamps_collected || 0;
 
-          // Debug logging for progress counting
-          console.log(`Progress item:`, {
-            reward_id: progress.reward_id,
-            stamps_collected: progress.stamps_collected,
-            stamps_required: progress.stamps_required,
-            is_completed: progress.is_completed,
-            status: progress.status
-          });
-
-          if (progress.is_completed && progress.status === "ready_to_redeem") {
+          if (progress.status === "ready_to_redeem") {
             rewardsReadyToRedeem++;
-            console.log(`Counting as Ready to Redeem: ${progress.reward_id}`);
-          } else if (progress.is_completed && (progress.status === "redeemed" || progress.status === "availed")) {
+          } else if (progress.status === "redeemed" || progress.status === "availed") {
             totalRewards++;
-            console.log(`Counting as Availed: ${progress.reward_id}`);
-          } else if (progress.stamps_collected > 0 && !progress.is_completed) {
-            // Only count as in progress if stamps collected but NOT completed
+          } else if (progress.status === "in_progress" && progress.stamps_collected > 0) {
             rewardsInProgress++;
-            console.log(`Counting as In Progress: ${progress.reward_id}`);
           }
         });
 
@@ -124,11 +123,13 @@ export default function Home() {
         console.log("Using manual calculation:", stats);
       }
 
-      setUserProgress(progressMap);
+      setUserProgress(progressMap); // For backward compatibility
+      setUserProgressByReward(progressByReward); // New grouped structure
       setLifetimeStats(stats);
     } catch (error) {
       console.error("Failed to fetch user progress:", error);
       setUserProgress({});
+      setUserProgressByReward({});
     } finally {
       setProgressLoading(false);
     }
@@ -558,7 +559,13 @@ export default function Home() {
                     className="home-add-stamp-button"
                     onClick={() => handleAddStamp(reward.id, reward.name)}
                   >
-                    📱 Grab Stamp
+                    {progress ? 
+                      (progress.is_completed ? 
+                        "🔄 Start New Collection" : 
+                        `📱 Add Stamp (${stampsCollected}/${stampsRequired})`
+                      ) : 
+                      "🌟 Start Collecting"
+                    }
                   </button>
                 </div>
               </div>
@@ -680,28 +687,30 @@ export default function Home() {
         return false; // Skip invalid reward objects
       }
       
-      const progress = userProgress[reward.id];
-      if (!progress) {
+      const progressRecords = userProgressByReward[reward.id] || [];
+      if (progressRecords.length === 0) {
         return false; // No progress means not in any status
       }
       
       // Get required stamps from points_required field (this is the actual stamps requirement)
       const stampsRequired = reward.points_required || 10; // points_required contains the required stamps count
       
-      const stampsCollected = progress.stamps_collected || 0;
-      
       switch (status) {
         case "in-progress":
-          // Has started collecting but hasn't reached requirement yet
-          return stampsCollected > 0 && stampsCollected < stampsRequired;
+          // Has at least one in_progress record
+          return progressRecords.some(progress => 
+            progress.status === 'in_progress' && progress.stamps_collected > 0
+          );
         case "ready-to-redeem":
-          // Has collected all required stamps but not redeemed yet
-          return stampsCollected >= stampsRequired && 
-                 progress.status !== "redeemed" && 
-                 progress.status !== "availed";
+          // Has at least one ready_to_redeem record
+          return progressRecords.some(progress => 
+            progress.status === 'ready_to_redeem'
+          );
         case "availed":
-          // Has been redeemed
-          return progress.status === "redeemed" || progress.status === "availed";
+          // Has at least one redeemed/availed record
+          return progressRecords.some(progress => 
+            progress.status === 'redeemed' || progress.status === 'availed'
+          );
         default:
           return false;
       }
@@ -754,6 +763,7 @@ export default function Home() {
         modalTitle={modalTitle}
         inProgressRewards={getRewardsByStatus(modalType)}
         userProgress={userProgress}
+        userProgressByReward={userProgressByReward}
         onAddStamp={handleInProgressAddStamp}
         onRedeemReward={handleInProgressRedeemReward}
       />

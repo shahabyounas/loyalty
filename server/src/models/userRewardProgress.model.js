@@ -53,24 +53,11 @@ class UserRewardProgress {
 
   static async findByUserId(userId) {
     try {
-      // Get the most relevant record for each reward:
-      // 1. Latest in_progress record if exists
-      // 2. Otherwise, the latest completed record
+      // Return all records, allowing frontend to handle multiple records per reward
       const query = `
-        WITH latest_progress AS (
-          SELECT DISTINCT ON (reward_id) *
-          FROM user_reward_progress 
-          WHERE user_id = $1 
-          ORDER BY reward_id, 
-                   CASE 
-                     WHEN status = 'in_progress' THEN 1
-                     WHEN status = 'ready_to_redeem' THEN 2
-                     ELSE 3
-                   END,
-                   created_at DESC
-        )
-        SELECT * FROM latest_progress
-        ORDER BY updated_at DESC
+        SELECT * FROM user_reward_progress 
+        WHERE user_id = $1 
+        ORDER BY reward_id, created_at DESC
       `;
       const results = await db.getMany(query, [userId]);
       return results.map((result) => new UserRewardProgress(result));

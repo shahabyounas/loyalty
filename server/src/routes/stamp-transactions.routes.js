@@ -564,13 +564,13 @@ router.post("/process-scan", async (req, res) => {
       });
     }
 
-    // Check if already completed and handle reset logic
+    // Handle UserRewardProgress lifecycle
     if (progress.stamps_collected >= progress.stamps_required) {
-      // Check if this is a reset request
+      // Current progress is already completed
       const shouldReset = req.body.reset_progress || false;
       
-      if (shouldReset && (progress.status === "ready_to_redeem" || progress.status === "redeemed" || progress.status === "availed")) {
-        // Create a new progress record to start a new cycle instead of resetting existing one
+      if (shouldReset) {
+        // User wants to start a new cycle - create new UserRewardProgress
         try {
           const requiredStamps = reward.points_cost || 10;
           
@@ -593,10 +593,10 @@ router.post("/process-scan", async (req, res) => {
           });
         }
       } else {
-        // Not a reset request and already completed
-        return res.status(400).json({
-          success: false,
-          message: "Reward already completed",
+        // Not a reset request - inform user they can start a new cycle
+        return res.status(200).json({
+          success: true,
+          message: "Reward already completed. Scan again to start a new collection cycle.",
           data: {
             customer_name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown Customer',
             reward_name: reward.name || 'Unknown Reward',
@@ -604,6 +604,7 @@ router.post("/process-scan", async (req, res) => {
             stamps_required: progress.stamps_required,
             is_completed: true,
             status: progress.status || 'completed',
+            can_start_new_cycle: true,
           },
         });
       }
