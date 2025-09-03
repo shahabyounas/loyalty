@@ -5,6 +5,7 @@ const {
   requireAdmin,
 } = require("../middleware/supabase-auth.middleware");
 const { logger } = require("../utils/logger");
+const { db } = require("../config/database");
 const User = require("../models/user.model");
 const Reward = require("../models/reward.model");
 const { UserRewardProgress } = require("../models/userRewardProgress.model");
@@ -522,8 +523,8 @@ router.post("/process-scan", async (req, res) => {
       logger.info(`No existing progress found. Creating new progress for user ${dbUserId}, reward ${validRewardId}`);
       try {
         
-        const requiredStamps = reward.points_required || reward.stamps_required || 10;
-        logger.info(`requiredStamps ${requiredStamps}, type ${typeof requiredStamps}`);
+        const requiredStamps = reward.points_cost || 10; // Use points_cost field from reward model
+        logger.info(`requiredStamps ${requiredStamps}, type ${typeof requiredStamps}, from reward.points_cost: ${reward.points_cost}`);
         
         // Validate required stamps
         if (typeof requiredStamps !== 'number' || requiredStamps <= 0) {
@@ -649,12 +650,26 @@ router.post("/process-scan", async (req, res) => {
     }
 
     // Update completion status if completed with error handling
-    if (updatedProgress.is_completed && updatedProgress.status !== "ready_to_redeem") {
+    if (updatedProgress.stamps_collected >= updatedProgress.stamps_required) {
       try {
-        updatedProgress.status = "ready_to_redeem";
-        updatedProgress.completed_at = new Date();
-        await updatedProgress.save();
-        logger.info(`Reward ${validRewardId} completed for user ${dbUserId}`);
+        // Check if status needs to be updated to ready_to_redeem
+        if (updatedProgress.status !== "ready_to_redeem" && updatedProgress.status !== "redeemed" && updatedProgress.status !== "availed") {
+          const updateQuery = `
+            UPDATE user_reward_progress 
+            SET status = 'ready_to_redeem', 
+                is_completed = TRUE,
+                completed_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = $1 AND reward_id = $2
+            RETURNING *
+          `;
+          
+          const updated = await db.getOne(updateQuery, [dbUserId, validRewardId]);
+          if (updated) {
+            updatedProgress = new UserRewardProgress(updated);
+            logger.info(`Reward ${validRewardId} status updated to ready_to_redeem for user ${dbUserId}`);
+          }
+        }
       } catch (completionError) {
         logger.error(`Error updating completion status:`, completionError);
         // Don't fail the request for this, just log it and continue

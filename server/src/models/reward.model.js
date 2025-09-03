@@ -14,7 +14,7 @@ class Reward {
     this.tenant_id = data.tenant_id;
     this.name = data.name;
     this.description = data.description;
-    this.points_cost = data.points_cost;
+    this.points_cost = data.points_cost;  // These are required Stamps to redeem
     this.discount_amount = parseNumeric(data.discount_amount);
     this.discount_percentage = parseNumeric(data.discount_percentage);
     this.reward_type = data.reward_type || "discount";

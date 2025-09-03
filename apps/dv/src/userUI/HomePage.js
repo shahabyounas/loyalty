@@ -392,26 +392,42 @@ export default function Home() {
           {availableRewards.map((reward) => {
             const progress = userProgress[reward.id];
             const stampsCollected = progress?.stamps_collected || 0;
-            const stampsRequired = reward.stamps_required || 10;
+            
+            // Get required stamps from points_required field (this is the actual stamps requirement)
+            const stampsRequired = reward.points_required || 10; // points_required contains the required stamps count
+            
             const isCompleted = progress?.is_completed || false;
             const status = progress?.status || "new";
             const completionPercentage = progress
               ? (stampsCollected / stampsRequired) * 100
               : 0;
 
-            // Determine reward state for styling
+            // Debug logging to see the actual values
+            if (reward.id && progress) {
+              console.log(`Reward ${reward.name}:`, {
+                reward_points_required: reward.points_required, // This is the actual stamps requirement
+                calculated_stampsRequired: stampsRequired,
+                progress_stamps_collected: progress.stamps_collected,
+                progress_is_completed: progress.is_completed,
+                progress_status: progress.status,
+                reward_object: reward
+              });
+            }
+
+            // Determine reward state based on UserRewardProgress
+            // Rewards are business entities - they only show Available or In Progress
             let rewardState = "new";
             let rewardDescription = "Available";
             
             if (progress) {
-              if (isCompleted && (status === "ready_to_redeem" || status === "redeemed")) {
-                // Reward is completed or redeemed - show as normal reward so user can collect again
-                rewardState = "new";
-                rewardDescription = "Available";
-              } else if (stampsCollected > 0 && !isCompleted) {
+              if (progress.stamps_collected > 0 && stampsCollected < stampsRequired) {
+                // User has started collecting stamps but hasn't reached the requirement yet
                 rewardState = "in-progress";
                 rewardDescription = "In Progress";
               }
+              // Note: We don't show "Ready to Redeem" on reward cards
+              // Users redeem UserRewardProgress items, not Reward cards directly
+              // Completed rewards automatically become "Available" again for new cycles
             }
 
             return (
@@ -465,15 +481,13 @@ export default function Home() {
                     </div>
                   )}
 
-                  {/* Remove completed reward badge - show as normal reward */}
-
                   <div className="home-reward-details">
                     <div className="home-reward-points">
                       <span className="home-points-label">
                         Stamps Needed:
                       </span>
                       <span className="home-points-value">
-                        {reward.points_required || reward.stamps_required || 10}
+                        {stampsRequired}
                       </span>
                     </div>
 
@@ -506,14 +520,11 @@ export default function Home() {
                 </div>
 
                 <div className="home-reward-actions">
-                  {/* Only show stamp collection button - no redeem in main section */}
                   <button
                     className="home-add-stamp-button"
                     onClick={() => handleAddStamp(reward.id, reward.name)}
                   >
-                    {rewardState === "new"
-                      ? "📱 Grab Stamp"
-                      : "📱 Grab Stamp"}
+                    📱 Grab Stamp
                   </button>
                 </div>
               </div>
@@ -630,19 +641,33 @@ export default function Home() {
     }
     
     return availableRewards.filter((reward) => {
+      console.log("Filtering reward for status:", status, reward);
       if (!reward || !reward.id) {
         return false; // Skip invalid reward objects
       }
       
       const progress = userProgress[reward.id];
+      if (!progress) {
+        return false; // No progress means not in any status
+      }
+      
+      // Get required stamps from points_required field (this is the actual stamps requirement)
+      const stampsRequired = reward.points_required || 10; // points_required contains the required stamps count
+      
+      const stampsCollected = progress.stamps_collected || 0;
       
       switch (status) {
         case "in-progress":
-          return progress && progress.stamps_collected > 0 && !progress.is_completed;
+          // Has started collecting but hasn't reached requirement yet
+          return stampsCollected > 0 && stampsCollected < stampsRequired;
         case "ready-to-redeem":
-          return progress && progress.is_completed && progress.status === "ready_to_redeem";
+          // Has collected all required stamps but not redeemed yet
+          return stampsCollected >= stampsRequired && 
+                 progress.status !== "redeemed" && 
+                 progress.status !== "availed";
         case "availed":
-          return progress && progress.is_completed && progress.status === "redeemed";
+          // Has been redeemed
+          return progress.status === "redeemed" || progress.status === "availed";
         default:
           return false;
       }
