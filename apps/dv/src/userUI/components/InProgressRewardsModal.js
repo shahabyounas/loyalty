@@ -8,6 +8,7 @@ const InProgressRewardsModal = ({
   modalTitle = "Rewards",
   inProgressRewards = [],
   userProgress = {},
+  userProgressByReward = {}, // New: multiple records per reward
   onAddStamp,
   onRedeemReward,
 }) => {
