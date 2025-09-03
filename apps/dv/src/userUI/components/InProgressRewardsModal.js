@@ -92,21 +92,33 @@ const InProgressRewardsModal = ({
                 
                 const progress = userProgress[reward.id];
                 const stampsCollected = progress?.stamps_collected || 0;
-                const stampsRequired =
-                  reward.points_required || reward.stamps_required || 10;
-                const isCompleted = progress?.is_completed || false;
+                
+                // Get required stamps from points_required field (this is the actual stamps requirement)
+                const stampsRequired = reward.points_required || 10; // points_required contains the required stamps count
+                
                 const status = progress?.status || "in_progress";
                 const completionPercentage = progress
                   ? (stampsCollected / stampsRequired) * 100
                   : 0;
 
-                // Determine reward state
+                // Determine reward state based on UserRewardProgress - stamps collected vs required
                 let rewardState = "in_progress";
-                if (isCompleted && status === "ready_to_redeem") {
-                  rewardState = "ready";
-                } else if (isCompleted && status === "redeemed") {
-                  rewardState = "redeemed";
+                if (stampsCollected >= stampsRequired) {
+                  if (status === "redeemed" || status === "availed") {
+                    rewardState = "redeemed";
+                  } else {
+                    rewardState = "ready";
+                  }
                 }
+
+                // Debug logging for UserRewardProgress state
+                console.log(`UserRewardProgress - ${reward.name}:`, {
+                  stampsCollected,
+                  stampsRequired,
+                  status,
+                  calculatedState: rewardState,
+                  completionPercentage: Math.round(completionPercentage)
+                });
 
                 return (
                   <div
