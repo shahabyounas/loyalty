@@ -73,7 +73,71 @@ export const AppRoutes = () => {
           }
         />
 
-        {/* ===== ADMIN FRONTEND ===== */}
+        {/* ===== ADMIN FRONTEND ROUTES ===== */}
+
+        {/* Admin Dashboard Sub-routes - All at root level for admin users */}
+        <Route
+          path="/users"
+          element={
+            <AdminRoute>
+              <Suspense fallback={<RouteLoading />}>
+                <LazyAdminDashboard />
+              </Suspense>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/stores"
+          element={
+            <AdminRoute>
+              <Suspense fallback={<RouteLoading />}>
+                <LazyAdminDashboard />
+              </Suspense>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/rewards"
+          element={
+            <AdminRoute>
+              <Suspense fallback={<RouteLoading />}>
+                <LazyAdminDashboard />
+              </Suspense>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/qr-scanner"
+          element={
+            <AdminRoute>
+              <Suspense fallback={<RouteLoading />}>
+                <LazyAdminDashboard />
+              </Suspense>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/stamp-transactions"
+          element={
+            <AdminRoute>
+              <Suspense fallback={<RouteLoading />}>
+                <LazyAdminDashboard />
+              </Suspense>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <AdminRoute>
+              <Suspense fallback={<RouteLoading />}>
+                <LazyAdminDashboard />
+              </Suspense>
+            </AdminRoute>
+          }
+        />
+
+        {/* ===== LEGACY ADMIN ROUTES (for backward compatibility) ===== */}
 
         {/* Admin Dashboard - Protected route with strict admin permissions */}
         <Route

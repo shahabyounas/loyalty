@@ -36,7 +36,7 @@ const HamburgerMenu = () => {
   };
 
   const handleAdminClick = () => {
-    navigate("/admin");
+    navigate("/");
     setIsOpen(false);
   };
 

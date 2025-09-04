@@ -79,11 +79,11 @@ const AdminDashboard = () => {
   // Extract menu from URL path or use default
   const getMenuFromPath = () => {
     const path = location.pathname;
-    if (path === '/admin' || path === '/admin/') {
+    if (path === '/' || path === '') {
       return 'dashboard';
     }
-    // Extract menu from /admin/menuname
-    const menuMatch = path.match(/^\/admin\/([^\/]+)/);
+    // Extract menu from /menuname for admin users at root
+    const menuMatch = path.match(/^\/([^\/]+)/);
     return menuMatch ? menuMatch[1] : 'dashboard';
   };
 
@@ -119,7 +119,7 @@ const AdminDashboard = () => {
     
     // If URL had invalid menu, redirect to dashboard
     if (!menuItem && menuFromUrl !== 'dashboard') {
-      navigate('/admin', { replace: true });
+      navigate('/', { replace: true });
     }
     
     // Load sidebar state
@@ -259,7 +259,7 @@ const AdminDashboard = () => {
       }
       
       // Update URL to persist menu selection
-      const newPath = menuId === 'dashboard' ? '/admin' : `/admin/${menuId}`;
+      const newPath = menuId === 'dashboard' ? '/' : `/${menuId}`;
       navigate(newPath, { replace: true });
       
       setActiveMenu(menuId);

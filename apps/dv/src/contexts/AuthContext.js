@@ -199,8 +199,8 @@ export const AuthProvider = ({ children }) => {
       
       // Role-based redirection
       if (isAdmin(mergedUser)) {
-        console.log('Redirecting admin user to admin dashboard');
-        navigate('/admin');
+        console.log('Redirecting admin user to main dashboard');
+        navigate('/');
       }
       
       return { success: true, user: mergedUser };
@@ -293,8 +293,8 @@ export const AuthProvider = ({ children }) => {
       
       // Role-based redirection
       if (isAdmin(mergedUser)) {
-        console.log('Redirecting admin user to admin dashboard');
-        navigate('/admin');
+        console.log('Redirecting admin user to main dashboard');
+        navigate('/');
       }
       
       return { success: true, user: mergedUser };

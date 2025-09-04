@@ -2,20 +2,13 @@ import React, { useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import * as EndUser from "../userUI";
+import * as Admin from "../adminUI";
 import LandingPage from "./landing/LandingPage";
 
 // Main Route Component - Conditionally renders based on auth status
 const MainRoute = () => {
-  const { isAuthenticated, isLoading, user, isAdmin } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const navigate = useNavigate();
-
-  // Redirect admin users to admin dashboard
-  useEffect(() => {
-    if (isAuthenticated && user && user.role && ['super_admin', 'admin', 'tenant_admin', 'store_manager', 'staff', 'manager'].includes(user.role)) {
-      console.log('Redirecting admin user from main route to admin dashboard');
-      navigate('/admin');
-    }
-  }, [isAuthenticated, user, navigate]);
 
   // Show loading spinner while checking authentication
   if (isLoading) {
@@ -27,17 +20,13 @@ const MainRoute = () => {
     );
   }
 
-  // If authenticated and is admin user, don't render anything (redirect will happen)
+  // If authenticated and is admin/staff user, show admin dashboard directly
   if (isAuthenticated && user && user.role && ['super_admin', 'admin', 'tenant_admin', 'store_manager', 'staff', 'manager'].includes(user.role)) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Redirecting to admin dashboard...</p>
-      </div>
-    );
+    console.log('Rendering admin dashboard for admin/staff user on main route');
+    return <Admin.AdminDashboard />;
   }
 
-  // If authenticated, show home page (for regular users)
+  // If authenticated and is regular customer, show customer home page
   if (isAuthenticated) {
     return <EndUser.Home />;
   }
