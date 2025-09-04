@@ -577,6 +577,11 @@ export default function Home() {
   }
 
   function handleAddStamp(rewardId, rewardName) {
+    // Ensure rewardId is a string (UUID)
+    if (rewardId && typeof rewardId !== 'string') {
+      rewardId = String(rewardId);
+    }
+    
     // Check if this is a completed reward that user wants to collect again
     const progress = userProgress[rewardId];
     const isCompletedReward = progress && progress.is_completed;
@@ -628,6 +633,11 @@ export default function Home() {
   }
 
   function handleInProgressAddStamp(rewardId, rewardName) {
+    // Ensure rewardId is a string (UUID)
+    if (rewardId && typeof rewardId !== 'string') {
+      rewardId = String(rewardId);
+    }
+    
     // Close the modal and open QR modal for this reward
     setInProgressModalOpen(false);
     handleAddStamp(rewardId, rewardName);
@@ -645,9 +655,19 @@ export default function Home() {
       const allProgressRecords = Object.values(userProgressByReward).flat();
       const targetProgress = allProgressRecords.find(p => p.id === progressId);
       rewardId = targetProgress?.reward_id;
+      
+      // Ensure rewardId is a string (UUID)
+      if (rewardId && typeof rewardId !== 'string') {
+        rewardId = String(rewardId);
+      }
     } else {
       rewardId = idValue;
       progressId = null;
+      
+      // Ensure rewardId is a string (UUID)
+      if (rewardId && typeof rewardId !== 'string') {
+        rewardId = String(rewardId);
+      }
     }
     
     // Find the reward to get its details
