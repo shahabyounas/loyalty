@@ -40,7 +40,7 @@ const Settings = () => {
     dateFormat: "DD/MM/YYYY",
     
     // Security Settings
-    sessionTimeout: 24,
+    sessionTimeout: 168, // 7 days (24h * 7) to match JWT access token
     passwordExpiry: 90,
     twoFactorAuth: false
   });
