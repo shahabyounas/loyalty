@@ -235,9 +235,9 @@ const ProgressDetailsModal = ({ progress, onClose }) => {
                         </td>
                         <td>
                           <div className="staff-info">
-                            {scan.staff_name ? (
+                            {scan.scanned_by_name ? (
                               <>
-                                <div className="staff-name">{scan.staff_name}</div>
+                                <div className="staff-name">{scan.scanned_by_name}</div>
                                 <div className="staff-role">{scan.staff_role || 'Staff'}</div>
                               </>
                             ) : (
@@ -247,7 +247,7 @@ const ProgressDetailsModal = ({ progress, onClose }) => {
                         </td>
                         <td>
                           <span className="store-name">
-                            {scan.store_name || "Unknown Store"}
+                            {scan.store_name || "Diamond Store"}
                           </span>
                         </td>
                       </tr>

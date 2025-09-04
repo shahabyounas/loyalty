@@ -1,11 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { QRCodeSVG } from "qrcode.react";
 import ParticleBackground from "../../../../libs/animations/ParticleBackground";
 import {
-  vapeAvatars,
   getAvatarById,
-  getRandomAvatar,
 } from "../assets/avatars/vape-avatars";
 import AvatarSelector from "../shared/components/AvatarSelector";
 import {
@@ -94,7 +91,6 @@ export default function Home() {
           rewardsInProgress: response.statistics.rewards_in_progress,
           rewardsReadyToRedeem: response.statistics.rewards_ready_to_redeem,
         };
-        console.log("Using backend statistics:", stats);
       } else {
         // Fallback to manual calculation (for backwards compatibility)
         let totalStamps = 0;
@@ -120,14 +116,12 @@ export default function Home() {
           rewardsInProgress,
           rewardsReadyToRedeem,
         };
-        console.log("Using manual calculation:", stats);
       }
 
       setUserProgress(progressMap); // For backward compatibility
       setUserProgressByReward(progressByReward); // New grouped structure
       setLifetimeStats(stats);
     } catch (error) {
-      console.error("Failed to fetch user progress:", error);
       setUserProgress({});
       setUserProgressByReward({});
     } finally {
@@ -437,18 +431,6 @@ export default function Home() {
               ? (stampsCollected / stampsRequired) * 100
               : 0;
 
-            // Debug logging to see the actual values
-            if (reward.id && progress) {
-              console.log(`Reward ${reward.name}:`, {
-                reward_points_required: reward.points_required, // This is the actual stamps requirement
-                calculated_stampsRequired: stampsRequired,
-                progress_stamps_collected: progress.stamps_collected,
-                progress_is_completed: progress.is_completed,
-                progress_status: progress.status,
-                reward_object: reward
-              });
-            }
-
             // Determine reward state based on UserRewardProgress
             // Rewards are business entities - they only show Available or In Progress
             let rewardState = "new";
@@ -620,17 +602,6 @@ export default function Home() {
     fetchUserProgress();
   }
 
-  function handleCancelTransaction() {
-    // No need to cancel anything since no transaction was created
-    handleCloseQRModal();
-  }
-
-  function handleRedeemReward(rewardId) {
-    // TODO: Implement reward redemption
-    console.log("Redeeming reward:", rewardId);
-    // This would typically call an API to redeem the reward
-    // and update the user's points/status
-  }
 
   function handleInProgressAddStamp(rewardId, rewardName) {
     // Ensure rewardId is a string (UUID)
@@ -721,7 +692,6 @@ export default function Home() {
     }
     
     return availableRewards.filter((reward) => {
-      console.log("Filtering reward for status:", status, reward);
       if (!reward || !reward.id) {
         return false; // Skip invalid reward objects
       }
@@ -730,9 +700,7 @@ export default function Home() {
       if (progressRecords.length === 0) {
         return false; // No progress means not in any status
       }
-      
-      // Get required stamps from points_required field (this is the actual stamps requirement)
-      const stampsRequired = reward.points_required || 10; // points_required contains the required stamps count
+
       
       switch (status) {
         case "in-progress":
@@ -801,7 +769,7 @@ export default function Home() {
       });
     });
     
-    console.log(`Found ${progressRecords.length} progress records for status: ${status}`, progressRecords);
+
     return progressRecords;
   }
 

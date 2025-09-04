@@ -423,8 +423,27 @@ router.post("/process-scan", authenticateUser, async (req, res) => {
     // Get the authenticated admin/staff user from the middleware
     const authenticatedUser = req.user;
     
+    // Get the database user record for the authenticated staff
+    let staffDbUser;
+    try {
+      staffDbUser = await User.findByAuthUserId(authenticatedUser.id);
+      if (!staffDbUser) {
+        logger.error(`Staff user not found in database for auth ID: ${authenticatedUser.id}`);
+        return res.status(403).json({
+          success: false,
+          message: "Staff user not found in system.",
+        });
+      }
+    } catch (staffError) {
+      logger.error(`Error finding staff user by auth ID ${authenticatedUser.id}:`, staffError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to verify staff user information",
+      });
+    }
+    
     // Validate that the authenticated user has appropriate role
-    if (!authenticatedUser || !['staff', 'store_manager', 'tenant_admin', 'super_admin'].includes(authenticatedUser.role)) {
+    if (!staffDbUser || !['staff', 'store_manager', 'tenant_admin', 'super_admin'].includes(staffDbUser.role)) {
       return res.status(403).json({
         success: false,
         message: "Access denied. Only staff members can scan QR codes.",
@@ -450,11 +469,10 @@ router.post("/process-scan", authenticateUser, async (req, res) => {
     const sanitizedUserId = user_id.trim();
     const validRewardId = reward_id.trim();
     
-    // Use the authenticated user as the scanner (no need to validate or look up)
-    const staffUserId = authenticatedUser.internalUserId; // This is the database user ID
-    const staffAuthId = authenticatedUser.id; // This is the Supabase auth ID
+    // Use the authenticated staff database user ID
+    const staffUserId = staffDbUser.id; // This is the database user ID
     
-    logger.info(`Scan initiated by staff: ${authenticatedUser.email} (ID: ${staffUserId}, Auth: ${staffAuthId})`);
+    logger.info(`Scan initiated by staff: ${staffDbUser.email} (DB ID: ${staffUserId}, Auth ID: ${authenticatedUser.id})`);
 
     // Get user by Supabase auth ID with comprehensive error handling
     let user;
@@ -582,7 +600,7 @@ router.post("/process-scan", authenticateUser, async (req, res) => {
               );
               
               if (scanRecord) {
-                logger.info(`Redemption scan history recorded: ${scanRecord.id} for progress ${redeemedProgress.id}, scanned by staff: ${authenticatedUser.email}`);
+                logger.info(`Redemption scan history recorded: ${scanRecord.id} for progress ${redeemedProgress.id}, scanned by staff: ${staffDbUser.email} (ID: ${staffUserId})`);
               }
             } catch (scanHistoryError) {
               // Don't fail the main request if scan history fails
@@ -783,11 +801,12 @@ router.post("/process-scan", authenticateUser, async (req, res) => {
         store_id || null, // store_id
         1, // stamps_added
         stampsBeforeScan, // stamps_before_scan
-        updatedProgress.stamps_collected // stamps_after_scan
+        updatedProgress.stamps_collected, // stamps_after_scan
+        "stamp_collection" // action_type
       );
       
       if (scanRecord) {
-        logger.info(`Scan history recorded: ${scanRecord.id} for progress ${progress.id}, scanned by staff: ${authenticatedUser.email}`);
+        logger.info(`Scan history recorded: ${scanRecord.id} for progress ${progress.id}, scanned by staff: ${staffDbUser.email} (ID: ${staffUserId})`);
       }
     } catch (scanHistoryError) {
       // Don't fail the main request if scan history fails, just log it
@@ -841,8 +860,27 @@ router.post("/process-redemption", authenticateUser, async (req, res) => {
     // Get the authenticated admin/staff user from the middleware
     const authenticatedUser = req.user;
     
+    // Get the database user record for the authenticated staff
+    let staffDbUser;
+    try {
+      staffDbUser = await User.findByAuthUserId(authenticatedUser.id);
+      if (!staffDbUser) {
+        logger.error(`Staff user not found in database for auth ID: ${authenticatedUser.id}`);
+        return res.status(403).json({
+          success: false,
+          message: "Staff user not found in system.",
+        });
+      }
+    } catch (staffError) {
+      logger.error(`Error finding staff user by auth ID ${authenticatedUser.id}:`, staffError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to verify staff user information",
+      });
+    }
+    
     // Validate that the authenticated user has appropriate role
-    if (!authenticatedUser || !['staff', 'store_manager', 'tenant_admin', 'super_admin'].includes(authenticatedUser.role)) {
+    if (!staffDbUser || !['staff', 'store_manager', 'tenant_admin', 'super_admin'].includes(staffDbUser.role)) {
       return res.status(403).json({
         success: false,
         message: "Access denied. Only staff members can process redemptions.",
@@ -864,28 +902,13 @@ router.post("/process-redemption", authenticateUser, async (req, res) => {
       });
     }
 
-    // Validate required fields with type checking
-    if (!user_id || typeof user_id !== 'string' || user_id.trim() === '') {
-      return res.status(400).json({
-        success: false,
-        message: "Valid user_id is required",
-      });
-    }
-
-    if (!reward_id || typeof reward_id !== 'string' || reward_id.trim() === '') {
-      return res.status(400).json({
-        success: false,
-        message: "Valid reward_id is required",
-      });
-    }
-
     const sanitizedUserId = user_id.trim();
     const validRewardId = reward_id.trim();
     
-    // Use the authenticated user as the scanner
-    const staffUserId = authenticatedUser.internalUserId;
+    // Use the authenticated staff database user ID
+    const staffUserId = staffDbUser.id; // This is the database user ID
     
-    logger.info(`Redemption initiated by staff: ${authenticatedUser.email} (ID: ${staffUserId})`);
+    logger.info(`Redemption initiated by staff: ${staffDbUser.email} (DB ID: ${staffUserId}, Auth ID: ${authenticatedUser.id})`);
 
     // Get user by Supabase auth ID
     let user;
@@ -1008,7 +1031,7 @@ router.post("/process-redemption", authenticateUser, async (req, res) => {
       );
       
       if (scanRecord) {
-        logger.info(`Redemption scan history recorded: ${scanRecord.id} for progress ${progress.id}, scanned by staff: ${authenticatedUser.email}`);
+        logger.info(`Redemption scan history recorded: ${scanRecord.id} for progress ${progress.id}, scanned by staff: ${staffDbUser.email} (ID: ${staffUserId})`);
       }
     } catch (scanHistoryError) {
       // Don't fail the main request if scan history fails
