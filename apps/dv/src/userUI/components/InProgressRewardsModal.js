@@ -57,9 +57,10 @@ const InProgressRewardsModal = ({
     }
   };
 
-  const handleRedeemReward = (rewardId, rewardName) => {
+  const handleRedeemReward = (rewardId, rewardName, type = 'reward') => {
+    console.log('🎯 InProgressRewardsModal handleRedeemReward called with:', { rewardId, rewardName, type });
     if (onRedeemReward) {
-      onRedeemReward(rewardId, rewardName);
+      onRedeemReward(rewardId, rewardName, type);
     }
   };
 
