@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [clearAuthData, clearAuthErrors, clearLockout, navigate]);
 
-  // Simple initialization - only run once on mount
+  // Enhanced initialization with persistent session support
   useEffect(() => {
     let mounted = true;
 
@@ -120,23 +120,36 @@ export const AuthProvider = ({ children }) => {
       try {
         loadLockoutState();
         
-        const token = tokenStorage.getToken();
-        if (token && isTokenValid(token)) {
-          // Extract user data from token
-          const tokenUser = getUserFromToken(token);
-          if (tokenUser && mounted) {
-            setUser(tokenUser);
-            setIsAuthenticated(true);
-            console.log("User authenticated:", tokenUser.email);
+        // Initialize cross-tab token synchronization
+        tokenStorage.syncTokensAcrossTabs();
+        
+        // Check for valid session (access token or refresh token)
+        if (tokenStorage.hasValidSession()) {
+          console.log("Valid session found, attempting to restore...");
+          
+          const token = tokenStorage.getToken();
+          if (token && isTokenValid(token)) {
+            // We have a valid access token
+            const tokenUser = getUserFromToken(token);
+            if (tokenUser && mounted) {
+              setUser(tokenUser);
+              setIsAuthenticated(true);
+              console.log("Session restored from access token:", tokenUser.email);
+            } else {
+              console.warn("Token valid but no user data found");
+              if (mounted) {
+                await attemptSessionRestore();
+              }
+            }
           } else {
-            console.warn("Token valid but no user data found");
+            // Access token invalid, try refresh token
             if (mounted) {
-              clearAuthData();
+              await attemptSessionRestore();
             }
           }
         } else {
-          // Token is missing or invalid - just clear data, don't show errors on startup
-          console.log("No valid token found");
+          // No valid session found
+          console.log("No valid session found");
           if (mounted) {
             clearAuthData();
           }
@@ -153,12 +166,67 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
+    // Helper function to restore session from refresh token
+    async function attemptSessionRestore() {
+      try {
+        const refreshToken = tokenStorage.getRefreshToken();
+        if (refreshToken && isTokenValid(refreshToken)) {
+          console.log("Attempting to restore session from refresh token...");
+          
+          // Use authAPI to refresh the session
+          const refreshResult = await authAPI.refreshToken();
+          if (refreshResult && refreshResult.session) {
+            // Session restored successfully
+            const newToken = refreshResult.session.accessToken;
+            const tokenUser = getUserFromToken(newToken);
+            
+            if (tokenUser && mounted) {
+              setUser(tokenUser);
+              setIsAuthenticated(true);
+              console.log("Session restored successfully:", tokenUser.email);
+              return;
+            }
+          }
+        }
+        
+        // If we get here, session restore failed
+        console.log("Session restore failed, clearing auth data");
+        clearAuthData();
+      } catch (error) {
+        console.error("Session restore failed:", error);
+        clearAuthData();
+      }
+    }
+
     initializeAuth();
+
+    // Listen for authentication failures from API calls
+    const handleAuthFailure = (event) => {
+      console.log("Authentication failure detected:", event.detail);
+      if (mounted) {
+        clearAuthData();
+        // Optionally redirect to login or show notification
+      }
+    };
+
+    // Listen for token sync events from other tabs
+    const handleTokenSync = () => {
+      console.log("Token sync required from other tab");
+      if (mounted) {
+        // Re-check authentication state
+        initializeAuth();
+      }
+    };
+
+    window.addEventListener('authenticationFailed', handleAuthFailure);
+    window.addEventListener('tokenSyncRequired', handleTokenSync);
 
     return () => {
       mounted = false;
+      window.removeEventListener('authenticationFailed', handleAuthFailure);
+      window.removeEventListener('tokenSyncRequired', handleTokenSync);
     };
-  }, []); // Empty dependency array - only run once on mount
+  }, []);
 
   const login = useCallback(async (email, password) => {
     if (isLocked) {

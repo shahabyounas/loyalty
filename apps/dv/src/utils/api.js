@@ -5,7 +5,7 @@ import {
   tokenStorage,
   isTokenValid,
   isTokenExpiringSoon,
-  refreshToken,
+  updateLastActivity,
 } from "./jwt.js";
 
 // API Configuration
@@ -95,7 +95,7 @@ const refreshTokenDirect = async () => {
 };
 
 /**
- * Make an authenticated API request with automatic token refresh
+ * Make an authenticated API request with intelligent token refresh
  * @param {string} endpoint - API endpoint
  * @param {Object} options - Fetch options
  * @param {boolean} isRetry - Whether this is a retry attempt after token refresh
@@ -103,18 +103,32 @@ const refreshTokenDirect = async () => {
  */
 const makeRequest = async (endpoint, options = {}, isRetry = false) => {
   try {
-    // Check if token needs refresh before making request
+    // Update activity tracking
+    updateLastActivity();
+    
+    // Check if we need to refresh token proactively
     const token = tokenStorage.getToken();
     if (token && isTokenExpiringSoon(token)) {
-      console.log("Token expiring soon, attempting refresh...");
+      console.log("Access token expiring soon, attempting proactive refresh...");
       try {
-        const refreshResult = await refreshTokenDirect();
-        if (refreshResult && refreshResult.session) {
-          console.log("Token refreshed successfully");
-        }
+        await refreshTokenDirect();
+        console.log("Token refreshed proactively");
       } catch (refreshError) {
-        console.error("Token refresh failed:", refreshError);
-        // Continue with current token if refresh fails
+        console.warn("Proactive refresh failed, continuing with current token:", refreshError);
+        // Continue with current token - might still work
+      }
+    } else if (!token) {
+      // No access token, try to restore from refresh token
+      const refreshToken = tokenStorage.getRefreshToken();
+      if (refreshToken && isTokenValid(refreshToken)) {
+        console.log("No access token found, attempting restore from refresh token...");
+        try {
+          await refreshTokenDirect();
+          console.log("Session restored from refresh token");
+        } catch (refreshError) {
+          console.error("Session restore failed:", refreshError);
+          // Let the request proceed and handle 401 below
+        }
       }
     }
 
@@ -141,25 +155,28 @@ const makeRequest = async (endpoint, options = {}, isRetry = false) => {
   } catch (error) {
     console.error("Request failed:", error);
 
-    // Handle token expiration with automatic refresh
+    // Handle token expiration with automatic refresh and retry
     if (error.message === "TOKEN_EXPIRED" && !isRetry) {
-      console.log("Token expired, attempting refresh...");
+      console.log("Token expired during request, attempting refresh...");
       try {
         const refreshResult = await refreshTokenDirect();
         if (refreshResult && refreshResult.session) {
-          console.log("Token refreshed, retrying request...");
-
+          console.log("Token refreshed after expiry, retrying request...");
           // Retry the original request with new token
           return await makeRequest(endpoint, options, true);
         } else {
-          // Refresh failed, clear tokens and redirect to login
-          tokenStorage.clearAll();
-          throw new Error("Authentication failed. Please log in again.");
+          throw new Error("Token refresh failed - no session returned");
         }
       } catch (refreshError) {
         console.error("Token refresh failed:", refreshError);
-        // Clear tokens and redirect to login
+        // Clear all tokens and force re-authentication
         tokenStorage.clearAll();
+        
+        // Dispatch event for components to react to auth failure
+        window.dispatchEvent(new CustomEvent('authenticationFailed', {
+          detail: { reason: 'token_refresh_failed', originalError: refreshError }
+        }));
+        
         throw new Error("Authentication failed. Please log in again.");
       }
     }
@@ -167,6 +184,9 @@ const makeRequest = async (endpoint, options = {}, isRetry = false) => {
     // Handle other authentication errors
     if (error.message.includes("Authentication failed") && !isRetry) {
       tokenStorage.clearAll();
+      window.dispatchEvent(new CustomEvent('authenticationFailed', {
+        detail: { reason: 'authentication_error', originalError: error }
+      }));
       throw new Error("Authentication failed. Please log in again.");
     }
 
