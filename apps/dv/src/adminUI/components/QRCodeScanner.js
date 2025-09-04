@@ -40,14 +40,16 @@ const QRCodeScanner = () => {
       const response = await stampTransactionAPI.processScan({
         user_id: qrData.user_id,
         reward_id: qrData.reward_id,
-        scanned_by: user.id,
+        action_type: qrData.action_type || 'stamp', // Include action type
+        progress_id: qrData.progress_id || null, // Include progress ID for redemptions
         store_id: user.store_id || null,
         reset_progress: qrData.reset_progress || false, // Pass the reset flag
       });
 
+      // Use the message from the API response
       setScanResult({
         success: true,
-        message: "Stamp added successfully!",
+        message: response.message || "Scan processed successfully!",
         data: response.data,
       });
 

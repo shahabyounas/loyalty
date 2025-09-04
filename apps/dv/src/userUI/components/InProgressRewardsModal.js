@@ -308,7 +308,7 @@ const InProgressRewardsModal = ({
                           <button
                             className="in-progress-add-stamp-button"
                             onClick={() =>
-                              handleAddStamp(reward.reward_id, reward.name)
+                              handleAddStamp(reward.reward_id || reward.id, reward.name)
                             }
                           >
                             📱 Add Stamp
