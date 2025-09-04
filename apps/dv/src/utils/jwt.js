@@ -1,10 +1,21 @@
-// JWT Token Utilities
+// JWT Token Utilities - Enhanced for Persistent Login
 // This module handles JWT token operations for authentication
 
 import { jwtDecode } from "jwt-decode";
 
-// Token expiry threshold for refresh - 5 minutes before expiry
-const TOKEN_REFRESH_THRESHOLD = 15 * 60 * 1000; // 5 minutes in milliseconds
+// Token refresh thresholds
+const ACCESS_TOKEN_REFRESH_THRESHOLD = 15 * 60 * 1000; // 15 minutes before expiry
+const REFRESH_TOKEN_WARNING_THRESHOLD = 7 * 24 * 60 * 60 * 1000; // 7 days before expiry
+
+// Storage keys
+const STORAGE_KEYS = {
+  ACCESS_TOKEN: "authToken",
+  REFRESH_TOKEN: "refreshToken", 
+  USER_DATA: "userData",
+  REMEMBER_ME: "rememberMe",
+  LAST_ACTIVITY: "lastActivity",
+  TOKEN_EXPIRY: "tokenExpiry"
+};
 
 /**
  * Decode a JWT token
@@ -36,10 +47,9 @@ export const isTokenValid = (token) => {
       return false;
     }
 
-    // Check if token is expired
-    const now = Date.now();
+    // Check if token is expired (with 30 second buffer for network delays)
+    const now = Date.now() + 30000; // 30 second buffer
     if (payload.exp && now >= payload.exp * 1000) {
-      // JWT exp is in seconds
       return false;
     }
 
@@ -66,23 +76,19 @@ export const getTokenExpiry = (token) => {
 };
 
 /**
- * Check if token will expire soon (within 5 minutes)
+ * Check if access token needs refresh (within 15 minutes of expiry)
  * @param {string} token - The JWT token
- * @param {number} threshold - Time threshold in milliseconds (default: 5 minutes)
- * @returns {boolean} True if token expires soon
+ * @returns {boolean} True if token needs refresh
  */
-export const isTokenExpiringSoon = (
-  token,
-  threshold = TOKEN_REFRESH_THRESHOLD
-) => {
+export const isTokenExpiringSoon = (token) => {
   try {
     const expiry = getTokenExpiry(token);
     if (!expiry) {
-      return true; // Consider invalid tokens as expiring soon
+      return true; // Consider invalid tokens as needing refresh
     }
 
     const now = Date.now();
-    return expiry - now <= threshold;
+    return expiry - now <= ACCESS_TOKEN_REFRESH_THRESHOLD;
   } catch (error) {
     console.error("Failed to check token expiry:", error);
     return true;
@@ -90,17 +96,23 @@ export const isTokenExpiringSoon = (
 };
 
 /**
- * Refresh a token via API (not local refresh since we can't create new Supabase tokens)
- * @param {string} token - The current JWT token
- * @returns {string|null} New JWT token or null if refresh failed
+ * Check if refresh token is expiring soon (within 7 days)
+ * @param {string} refreshToken - The refresh token
+ * @returns {boolean} True if refresh token is expiring soon
  */
-export const refreshToken = (token) => {
-  // For Supabase tokens, we need to use the API refresh endpoint
-  // Local refresh is not possible since we don't have the signing key
-  console.warn(
-    "Local token refresh not supported for Supabase tokens. Use API refresh instead."
-  );
-  return null;
+export const isRefreshTokenExpiringSoon = (refreshToken) => {
+  try {
+    const expiry = getTokenExpiry(refreshToken);
+    if (!expiry) {
+      return true;
+    }
+
+    const now = Date.now();
+    return expiry - now <= REFRESH_TOKEN_WARNING_THRESHOLD;
+  } catch (error) {
+    console.error("Failed to check refresh token expiry:", error);
+    return true;
+  }
 };
 
 /**
@@ -115,7 +127,7 @@ export const getUserFromToken = (token) => {
       return null;
     }
 
-    // Extract user data from Supabase JWT
+    // Extract user data from JWT payload
     return {
       id: payload.sub,
       email: payload.email,
@@ -131,41 +143,105 @@ export const getUserFromToken = (token) => {
 };
 
 /**
- * Token storage utilities
+ * Update last activity timestamp
+ */
+export const updateLastActivity = () => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.LAST_ACTIVITY, Date.now().toString());
+  } catch (error) {
+    console.error("Failed to update last activity:", error);
+  }
+};
+
+/**
+ * Get last activity timestamp
+ * @returns {number|null} Last activity timestamp or null
+ */
+export const getLastActivity = () => {
+  try {
+    const activity = localStorage.getItem(STORAGE_KEYS.LAST_ACTIVITY);
+    return activity ? parseInt(activity) : null;
+  } catch (error) {
+    console.error("Failed to get last activity:", error);
+    return null;
+  }
+};
+
+/**
+ * Enhanced token storage utilities with persistence features
  */
 export const tokenStorage = {
-  // Store token in localStorage
+  // Store access token
   setToken: (token) => {
     try {
-      localStorage.setItem("authToken", token);
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token);
+      
+      // Store expiry for quick access
+      const expiry = getTokenExpiry(token);
+      if (expiry) {
+        localStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, expiry.toString());
+      }
+      
+      updateLastActivity();
     } catch (error) {
       console.error("Failed to store token:", error);
     }
   },
 
-  // Get token from localStorage
+  // Get access token
   getToken: () => {
     try {
-      return localStorage.getItem("authToken");
+      return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
     } catch (error) {
       console.error("Failed to get token:", error);
       return null;
     }
   },
 
-  // Remove token from localStorage
+  // Remove access token
   removeToken: () => {
     try {
-      localStorage.removeItem("authToken");
+      localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+      localStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
     } catch (error) {
       console.error("Failed to remove token:", error);
+    }
+  },
+
+  // Store refresh token
+  setRefreshToken: (refreshToken) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+      updateLastActivity();
+    } catch (error) {
+      console.error("Failed to store refresh token:", error);
+    }
+  },
+
+  // Get refresh token
+  getRefreshToken: () => {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    } catch (error) {
+      console.error("Failed to get refresh token:", error);
+      return null;
+    }
+  },
+
+  // Remove refresh token
+  removeRefreshToken: () => {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    } catch (error) {
+      console.error("Failed to remove refresh token:", error);
     }
   },
 
   // Store user data
   setUser: (userData) => {
     try {
-      localStorage.setItem("userData", JSON.stringify(userData));
+      localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData));
+      updateLastActivity();
     } catch (error) {
       console.error("Failed to store user data:", error);
     }
@@ -174,7 +250,7 @@ export const tokenStorage = {
   // Get user data
   getUser: () => {
     try {
-      const userData = localStorage.getItem("userData");
+      const userData = localStorage.getItem(STORAGE_KEYS.USER_DATA);
       return userData ? JSON.parse(userData) : null;
     } catch (error) {
       console.error("Failed to get user data:", error);
@@ -185,48 +261,89 @@ export const tokenStorage = {
   // Remove user data
   removeUser: () => {
     try {
-      localStorage.removeItem("userData");
+      localStorage.removeItem(STORAGE_KEYS.USER_DATA);
     } catch (error) {
       console.error("Failed to remove user data:", error);
     }
   },
 
-  // Store refresh token
-  setRefreshToken: (refreshToken) => {
+  // Set remember me preference
+  setRememberMe: (remember) => {
     try {
-      localStorage.setItem("refreshToken", refreshToken);
+      localStorage.setItem(STORAGE_KEYS.REMEMBER_ME, remember.toString());
     } catch (error) {
-      console.error("Failed to store refresh token:", error);
+      console.error("Failed to store remember me:", error);
     }
   },
 
-  // Get refresh token
-  getRefreshToken: () => {
+  // Get remember me preference
+  getRememberMe: () => {
     try {
-      return localStorage.getItem("refreshToken");
+      const remember = localStorage.getItem(STORAGE_KEYS.REMEMBER_ME);
+      return remember === "true";
     } catch (error) {
-      console.error("Failed to get refresh token:", error);
+      console.error("Failed to get remember me:", error);
+      return false;
+    }
+  },
+
+  // Check if user has valid session
+  hasValidSession: () => {
+    try {
+      const token = tokenStorage.getToken();
+      const refreshToken = tokenStorage.getRefreshToken();
+      
+      // If we have a valid access token, session is valid
+      if (token && isTokenValid(token)) {
+        return true;
+      }
+      
+      // If access token is invalid but we have refresh token, session can be restored
+      if (refreshToken && isTokenValid(refreshToken)) {
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("Failed to check session validity:", error);
+      return false;
+    }
+  },
+
+  // Get quick token expiry without decoding
+  getTokenExpiryFast: () => {
+    try {
+      const expiry = localStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY);
+      return expiry ? parseInt(expiry) : null;
+    } catch (error) {
+      console.error("Failed to get token expiry:", error);
       return null;
-    }
-  },
-
-  // Remove refresh token
-  removeRefreshToken: () => {
-    try {
-      localStorage.removeItem("refreshToken");
-    } catch (error) {
-      console.error("Failed to remove refresh token:", error);
     }
   },
 
   // Clear all auth data
   clearAll: () => {
     try {
-      localStorage.removeItem("authToken");
-      localStorage.removeItem("userData");
-      localStorage.removeItem("refreshToken");
+      Object.values(STORAGE_KEYS).forEach(key => {
+        localStorage.removeItem(key);
+      });
     } catch (error) {
       console.error("Failed to clear auth data:", error);
     }
   },
+
+  // Sync tokens across tabs (for multi-tab consistency)
+  syncTokensAcrossTabs: () => {
+    try {
+      // Listen for storage changes from other tabs
+      window.addEventListener('storage', (e) => {
+        if (e.key === STORAGE_KEYS.ACCESS_TOKEN || e.key === STORAGE_KEYS.REFRESH_TOKEN) {
+          // Token changed in another tab, trigger re-authentication check
+          window.dispatchEvent(new CustomEvent('tokenSyncRequired'));
+        }
+      });
+    } catch (error) {
+      console.error("Failed to setup token sync:", error);
+    }
+  }
 };
