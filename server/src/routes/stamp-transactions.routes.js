@@ -779,6 +779,7 @@ router.post("/process-scan", async (req, res) => {
 router.post("/process-redemption", async (req, res) => {
   try {
     const { user_id, reward_id, scanned_by, store_id } = req.body;
+    console.log('Redemption request body:', req.body);
 
     // Validate required fields with type checking
     if (!user_id || typeof user_id !== 'string' || user_id.trim() === '') {

@@ -10,11 +10,11 @@ const router = express.Router();
 
 // Validation rules
 const addStampValidation = [
-  body("rewardId").isInt({ min: 1 }).withMessage("Valid reward ID is required"),
+  body("rewardId").isUUID().withMessage("Valid reward ID (UUID) is required"),
 ];
 
 const createProgressValidation = [
-  body("rewardId").isInt({ min: 1 }).withMessage("Valid reward ID is required"),
+  body("rewardId").isUUID().withMessage("Valid reward ID (UUID) is required"),
   body("stampsRequired")
     .isInt({ min: 1, max: 100 })
     .withMessage("Stamps required must be between 1 and 100"),
@@ -66,7 +66,7 @@ router.get("/", authenticateUser, async (req, res) => {
 router.get("/:rewardId", authenticateUser, async (req, res) => {
   try {
     const authUserId = req.user.id; // Supabase auth user ID
-    const rewardId = parseInt(req.params.rewardId);
+    const rewardId = req.params.rewardId; // Keep as UUID string
 
     // Get the database user by auth user ID
     const dbUser = await User.findByAuthUserId(authUserId);
@@ -158,7 +158,7 @@ router.post(
   async (req, res) => {
     try {
       const authUserId = req.user.id; // Supabase auth user ID
-      const rewardId = parseInt(req.params.rewardId);
+      const rewardId = req.params.rewardId; // Keep as UUID string
 
       // Get the database user by auth user ID
       const dbUser = await User.findByAuthUserId(authUserId);
@@ -217,7 +217,7 @@ router.post(
 router.put("/:rewardId/reset", authenticateUser, async (req, res) => {
   try {
     const authUserId = req.user.id; // Supabase auth user ID
-    const rewardId = parseInt(req.params.rewardId);
+    const rewardId = req.params.rewardId; // Keep as UUID string
 
     // Get the database user by auth user ID
     const dbUser = await User.findByAuthUserId(authUserId);
@@ -259,7 +259,7 @@ router.put("/:rewardId/reset", authenticateUser, async (req, res) => {
 router.delete("/:rewardId", authenticateUser, async (req, res) => {
   try {
     const authUserId = req.user.id; // Supabase auth user ID
-    const rewardId = parseInt(req.params.rewardId);
+    const rewardId = req.params.rewardId; // Keep as UUID string
 
     // Get the database user by auth user ID
     const dbUser = await User.findByAuthUserId(authUserId);

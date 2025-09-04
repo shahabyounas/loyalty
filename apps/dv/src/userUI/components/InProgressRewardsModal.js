@@ -96,6 +96,7 @@ const InProgressRewardsModal = ({
                   progress = item;
                   reward = item.reward || {
                     id: item.reward_id,
+                    reward_id: item.reward_id, // Add this to ensure reward_id is always available
                     name: item.reward_name,
                     description: item.reward_description,
                     points_required: item.reward_points_required,
@@ -263,7 +264,7 @@ const InProgressRewardsModal = ({
                           <button
                             className="in-progress-redeem-button"
                             onClick={() => handleRedeemReward(
-                              showProgressRecords ? progress.id : reward.id, 
+                              showProgressRecords ? progress.id : (reward.reward_id || reward.id), 
                               reward.name,
                               showProgressRecords ? 'progress' : 'reward'
                             )}
@@ -291,7 +292,7 @@ const InProgressRewardsModal = ({
                           <button
                             className="in-progress-redeem-button"
                             onClick={() => handleRedeemReward(
-                              showProgressRecords ? progress.id : reward.id, 
+                              showProgressRecords ? progress.id : (reward.reward_id || reward.id), 
                               reward.name,
                               showProgressRecords ? 'progress' : 'reward'
                             )}
@@ -307,7 +308,7 @@ const InProgressRewardsModal = ({
                           <button
                             className="in-progress-add-stamp-button"
                             onClick={() =>
-                              handleAddStamp(reward.id, reward.name)
+                              handleAddStamp(reward.reward_id, reward.name)
                             }
                           >
                             📱 Add Stamp
