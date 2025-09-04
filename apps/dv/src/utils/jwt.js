@@ -3,8 +3,8 @@
 
 import { jwtDecode } from "jwt-decode";
 
-// Token expiry threshold for refresh
-const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 minutes
+// Token expiry threshold for refresh - 1 year
+const TOKEN_REFRESH_THRESHOLD = 365 * 24 * 60 * 60 * 1000; // 1 year in milliseconds
 
 /**
  * Decode a JWT token
