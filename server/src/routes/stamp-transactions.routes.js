@@ -418,7 +418,7 @@ router.get("/scan-history/statistics", requireAdmin, async (req, res) => {
 // Process QR code scan (any authenticated staff member)
 router.post("/process-scan", async (req, res) => {
   try {
-    const { user_id, reward_id, scanned_by, store_id } = req.body;
+    const { user_id, reward_id, scanned_by, store_id, action_type, progress_id } = req.body;
 
     // Validate required fields with type checking
     if (!user_id || typeof user_id !== 'string' || user_id.trim() === '') {
@@ -555,7 +555,7 @@ router.post("/process-scan", async (req, res) => {
       }
     }
 
-    // Validate progress data before adding stamp
+    // Validate progress data before processing
     if (!progress || typeof progress.stamps_collected !== 'number' || typeof progress.stamps_required !== 'number') {
       logger.error(`Invalid progress data structure:`, progress);
       return res.status(500).json({
@@ -564,9 +564,59 @@ router.post("/process-scan", async (req, res) => {
       });
     }
 
-    // Handle UserRewardProgress lifecycle
+    // Handle redemption scans first (if action_type is "redemption")
+    if (action_type === "redemption") {
+      logger.info(`Processing redemption scan for progress ${progress.id}`);
+      
+      if (progress.status === 'ready_to_redeem') {
+        try {
+          const redeemedProgress = await UserRewardProgress.redeemProgress(progress.id);
+          
+          if (redeemedProgress) {
+            logger.info(`Successfully redeemed progress ${progress.id} for user ${dbUserId}, reward ${validRewardId}`);
+            
+            return res.status(200).json({
+              success: true,
+              message: "🎉 Reward successfully redeemed!",
+              data: {
+                customer_name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown Customer',
+                reward_name: reward.name || 'Unknown Reward',
+                stamps_collected: redeemedProgress.stamps_collected,
+                stamps_required: redeemedProgress.stamps_required,
+                is_completed: true,
+                status: redeemedProgress.status,
+                redeemed_at: redeemedProgress.redeemed_at,
+                progress_id: redeemedProgress.id,
+                action: 'redeemed'
+              },
+            });
+          } else {
+            logger.error(`Failed to redeem progress ${progress.id} - may not be in ready_to_redeem status`);
+            return res.status(400).json({
+              success: false,
+              message: "This reward is not ready for redemption or has already been redeemed",
+            });
+          }
+        } catch (redemptionError) {
+          logger.error(`Error redeeming progress ${progress.id}:`, redemptionError);
+          return res.status(500).json({
+            success: false,
+            message: "Failed to redeem reward",
+          });
+        }
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot redeem reward. Current status: ${progress.status}. Only ready_to_redeem rewards can be redeemed.`,
+        });
+      }
+    }
+
+    // Handle UserRewardProgress lifecycle (stamp collection)
     if (progress.stamps_collected >= progress.stamps_required) {
       // Current progress is already completed
+      
+      // Handle other completed statuses (availed, redeemed) - no redemption here since that's handled above
       const shouldReset = req.body.reset_progress || false;
       
       if (shouldReset) {
@@ -593,10 +643,18 @@ router.post("/process-scan", async (req, res) => {
           });
         }
       } else {
-        // Not a reset request - inform user they can start a new cycle
+        // Not a reset request - inform user about current status
+        let statusMessage = "Reward already completed. Scan again to start a new collection cycle.";
+        
+        if (progress.status === 'ready_to_redeem') {
+          statusMessage = "Reward is ready to redeem! Please use the redemption QR code to redeem this reward.";
+        } else if (progress.status === 'availed') {
+          statusMessage = "Reward already redeemed. Scan again to start a new collection cycle.";
+        }
+          
         return res.status(200).json({
           success: true,
-          message: "Reward already completed. Scan again to start a new collection cycle.",
+          message: statusMessage,
           data: {
             customer_name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown Customer',
             reward_name: reward.name || 'Unknown Reward',
@@ -604,7 +662,7 @@ router.post("/process-scan", async (req, res) => {
             stamps_required: progress.stamps_required,
             is_completed: true,
             status: progress.status || 'completed',
-            can_start_new_cycle: true,
+            can_start_new_cycle: progress.status !== 'ready_to_redeem',
           },
         });
       }

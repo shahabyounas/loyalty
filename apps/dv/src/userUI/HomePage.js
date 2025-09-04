@@ -633,11 +633,24 @@ export default function Home() {
     handleAddStamp(rewardId, rewardName);
   }
 
-  function handleInProgressRedeemReward(rewardId, rewardName) {
+  function handleInProgressRedeemReward(idValue, rewardName, type = 'reward') {
     // Close the modal and generate redemption QR code
     setInProgressModalOpen(false);
     
-    // Find the reward to get its name
+    // Handle both progress ID and reward ID based on type
+    let rewardId, progressId;
+    if (type === 'progress') {
+      progressId = idValue;
+      // Find the reward through progress records
+      const allProgressRecords = Object.values(userProgressByReward).flat();
+      const targetProgress = allProgressRecords.find(p => p.id === progressId);
+      rewardId = targetProgress?.reward_id;
+    } else {
+      rewardId = idValue;
+      progressId = null;
+    }
+    
+    // Find the reward to get its details
     const reward = availableRewards.find(r => r.id === rewardId);
     const displayName = rewardName || reward?.name || 'Unknown Reward';
     
@@ -645,23 +658,29 @@ export default function Home() {
     const qrData = {
       user_id: user?.id, // Supabase auth user ID
       reward_id: rewardId,
+      progress_id: progressId, // Include progress ID for specific redemption
       action_type: "redemption", // Distinguish from stamp collection
       timestamp: Date.now(),
       expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(), // 15 minutes expiry
     };
 
     setCurrentTransaction({
-      transaction_code: `REDEEM_${user?.id}_${rewardId}_${Date.now()}_${Math.random()
+      transaction_code: `REDEEM_${user?.id}_${rewardId}_${progressId || 'ANY'}_${Date.now()}_${Math.random()
         .toString(36)
         .substr(2, 9)
         .toUpperCase()}`,
       user_id: user?.id,
       reward_id: rewardId,
+      progress_id: progressId,
       action_type: "redemption",
       expires_at: qrData.expires_at,
       qr_data: JSON.stringify(qrData),
     });
-    setCurrentReward({ id: rewardId, name: displayName });
+    setCurrentReward({ 
+      id: rewardId, 
+      name: displayName, 
+      progressId: progressId 
+    });
     setQrModalOpen(true);
   }
 

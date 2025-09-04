@@ -197,6 +197,25 @@ class UserRewardProgress {
     }
   }
 
+  // Redeem a progress record (ready_to_redeem -> availed)
+  static async redeemProgress(progressId) {
+    try {
+      const query = `
+        UPDATE user_reward_progress 
+        SET status = 'availed',
+            redeemed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1 AND status = 'ready_to_redeem'
+        RETURNING *
+      `;
+      const result = await db.getOne(query, [progressId]);
+      return result ? new UserRewardProgress(result) : null;
+    } catch (error) {
+      logger.error("Error redeeming progress:", error);
+      throw error;
+    }
+  }
+
   // Get completion percentage
   getCompletionPercentage() {
     if (this.stamps_required === 0) return 0;
