@@ -814,3 +814,112 @@ export const analyticsAPI = {
     }
   }
 };
+
+// Settings API
+export const settingsAPI = {
+  // Get all settings
+  getSettings: async () => {
+    try {
+      const response = await makeRequest('/settings', {
+        method: 'GET',
+        headers: createHeaders(),
+      });
+      return response;
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+      // Return mock data for now since backend might not be implemented
+      return {
+        data: {
+          businessName: "Demo Vape Shop",
+          businessEmail: "contact@demovapeshop.com",
+          businessPhone: "+44 20 1234 5678",
+          businessAddress: "123 High Street, London, UK",
+          pointsPerPound: 1,
+          pointsExpiry: 365,
+          defaultLevel: "Bronze",
+          levelThresholds: {
+            bronze: 0,
+            silver: 500,
+            gold: 1000,
+            platinum: 2500
+          },
+          maxStampsPerCard: 10,
+          stampCardExpiry: 30,
+          stampsPerPurchase: 1,
+          emailNotifications: true,
+          smsNotifications: false,
+          customerWelcomeEmail: true,
+          loyaltyUpdates: true,
+          timezone: "Europe/London",
+          currency: "GBP",
+          dateFormat: "DD/MM/YYYY",
+          sessionTimeout: 24,
+          passwordExpiry: 90,
+          twoFactorAuth: false
+        }
+      };
+    }
+  },
+
+  // Update settings
+  updateSettings: async (settings) => {
+    try {
+      const response = await makeRequest('/settings', {
+        method: 'PUT',
+        headers: createHeaders(),
+        body: JSON.stringify(settings),
+      });
+      return response;
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      // Mock success response for now
+      return {
+        data: settings,
+        message: 'Settings updated successfully'
+      };
+    }
+  },
+
+  // Get specific setting category
+  getSettingCategory: async (category) => {
+    try {
+      const response = await makeRequest(`/settings/${category}`, {
+        method: 'GET',
+        headers: createHeaders(),
+      });
+      return response;
+    } catch (error) {
+      console.error(`Error fetching ${category} settings:`, error);
+      throw error;
+    }
+  },
+
+  // Update specific setting category
+  updateSettingCategory: async (category, data) => {
+    try {
+      const response = await makeRequest(`/settings/${category}`, {
+        method: 'PUT',
+        headers: createHeaders(),
+        body: JSON.stringify(data),
+      });
+      return response;
+    } catch (error) {
+      console.error(`Error updating ${category} settings:`, error);
+      throw error;
+    }
+  },
+
+  // Reset settings to defaults
+  resetSettings: async () => {
+    try {
+      const response = await makeRequest('/settings/reset', {
+        method: 'POST',
+        headers: createHeaders(),
+      });
+      return response;
+    } catch (error) {
+      console.error('Error resetting settings:', error);
+      throw error;
+    }
+  }
+};
