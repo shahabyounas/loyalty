@@ -644,8 +644,6 @@ export default function Home() {
   }
 
   function handleInProgressRedeemReward(idValue, rewardName, type = 'reward') {
-    console.log('🔍 handleInProgressRedeemReward called with:', { idValue, rewardName, type });
-    
     // Close the modal and generate redemption QR code
     setInProgressModalOpen(false);
     
@@ -653,36 +651,24 @@ export default function Home() {
     let rewardId, progressId;
     if (type === 'progress') {
       progressId = idValue;
-      console.log('📋 Processing progress type. progressId:', progressId);
-      
       // Find the reward through progress records
       const allProgressRecords = Object.values(userProgressByReward).flat();
-      console.log('📊 All progress records:', allProgressRecords.map(p => ({ id: p.id, reward_id: p.reward_id, status: p.status })));
-      
       const targetProgress = allProgressRecords.find(p => p.id === progressId);
-      console.log('🎯 Target progress found:', targetProgress);
-      
       rewardId = targetProgress?.reward_id;
-      console.log('🏆 Extracted rewardId from progress:', rewardId, typeof rewardId);
       
       // Ensure rewardId is a string (UUID)
       if (rewardId && typeof rewardId !== 'string') {
         rewardId = String(rewardId);
-        console.log('🔄 Converted rewardId to string:', rewardId);
       }
     } else {
       rewardId = idValue;
       progressId = null;
-      console.log('🏆 Processing reward type. rewardId:', rewardId, typeof rewardId);
       
       // Ensure rewardId is a string (UUID)
       if (rewardId && typeof rewardId !== 'string') {
         rewardId = String(rewardId);
-        console.log('🔄 Converted rewardId to string:', rewardId);
       }
     }
-    
-    console.log('🎊 Final values before QR generation:', { rewardId, progressId, type: typeof rewardId });
     
     // Find the reward to get its details
     const reward = availableRewards.find(r => r.id === rewardId);
@@ -697,8 +683,6 @@ export default function Home() {
       timestamp: Date.now(),
       expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(), // 15 minutes expiry
     };
-
-    console.log('📱 Generated QR data:', qrData);
 
     setCurrentTransaction({
       transaction_code: `REDEEM_${user?.id}_${rewardId}_${progressId || 'ANY'}_${Date.now()}_${Math.random()

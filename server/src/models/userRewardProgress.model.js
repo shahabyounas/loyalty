@@ -67,6 +67,20 @@ class UserRewardProgress {
     }
   }
 
+  static async findById(progressId) {
+    try {
+      const query = `
+        SELECT * FROM user_reward_progress 
+        WHERE id = $1
+      `;
+      const result = await db.getOne(query, [progressId]);
+      return result ? new UserRewardProgress(result) : null;
+    } catch (error) {
+      logger.error("Error finding user reward progress by ID:", error);
+      throw error;
+    }
+  }
+
   static async findAllByUserAndReward(userId, rewardId) {
     try {
       const query = `

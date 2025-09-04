@@ -566,14 +566,51 @@ router.post("/process-scan", async (req, res) => {
 
     // Handle redemption scans first (if action_type is "redemption")
     if (action_type === "redemption") {
-      logger.info(`Processing redemption scan for progress ${progress.id}`);
+      logger.info(`Processing redemption scan with progress_id: ${progress_id}`);
       
-      if (progress.status === 'ready_to_redeem') {
+      // For redemption, we need to use the specific progress_id from the QR code
+      if (!progress_id) {
+        logger.error(`No progress_id provided for redemption scan`);
+        return res.status(400).json({
+          success: false,
+          message: "Invalid redemption QR code - missing progress ID",
+        });
+      }
+      
+      // Get the specific progress record to redeem
+      let specificProgress;
+      try {
+        specificProgress = await UserRewardProgress.findById(progress_id);
+        if (!specificProgress) {
+          logger.error(`Progress record not found for ID: ${progress_id}`);
+          return res.status(404).json({
+            success: false,
+            message: "Progress record not found",
+          });
+        }
+      } catch (findError) {
+        logger.error(`Error finding progress record ${progress_id}:`, findError);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to find progress record",
+        });
+      }
+      
+      // Verify that this progress belongs to the correct user and reward
+      if (specificProgress.user_id !== dbUserId || specificProgress.reward_id !== validRewardId) {
+        logger.error(`Progress ownership mismatch. Progress user: ${specificProgress.user_id}, Expected: ${dbUserId}, Progress reward: ${specificProgress.reward_id}, Expected: ${validRewardId}`);
+        return res.status(403).json({
+          success: false,
+          message: "Invalid redemption - progress record doesn't match user or reward",
+        });
+      }
+      
+      if (specificProgress.status === 'ready_to_redeem') {
         try {
-          const redeemedProgress = await UserRewardProgress.redeemProgress(progress.id);
+          const redeemedProgress = await UserRewardProgress.redeemProgress(progress_id);
           
           if (redeemedProgress) {
-            logger.info(`Successfully redeemed progress ${progress.id} for user ${dbUserId}, reward ${validRewardId}`);
+            logger.info(`Successfully redeemed progress ${progress_id} for user ${dbUserId}, reward ${validRewardId}`);
             
             return res.status(200).json({
               success: true,
@@ -591,14 +628,14 @@ router.post("/process-scan", async (req, res) => {
               },
             });
           } else {
-            logger.error(`Failed to redeem progress ${progress.id} - may not be in ready_to_redeem status`);
+            logger.error(`Failed to redeem progress ${progress_id} - may not be in ready_to_redeem status`);
             return res.status(400).json({
               success: false,
               message: "This reward is not ready for redemption or has already been redeemed",
             });
           }
         } catch (redemptionError) {
-          logger.error(`Error redeeming progress ${progress.id}:`, redemptionError);
+          logger.error(`Error redeeming progress ${progress_id}:`, redemptionError);
           return res.status(500).json({
             success: false,
             message: "Failed to redeem reward",
@@ -607,7 +644,7 @@ router.post("/process-scan", async (req, res) => {
       } else {
         return res.status(400).json({
           success: false,
-          message: `Cannot redeem reward. Current status: ${progress.status}. Only ready_to_redeem rewards can be redeemed.`,
+          message: `Cannot redeem reward. Current status: ${specificProgress.status}. Only ready_to_redeem rewards can be redeemed.`,
         });
       }
     }
