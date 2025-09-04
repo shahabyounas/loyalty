@@ -5,6 +5,7 @@ export const MENU_PERMISSIONS = {
   // System permissions
   SYSTEM_ADMIN: "*",
   SUPER_ADMIN: "super_admin",
+  STAFF: "staff", // Add staff permission
 
   // User management
   USER_MANAGE: "user_manage",
@@ -44,7 +45,7 @@ export const MENU_CONFIG = [
     label: "Dashboard",
     icon: "📊",
     component: "Dashboard",
-    permissions: [MENU_PERMISSIONS.SYSTEM_ADMIN, MENU_PERMISSIONS.SUPER_ADMIN], // Everyone can see dashboard
+    permissions: [MENU_PERMISSIONS.SYSTEM_ADMIN, MENU_PERMISSIONS.SUPER_ADMIN, MENU_PERMISSIONS.STAFF],
     description: "Overview and analytics",
     category: "overview",
   },
@@ -92,7 +93,7 @@ export const MENU_CONFIG = [
     label: "QR Code Scanner",
     icon: "📱",
     component: "QR_SCANNER",
-    permissions: [MENU_PERMISSIONS.QR_SCANNER, MENU_PERMISSIONS.SUPER_ADMIN],
+    permissions: [MENU_PERMISSIONS.QR_SCANNER, MENU_PERMISSIONS.SYSTEM_ADMIN, MENU_PERMISSIONS.SUPER_ADMIN, MENU_PERMISSIONS.STAFF],
     description: "Scan customer QR codes to add stamps",
     category: "operations",
   },

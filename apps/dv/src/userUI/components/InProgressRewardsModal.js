@@ -58,7 +58,6 @@ const InProgressRewardsModal = ({
   };
 
   const handleRedeemReward = (rewardId, rewardName, type = 'reward') => {
-    console.log('🎯 InProgressRewardsModal handleRedeemReward called with:', { rewardId, rewardName, type });
     if (onRedeemReward) {
       onRedeemReward(rewardId, rewardName, type);
     }
@@ -309,7 +308,7 @@ const InProgressRewardsModal = ({
                           <button
                             className="in-progress-add-stamp-button"
                             onClick={() =>
-                              handleAddStamp(reward.reward_id, reward.name)
+                              handleAddStamp(reward.reward_id || reward.id, reward.name)
                             }
                           >
                             📱 Add Stamp

@@ -1,11 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { QRCodeSVG } from "qrcode.react";
 import ParticleBackground from "../../../../libs/animations/ParticleBackground";
 import {
-  vapeAvatars,
   getAvatarById,
-  getRandomAvatar,
 } from "../assets/avatars/vape-avatars";
 import AvatarSelector from "../shared/components/AvatarSelector";
 import {
@@ -94,7 +91,6 @@ export default function Home() {
           rewardsInProgress: response.statistics.rewards_in_progress,
           rewardsReadyToRedeem: response.statistics.rewards_ready_to_redeem,
         };
-        console.log("Using backend statistics:", stats);
       } else {
         // Fallback to manual calculation (for backwards compatibility)
         let totalStamps = 0;
@@ -120,14 +116,12 @@ export default function Home() {
           rewardsInProgress,
           rewardsReadyToRedeem,
         };
-        console.log("Using manual calculation:", stats);
       }
 
       setUserProgress(progressMap); // For backward compatibility
       setUserProgressByReward(progressByReward); // New grouped structure
       setLifetimeStats(stats);
     } catch (error) {
-      console.error("Failed to fetch user progress:", error);
       setUserProgress({});
       setUserProgressByReward({});
     } finally {
@@ -437,18 +431,6 @@ export default function Home() {
               ? (stampsCollected / stampsRequired) * 100
               : 0;
 
-            // Debug logging to see the actual values
-            if (reward.id && progress) {
-              console.log(`Reward ${reward.name}:`, {
-                reward_points_required: reward.points_required, // This is the actual stamps requirement
-                calculated_stampsRequired: stampsRequired,
-                progress_stamps_collected: progress.stamps_collected,
-                progress_is_completed: progress.is_completed,
-                progress_status: progress.status,
-                reward_object: reward
-              });
-            }
-
             // Determine reward state based on UserRewardProgress
             // Rewards are business entities - they only show Available or In Progress
             let rewardState = "new";
@@ -620,17 +602,6 @@ export default function Home() {
     fetchUserProgress();
   }
 
-  function handleCancelTransaction() {
-    // No need to cancel anything since no transaction was created
-    handleCloseQRModal();
-  }
-
-  function handleRedeemReward(rewardId) {
-    // TODO: Implement reward redemption
-    console.log("Redeeming reward:", rewardId);
-    // This would typically call an API to redeem the reward
-    // and update the user's points/status
-  }
 
   function handleInProgressAddStamp(rewardId, rewardName) {
     // Ensure rewardId is a string (UUID)
@@ -644,8 +615,6 @@ export default function Home() {
   }
 
   function handleInProgressRedeemReward(idValue, rewardName, type = 'reward') {
-    console.log('🔍 handleInProgressRedeemReward called with:', { idValue, rewardName, type });
-    
     // Close the modal and generate redemption QR code
     setInProgressModalOpen(false);
     
@@ -653,36 +622,24 @@ export default function Home() {
     let rewardId, progressId;
     if (type === 'progress') {
       progressId = idValue;
-      console.log('📋 Processing progress type. progressId:', progressId);
-      
       // Find the reward through progress records
       const allProgressRecords = Object.values(userProgressByReward).flat();
-      console.log('📊 All progress records:', allProgressRecords.map(p => ({ id: p.id, reward_id: p.reward_id, status: p.status })));
-      
       const targetProgress = allProgressRecords.find(p => p.id === progressId);
-      console.log('🎯 Target progress found:', targetProgress);
-      
       rewardId = targetProgress?.reward_id;
-      console.log('🏆 Extracted rewardId from progress:', rewardId, typeof rewardId);
       
       // Ensure rewardId is a string (UUID)
       if (rewardId && typeof rewardId !== 'string') {
         rewardId = String(rewardId);
-        console.log('🔄 Converted rewardId to string:', rewardId);
       }
     } else {
       rewardId = idValue;
       progressId = null;
-      console.log('🏆 Processing reward type. rewardId:', rewardId, typeof rewardId);
       
       // Ensure rewardId is a string (UUID)
       if (rewardId && typeof rewardId !== 'string') {
         rewardId = String(rewardId);
-        console.log('🔄 Converted rewardId to string:', rewardId);
       }
     }
-    
-    console.log('🎊 Final values before QR generation:', { rewardId, progressId, type: typeof rewardId });
     
     // Find the reward to get its details
     const reward = availableRewards.find(r => r.id === rewardId);
@@ -697,8 +654,6 @@ export default function Home() {
       timestamp: Date.now(),
       expires_at: new Date(Date.now() + 15 * 60 * 1000).toISOString(), // 15 minutes expiry
     };
-
-    console.log('📱 Generated QR data:', qrData);
 
     setCurrentTransaction({
       transaction_code: `REDEEM_${user?.id}_${rewardId}_${progressId || 'ANY'}_${Date.now()}_${Math.random()
@@ -737,7 +692,6 @@ export default function Home() {
     }
     
     return availableRewards.filter((reward) => {
-      console.log("Filtering reward for status:", status, reward);
       if (!reward || !reward.id) {
         return false; // Skip invalid reward objects
       }
@@ -746,9 +700,7 @@ export default function Home() {
       if (progressRecords.length === 0) {
         return false; // No progress means not in any status
       }
-      
-      // Get required stamps from points_required field (this is the actual stamps requirement)
-      const stampsRequired = reward.points_required || 10; // points_required contains the required stamps count
+
       
       switch (status) {
         case "in-progress":
@@ -817,7 +769,7 @@ export default function Home() {
       });
     });
     
-    console.log(`Found ${progressRecords.length} progress records for status: ${status}`, progressRecords);
+
     return progressRecords;
   }
 
