@@ -147,10 +147,6 @@ const ProgressDetailsModal = ({ progress, onClose }) => {
                 <span className="progress-stat-value">{calculateRemainingStamps()}</span>
                 <span className="progress-stat-label">Stamps Remaining</span>
               </div>
-              <div className="progress-stat">
-                <span className="progress-stat-value">{progress.total_scans || 0}</span>
-                <span className="progress-stat-label">Total Scans</span>
-              </div>
             </div>
 
             <div className="progress-visual">

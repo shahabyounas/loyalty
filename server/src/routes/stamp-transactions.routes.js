@@ -443,7 +443,7 @@ router.post("/process-scan", authenticateUser, async (req, res) => {
     }
     
     // Validate that the authenticated user has appropriate role
-    if (!staffDbUser || !['staff', 'store_manager', 'tenant_admin', 'super_admin'].includes(staffDbUser.role)) {
+    if (!staffDbUser || !['staff', 'store_manager', 'admin', 'tenant_admin', 'super_admin'].includes(staffDbUser.role)) {
       return res.status(403).json({
         success: false,
         message: "Access denied. Only staff members can scan QR codes.",
@@ -876,7 +876,7 @@ router.post("/process-redemption", authenticateUser, async (req, res) => {
     }
     
     // Validate that the authenticated user has appropriate role
-    if (!staffDbUser || !['staff', 'store_manager', 'tenant_admin', 'super_admin'].includes(staffDbUser.role)) {
+    if (!staffDbUser || !['staff', 'store_manager', 'admin', 'tenant_admin', 'super_admin'].includes(staffDbUser.role)) {
       return res.status(403).json({
         success: false,
         message: "Access denied. Only staff members can process redemptions.",
