@@ -45,18 +45,21 @@ const StampTransactions = () => {
 
   const getStatusIcon = (status, isCompleted) => {
     if (status === "redeemed") return "🎉";
+    if (status === "availed") return "🎉";
     if (isCompleted && status === "ready_to_redeem") return "✅";
     return "🔄";
   };
 
   const getStatusLabel = (status, isCompleted) => {
     if (status === "redeemed") return "Redeemed";
+    if (status === "availed") return "Redeemed";
     if (isCompleted && status === "ready_to_redeem") return "Ready to Redeem";
     return "In Progress";
   };
 
   const getStatusClass = (status, isCompleted) => {
     if (status === "redeemed") return "redeemed";
+    if (status === "availed") return "redeemed";
     if (isCompleted && status === "ready_to_redeem") return "ready";
     return "in-progress";
   };
@@ -117,7 +120,7 @@ const StampTransactions = () => {
       <div className="stamp-transactions-summary">
         <div className="stamp-transactions-summary-card">
           <div className="stamp-transactions-summary-number">{progressRewards.length}</div>
-          <div className="stamp-transactions-summary-label">Total Progress</div>
+          <div className="stamp-transactions-summary-label">Total Customer Rewards</div>
         </div>
         <div className="stamp-transactions-summary-card">
           <div className="stamp-transactions-summary-number">
@@ -133,7 +136,7 @@ const StampTransactions = () => {
         </div>
         <div className="stamp-transactions-summary-card">
           <div className="stamp-transactions-summary-number">
-            {progressRewards.filter(p => p.status === 'redeemed').length}
+            {progressRewards.filter(p => p.status === 'availed').length}
           </div>
           <div className="stamp-transactions-summary-label">Redeemed</div>
         </div>
