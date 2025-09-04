@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import * as EndUser from "../userUI";
 import * as Admin from "../adminUI";
 import LandingPage from "./landing/LandingPage";
+import PublicLayout from "./layout/PublicLayout";
 
 // Main Route Component - Conditionally renders based on auth status
 const MainRoute = () => {
@@ -20,19 +21,27 @@ const MainRoute = () => {
     );
   }
 
-  // If authenticated and is admin/staff user, show admin dashboard directly
+  // If authenticated and is admin/staff user, show admin dashboard directly (no header)
   if (isAuthenticated && user && user.role && ['super_admin', 'admin', 'tenant_admin', 'store_manager', 'staff', 'manager'].includes(user.role)) {
     console.log('Rendering admin dashboard for admin/staff user on main route');
     return <Admin.AdminDashboard />;
   }
 
-  // If authenticated and is regular customer, show customer home page
+  // If authenticated and is regular customer, show customer home page with layout
   if (isAuthenticated) {
-    return <EndUser.Home />;
+    return (
+      <PublicLayout>
+        <EndUser.Home />
+      </PublicLayout>
+    );
   }
 
-  // If not authenticated, show landing page
-  return <LandingPage />;
+  // If not authenticated, show landing page with layout
+  return (
+    <PublicLayout>
+      <LandingPage />
+    </PublicLayout>
+  );
 };
 
 export default MainRoute;

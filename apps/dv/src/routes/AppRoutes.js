@@ -30,11 +30,7 @@ export const AppRoutes = () => {
         {/* Main Route - Shows home page if logged in, landing page if not */}
         <Route
           path="/"
-          element={
-            <PublicLayout>
-              <MainRoute />
-            </PublicLayout>
-          }
+          element={<MainRoute />}
         />
 
         {/* End User Home Page - Protected route */}
