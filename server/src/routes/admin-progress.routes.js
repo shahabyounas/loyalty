@@ -100,7 +100,6 @@ router.get("/progress-rewards", authenticateUser, requireAdmin, async (req, res)
 router.get("/progress-rewards/:progressId/scan-history", authenticateUser, requireAdmin, async (req, res) => {
   try {
     const { progressId } = req.params;
-    console.log('Progress ID:', progressId);
     // Validate progress ID
     if (!progressId) {
       return res.status(400).json({

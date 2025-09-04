@@ -427,16 +427,22 @@ export const AuthProvider = ({ children }) => {
     return Math.max(0, MAX_LOGIN_ATTEMPTS - loginAttempts);
   }, [loginAttempts]);
 
-  // Check if user is admin
+  // Check if user is admin (including staff for admin dashboard access)
   const isAdmin = useCallback((userObj = user) => {
     if (!userObj) return false;
-    return ['super_admin', 'admin', 'tenant_admin', 'store_manager'].includes(userObj.role);
+    return ['super_admin', 'admin', 'tenant_admin', 'store_manager', 'staff', 'manager'].includes(userObj.role);
   }, [user]);
 
   // Check if user is super admin
   const isSuperAdmin = useCallback((userObj = user) => {
     if (!userObj) return false;
     return userObj.role === 'super_admin';
+  }, [user]);
+
+  // Check if user is staff (for permission restrictions)
+  const isStaff = useCallback((userObj = user) => {
+    if (!userObj) return false;
+    return userObj.role === 'staff';
   }, [user]);
 
   // Check if user has specific permission
@@ -511,6 +517,7 @@ export const AuthProvider = ({ children }) => {
     getRemainingAttempts,
     isAdmin,
     isSuperAdmin,
+    isStaff,
     hasPermission,
     logSecurityEvent,
   };

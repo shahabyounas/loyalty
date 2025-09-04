@@ -104,7 +104,7 @@ export const AdminRoute = ({ children }) => (
   <RouteWrapper
     requireAuth={true}
     redirectTo="/"
-    allowedRoles={["super_admin", "admin", "tenant_admin", "store_manager"]}
+    allowedRoles={["super_admin", "admin", "tenant_admin", "store_manager", "staff", "manager"]}
   >
     {children}
   </RouteWrapper>

@@ -521,9 +521,6 @@ router.post("/process-scan", authenticateUser, async (req, res) => {
       });
     }
 
-    
-    console.log('Reward fetched:', reward);
-
     if (!reward.name) {
       logger.error(`Invalid reward structure for ID ${validRewardId}:`, reward);
       return res.status(500).json({
@@ -855,7 +852,6 @@ router.post("/process-scan", authenticateUser, async (req, res) => {
 router.post("/process-redemption", authenticateUser, async (req, res) => {
   try {
     const { user_id, reward_id, store_id } = req.body;
-    console.log('Redemption request body:', req.body);
 
     // Get the authenticated admin/staff user from the middleware
     const authenticatedUser = req.user;

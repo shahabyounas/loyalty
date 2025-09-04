@@ -159,12 +159,12 @@ const AdminDashboard = () => {
 
       // Check if user is super admin based on role with safety checks
       const userRole = user?.role || '';
+      console.log("user.role", userRole);
       if (userRole === "super_admin") {
-        console.log("user.role", userRole);
         setUserPermissions([MENU_PERMISSIONS.SUPER_ADMIN]);
       } else {
-        // Fallback to basic permissions
-        setUserPermissions([MENU_PERMISSIONS.SYSTEM_ADMIN]);
+        // Staff, admin, manager get restricted access (only Dashboard, QR Scanner, Logout)
+        setUserPermissions([MENU_PERMISSIONS.STAFF]);
       }
       
     } catch (error) {
@@ -184,8 +184,10 @@ const AdminDashboard = () => {
       try {
         if (user?.role === "super_admin") {
           setUserPermissions([MENU_PERMISSIONS.SUPER_ADMIN]);
+        } else if (user?.role === "staff") {
+          setUserPermissions([MENU_PERMISSIONS.STAFF]); // Staff gets limited permissions
         } else {
-          // Default fallback permissions
+          // Default fallback permissions for other admin roles
           setUserPermissions([MENU_PERMISSIONS.SYSTEM_ADMIN]);
         }
         setError(null);
@@ -207,7 +209,7 @@ const AdminDashboard = () => {
         return getVisibleMenuItems([MENU_PERMISSIONS.SYSTEM_ADMIN]) || [];
       }
       
-      const visibleItems = getVisibleMenuItems([MENU_PERMISSIONS.SUPER_ADMIN]);
+      const visibleItems = getVisibleMenuItems(userPermissions);
       return Array.isArray(visibleItems) ? visibleItems : [];
     } catch (error) {
       console.error('Error getting visible menus:', error);
@@ -491,7 +493,9 @@ const AdminDashboard = () => {
                     {(!user?.first_name && !user?.last_name) && (user?.email || 'User')}
                   </div>
                   <div className="user-role">
-                    {user?.role === "super_admin" ? "Super Admin" : (user?.role || "User")}
+                    {user?.role === "super_admin" ? "Super Admin" : 
+                     user?.role === "staff" ? "Staff" : 
+                     (user?.role || "User")}
                   </div>
                 </div>
               )}

@@ -421,73 +421,8 @@ const Dashboard = () => {
             )}
           </div>
         </div>
-
-        {/* Quick Actions */}
-        <div className="analytics-card ai-analytics quick-actions">
-          <div className="analytics-glow"></div>
-          <div className="analytics-header">
-            <h3>⚡ Quick Actions</h3>
-          </div>
-          <div className="analytics-content">
-            <div className="action-grid">
-              <button className="ai-action-btn">
-                <span className="action-icon">➕</span>
-                <span className="action-text">Add User</span>
-                <div className="action-glow"></div>
-              </button>
-              <button className="ai-action-btn">
-                <span className="action-icon">🏪</span>
-                <span className="action-text">Add Store</span>
-                <div className="action-glow"></div>
-              </button>
-              <button className="ai-action-btn">
-                <span className="action-icon">🎁</span>
-                <span className="action-text">Create Reward</span>
-                <div className="action-glow"></div>
-              </button>
-              <button className="ai-action-btn">
-                <span className="action-icon">📊</span>
-                <span className="action-text">View Reports</span>
-                <div className="action-glow"></div>
-              </button>
-              <button className="ai-action-btn">
-                <span className="action-icon">📱</span>
-                <span className="action-text">QR Scanner</span>
-                <div className="action-glow"></div>
-              </button>
-              <button className="ai-action-btn">
-                <span className="action-icon">⚙️</span>
-                <span className="action-text">Settings</span>
-                <div className="action-glow"></div>
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Recent Activity */}
-      {dashboardData.activity && dashboardData.activity.length > 0 && (
-        <div className="dashboard-activity">
-          <div className="activity-header">
-            <h3>🔮 Recent Activity</h3>
-            <div className="activity-period">
-              {getPeriodLabel(selectedPeriod)}
-            </div>
-          </div>
-          <div className="activity-list">
-            {dashboardData.activity.slice(0, 8).map((activity, index) => (
-              <div key={index} className="activity-item ai-activity">
-                <div className="activity-icon">{getActivityIcon(activity.type)}</div>
-                <div className="activity-content">
-                  <div className="activity-title">{getActivityDescription(activity)}</div>
-                  <div className="activity-time">{activity.timeAgo}</div>
-                </div>
-                <div className="activity-glow"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
