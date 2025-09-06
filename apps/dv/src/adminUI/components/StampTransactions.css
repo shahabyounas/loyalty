@@ -44,43 +44,113 @@
     font-weight: 400;
 }
 
-.stamp-transactions-header-actions {
+/* Search and Filter Section - Consistent with Users and Stores */
+.stamp-transactions-search-filter-section {
     display: flex;
-    align-items: center;
     gap: 1em;
+    align-items: center;
     flex-wrap: wrap;
+    padding: 1.5em;
+    border: 1px solid var(--border);
+    border-radius: 0.75em;
+    box-shadow: var(--shadow);
+    background: var(--background);
+}
+
+.stamp-transactions-search-input {
+    flex: 1;
+    min-width: 15em;
+    max-width: 25em;
+    padding: 0.75em 1em;
+    border: 1px solid var(--border);
+    border-radius: 0.5em;
+    font-size: 1em;
+    color: var(--text);
+    background: var(--background);
+}
+
+.stamp-transactions-search-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: var(--shadow-focus);
+}
+
+.stamp-transactions-search-input::placeholder {
+    color: var(--text-muted);
+}
+
+.stamp-transactions-filter-select {
+    min-width: 10em;
+    padding: 0.75em 1em;
+    border: 1px solid var(--border);
+    border-radius: 0.5em;
+    font-size: 1em;
+    color: var(--text);
+    background: var(--background);
+    cursor: pointer;
+}
+
+.stamp-transactions-filter-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: var(--shadow-focus);
 }
 
 .stamp-transactions-refresh-btn {
-    background: var(--primary);
-    color: var(--white);
-    border: none;
-    padding: 0.5em 1em;
+    padding: 0.75em 1.5em;
+    border: 1px solid var(--primary);
     border-radius: 0.5em;
-    cursor: pointer;
+    background: var(--primary);
+    color: white;
     font-size: 0.875em;
     font-weight: 500;
+    cursor: pointer;
     transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5em;
+    white-space: nowrap;
 }
 
 .stamp-transactions-refresh-btn:hover {
     background: var(--primary-dark);
     transform: translateY(-1px);
-    box-shadow: var(--shadow-focus);
+    box-shadow: var(--shadow-hover);
+}
+
+.stamp-transactions-refresh-btn:active {
+    transform: translateY(0);
 }
 
 .stamp-transactions-error-indicator {
-    background: var(--warning-light);
-    color: var(--warning-dark);
-    padding: 0.5em 0.75em;
-    border-radius: 0.375em;
-    font-size: 0.75em;
+    color: var(--error);
+    font-size: 0.875em;
     font-weight: 500;
-    border: 1px solid var(--warning);
     cursor: help;
+}
+
+.stamp-transactions-clear-filters-btn {
+    padding: 0.75em 1.5em;
+    border: 1px solid var(--border);
+    border-radius: 0.5em;
+    background: var(--background);
+    color: var(--text);
+    font-size: 0.875em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 1em;
+}
+
+.stamp-transactions-clear-filters-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-hover);
+}
+
+.stamp-transactions-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+    flex-wrap: wrap;
 }
 
 /* Summary Cards - Following application pattern */
@@ -824,6 +894,29 @@
     .stamp-transactions-export {
         flex-direction: column;
     }
+
+    /* Mobile: Search and Filter Section */
+    .stamp-transactions-search-filter-section {
+        flex-direction: column;
+        gap: 0.75em;
+    }
+
+    .stamp-transactions-search-input {
+        min-width: unset;
+        max-width: unset;
+        width: 100%;
+    }
+
+    .stamp-transactions-filter-select {
+        min-width: unset;
+        width: 100%;
+    }
+
+    .stamp-transactions-refresh-btn,
+    .stamp-transactions-clear-filters-btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 @media (max-width: 1024px) {
@@ -831,5 +924,15 @@
     .stamp-transactions-table-header,
     .stamp-transactions-table-row {
         grid-template-columns: 100px 180px 150px 120px 80px 80px 140px 80px;
+    }
+
+    /* Tablet: Search and Filter Section */
+    .stamp-transactions-search-filter-section {
+        flex-wrap: wrap;
+    }
+
+    .stamp-transactions-search-input {
+        flex: 1;
+        min-width: 200px;
     }
 }

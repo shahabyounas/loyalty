@@ -1,18 +1,78 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { adminProgressAPI } from "../../utils/api";
 import ProgressDetailsModal from "./ProgressDetailsModal";
 import "./StampTransactions.css";
 
 const StampTransactions = () => {
   const [progressRewards, setProgressRewards] = useState([]);
+  const [filteredProgressRewards, setFilteredProgressRewards] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedProgress, setSelectedProgress] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  
+  // Filter and search refs
+  const searchInputRef = useRef(null);
+  const statusSelectRef = useRef(null);
+  const searchDebounceRef = useRef(null);
 
   useEffect(() => {
     fetchProgressRewards();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, []);
+
+  const applyFilters = (list) => {
+    let result = Array.isArray(list) ? [...list] : [];
+    
+    // Apply search filter
+    const searchTerm = (searchInputRef.current?.value || "").trim().toLowerCase();
+    if (searchTerm) {
+      result = result.filter((progress) => {
+        const customerName = (progress.customer_name || "").toLowerCase();
+        const customerEmail = (progress.customer_email || "").toLowerCase();
+        const rewardName = (progress.reward_name || "").toLowerCase();
+        return (
+          customerName.includes(searchTerm) ||
+          customerEmail.includes(searchTerm) ||
+          rewardName.includes(searchTerm)
+        );
+      });
+    }
+
+    // Apply status filter
+    const statusFilter = (statusSelectRef.current?.value || "all").toLowerCase();
+    if (statusFilter !== "all") {
+      result = result.filter((progress) => {
+        const status = getStatusLabel(progress.status, progress.is_completed).toLowerCase();
+        return status === statusFilter;
+      });
+    }
+
+    return result;
+  };
+
+  const handleSearchInput = () => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    
+    searchDebounceRef.current = setTimeout(() => {
+      const filtered = applyFilters(progressRewards);
+      setFilteredProgressRewards(filtered);
+    }, 300);
+  };
+
+  const handleFiltersChange = () => {
+    const filtered = applyFilters(progressRewards);
+    setFilteredProgressRewards(filtered);
+  };
 
   const fetchProgressRewards = async () => {
     setLoading(true);
@@ -22,17 +82,21 @@ const StampTransactions = () => {
       const response = await adminProgressAPI.getAllProgressRewards();
 
       if (response && response.success) {
-        setProgressRewards(response.data || []);
+        const data = response.data || [];
+        setProgressRewards(data);
+        setFilteredProgressRewards(data);
       } else {
         // Silently handle API errors, show empty list
         console.warn("API response unsuccessful:", response?.message || "Unknown error");
         setProgressRewards([]);
+        setFilteredProgressRewards([]);
         setError(response?.message || "Unable to load data at the moment");
       }
     } catch (error) {
       // Silently handle network/API errors, show empty list
       console.warn("Failed to fetch progress rewards:", error);
       setProgressRewards([]);
+      setFilteredProgressRewards([]);
       setError("Network error - showing cached data");
     } finally {
       setLoading(false);
@@ -96,28 +160,43 @@ const StampTransactions = () => {
 
   return (
     <div className="stamp-transactions-container">
-      <div className="stamp-transactions-header">
-        <h2 className="stamp-transactions-title">
-          <span className="stamp-transactions-icon">🎯</span>
-          User Progress Rewards
-        </h2>
-        <p className="stamp-transactions-subtitle">
-          Manage and track customer reward progress across all stamps and redemptions
-        </p>
-        <div className="stamp-transactions-header-actions">
-          <button onClick={fetchProgressRewards} className="stamp-transactions-refresh-btn">
-            🔄 Refresh
-          </button>
-          {error && (
-            <span className="stamp-transactions-error-indicator" title={error}>
-              ⚠️ Connection Issue
-            </span>
-          )}
-        </div>
+
+      {/* Search and Filter Section */}
+      <div className="stamp-transactions-search-filter-section">
+        <input
+          type="text"
+          placeholder="Search by customer name, email, or reward..."
+          ref={searchInputRef}
+          onInput={handleSearchInput}
+          className="stamp-transactions-search-input"
+        />
+        <select
+          ref={statusSelectRef}
+          defaultValue="all"
+          onChange={handleFiltersChange}
+          className="stamp-transactions-filter-select"
+        >
+          <option value="all">All Status</option>
+          <option value="in progress">In Progress</option>
+          <option value="ready to redeem">Ready to Redeem</option>
+          <option value="redeemed">Redeemed</option>
+        </select>
+        <button onClick={fetchProgressRewards} className="stamp-transactions-refresh-btn">
+          🔄 Refresh
+        </button>
+        {error && (
+          <span className="stamp-transactions-error-indicator" title={error}>
+            ⚠️ Connection Issue
+          </span>
+        )}
       </div>
 
       {/* Summary Cards */}
       <div className="stamp-transactions-summary">
+        <div className="stamp-transactions-summary-card">
+          <div className="stamp-transactions-summary-number">{filteredProgressRewards.length}</div>
+          <div className="stamp-transactions-summary-label">Filtered Results</div>
+        </div>
         <div className="stamp-transactions-summary-card">
           <div className="stamp-transactions-summary-number">{progressRewards.length}</div>
           <div className="stamp-transactions-summary-label">Total Customer Rewards</div>
@@ -144,19 +223,38 @@ const StampTransactions = () => {
 
       {/* Progress Table */}
       <div className="stamp-transactions-table-container">
-        {progressRewards.length === 0 ? (
+        {filteredProgressRewards.length === 0 ? (
           <div className="stamp-transactions-empty">
             <div className="stamp-transactions-empty-icon">📋</div>
-            <h3>No Progress Rewards Found</h3>
-            {error ? (
-              <div>
-                <p>Unable to load data at the moment. Please try refreshing.</p>
-                <button onClick={fetchProgressRewards} className="stamp-transactions-retry-btn">
-                  🔄 Try Again
-                </button>
-              </div>
+            {progressRewards.length === 0 ? (
+              <>
+                <h3>No Progress Rewards Found</h3>
+                {error ? (
+                  <div>
+                    <p>Unable to load data at the moment. Please try refreshing.</p>
+                    <button onClick={fetchProgressRewards} className="stamp-transactions-retry-btn">
+                      🔄 Try Again
+                    </button>
+                  </div>
+                ) : (
+                  <p>There are no customer progress rewards to display at the moment.</p>
+                )}
+              </>
             ) : (
-              <p>There are no customer progress rewards to display at the moment.</p>
+              <>
+                <h3>No Results Found</h3>
+                <p>No progress rewards match your current search and filter criteria.</p>
+                <button 
+                  onClick={() => {
+                    if (searchInputRef.current) searchInputRef.current.value = '';
+                    if (statusSelectRef.current) statusSelectRef.current.value = 'all';
+                    setFilteredProgressRewards(progressRewards);
+                  }}
+                  className="stamp-transactions-clear-filters-btn"
+                >
+                  Clear Filters
+                </button>
+              </>
             )}
           </div>
         ) : (
@@ -172,7 +270,7 @@ const StampTransactions = () => {
               </tr>
             </thead>
             <tbody>
-              {progressRewards.map((progress) => (
+              {filteredProgressRewards.map((progress) => (
                 <tr key={progress.id} className="stamp-transactions-row">
                   <td className="stamp-transactions-customer">
                     <div className="stamp-transactions-customer-info">
